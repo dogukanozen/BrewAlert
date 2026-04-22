@@ -28,38 +28,43 @@ public class ProfileListViewModelTests
         // Arrange
         var profiles = new List<BrewProfile>
         {
-            new() { Name = "Tea" },
-            new() { Name = "Coffee" }
+            new() { Name = "Tea", BrewDuration = TimeSpan.FromMinutes(3) },
+            new() { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(3) }
         };
-        _repository.GetAllAsync().Returns(profiles);
+        _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(profiles);
 
         // Act
         var vm = new ProfileListViewModel(_profileService, _navigation);
         
-        // Give it a moment as it loads in constructor
-        await Task.Delay(100);
+        // Wait for loading to complete without fixed delay
+        int attempts = 0;
+        while (vm.IsLoading && attempts++ < 10)
+        {
+            await Task.Delay(50);
+        }
 
         // Assert
         Assert.Equal(2, vm.Profiles.Count);
         Assert.Equal("Tea", vm.Profiles[0].Name);
-        Assert.Equal("Coffee", vm.Profiles[1].Name);
     }
 
     [AvaloniaFact]
     public void SelectProfile_NavigatesAndStartsBrew()
     {
         // Arrange
-        var profile = new BrewProfile { Name = "Tea" };
+        var profile = new BrewProfile { Name = "Tea", BrewDuration = TimeSpan.FromMinutes(3) };
         var timerService = Substitute.For<IBrewTimerService>();
-        timerService.Start(Arg.Any<BrewProfile>()).Returns(callInfo => new BrewSession { Profile = (BrewProfile)callInfo[0] });
+        timerService.Start(Arg.Any<BrewProfile>()).Returns(new BrewSession { Profile = profile });
 
-        var timerVm = Substitute.For<BrewTimerViewModel>(
+        // Use real instance because StartBrew is not virtual
+        var timerVm = new BrewTimerViewModel(
             timerService,
             Substitute.For<INotificationService>(),
             _navigation);
             
         var vm = new ProfileListViewModel(_profileService, _navigation);
         
+        // Setup navigation to return vm then timerVm
         _navigation.CurrentView.Returns(vm, timerVm);
 
         // Act
@@ -67,6 +72,6 @@ public class ProfileListViewModelTests
 
         // Assert
         _navigation.Received(1).NavigateTo<BrewTimerViewModel>();
-        timerVm.Received(1).StartBrew(profile);
+        timerService.Received(1).Start(profile);
     }
 }

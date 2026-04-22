@@ -27,13 +27,10 @@ public class MainWindowViewModelTests
         var mockVm = Substitute.For<ViewModelBase>();
 
         // Act
-        // Simulate event trigger (since we can't easily trigger the private event subscriber from outside, 
-        // we check if it was subscribed correctly in constructor and then we can simulate the call if needed,
-        // but here we just test the logic via public methods if possible).
-        
-        // Actually, we can test NavigateToSettings which calls _navigation.NavigateTo
-        // and NavigationService would normally trigger the event.
-        // In our mock, we just want to see if the property updates when the event is triggered.
+        _navigation.CurrentViewChanged += Raise.Event<Action<ViewModelBase>>(mockVm);
+
+        // Assert
+        Assert.Equal(mockVm, vm.CurrentView);
     }
 
     [Fact]

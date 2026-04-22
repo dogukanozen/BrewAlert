@@ -1,13 +1,12 @@
-using BrewAlert.Core.Interfaces;
-using BrewAlert.Core.Services;
 using BrewAlert.UI.Services;
 using BrewAlert.UI.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Xunit;
 using System;
 
 namespace BrewAlert.UI.Tests;
+
+public class TestViewModel : ViewModelBase { }
 
 public class NavigationServiceTests
 {
@@ -16,19 +15,15 @@ public class NavigationServiceTests
     {
         // Arrange
         var serviceProvider = Substitute.For<IServiceProvider>();
-        var repository = Substitute.For<IProfileRepository>();
-        var profileService = new BrewProfileService(repository);
-        var mockVm = Substitute.For<ProfileListViewModel>(
-            profileService,
-            Substitute.For<INavigationService>());
-        serviceProvider.GetService(typeof(ProfileListViewModel)).Returns(mockVm);
+        var mockVm = new TestViewModel();
+        serviceProvider.GetService(typeof(TestViewModel)).Returns(mockVm);
         
         var navigation = new NavigationService(serviceProvider);
         ViewModelBase? notifiedVm = null;
         navigation.CurrentViewChanged += vm => notifiedVm = vm;
 
         // Act
-        navigation.NavigateTo<ProfileListViewModel>();
+        navigation.NavigateTo<TestViewModel>();
 
         // Assert
         Assert.Equal(mockVm, navigation.CurrentView);
