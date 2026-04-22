@@ -1,0 +1,29 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/publish/
+
+# IDE files
+.vs/
+.idea/
+*.user
+*.suo
+*.sln.dotSettings
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dependencies
+**/packages/
+**/node_modules/
+
+# Gemini CLI local data
+.gemini/sessions/
+.gemini/cache/
+
+# Sensitive data (though handled by security filters, it's good practice)
+**/*.pfx
+**/*.snk
+.env
+*.usersecrets
