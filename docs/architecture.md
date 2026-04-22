@@ -1,91 +1,90 @@
-# BrewAlert Architecture
+# BrewAlert — Architecture
 
-## Overview
+For day-to-day work most agents should read [`../AGENT.md`](../AGENT.md), not this file. Open this one only when you actually need architectural detail (adding a layer, changing DI lifetimes, touching threading).
 
-BrewAlert is a brew timer & notification application built with a clean 3-layer architecture.
-
-## Layer Diagram
+## 1. Layers
 
 ```
 ┌─────────────────────────────────────────────────┐
 │                  BrewAlert.UI                    │
-│    Views │ ViewModels │ Services │ Themes        │
-│            Composition Root (DI)                 │
+│   Views │ ViewModels │ NavigationService │ DI    │
 ├─────────────────────────────────────────────────┤
 │             BrewAlert.Infrastructure             │
-│    Teams Webhook │ JSON Persistence │ Hardware   │
+│   Teams webhook │ JSON persistence │ Console     │
 ├─────────────────────────────────────────────────┤
 │                 BrewAlert.Core                   │
-│      Models │ Interfaces │ Services │ Events     │
-│              (Zero Dependencies)                 │
+│    Models │ Interfaces │ Services │ Events       │
+│               (zero dependencies)                │
 └─────────────────────────────────────────────────┘
 ```
 
-## Key Design Decisions
+Dependency direction is one-way: UI → Infrastructure → Core. Core has no project references; Infrastructure references only Core; UI references both. Never reverse.
 
-### 1. Interface-Based Services
-All services are accessed through interfaces defined in `BrewAlert.Core/Interfaces/`.
-This allows:
-- Easy mocking in tests
-- Swapping implementations (e.g., Teams → Slack)
-- Parallel development by multiple agents
+## 2. Key design decisions
 
-### 2. NavigationService Pattern
-ViewModels **never** access the DI container directly (no Service Locator anti-pattern).
-Instead, an `INavigationService` abstraction handles all view transitions:
+### 2.1 Interfaces live in Core
+All services are consumed through interfaces under `BrewAlert.Core/Interfaces/`. That keeps the domain testable and lets us swap implementations (`TeamsWebhookNotifier` ↔ `ConsoleNotifier` is the live example — see §2.5).
+
+### 2.2 NavigationService (no service locator)
+ViewModels **never** touch `App.Services` / `IServiceProvider`. All view transitions go through `INavigationService`:
 
 ```
 ProfileListVM ──→ INavigationService.NavigateTo<BrewTimerVM>()
-                         │
-                  NavigationService resolves VM from DI
-                         │
-                  Fires CurrentViewChanged event
-                         │
-                  MainWindowVM updates CurrentView property
-                         │
-                  ContentControl renders the new view
+                     │
+               NavigationService resolves VM from DI
+                     │
+               Fires CurrentViewChanged event
+                     │
+               MainWindowVM updates CurrentView
+                     │
+               ContentControl renders the new view
 ```
 
-**Why?**
-- All ViewModel dependencies are visible in the constructor
-- ViewModels are independently unit-testable (mock `INavigationService`)
-- No hidden coupling to `App.Services` or `IServiceProvider`
+Why: all dependencies visible in the constructor, VMs unit-testable with a mocked `INavigationService`, no hidden coupling.
 
-### 3. Event-Driven Timer
-`IBrewTimerService` uses C# events (`TimerTick`, `BrewCompleted`) rather than polling.
-The UI subscribes to these events and marshals updates to the Avalonia UI thread.
+### 2.3 Event-driven timer
+`BrewTimerService` runs a `PeriodicTimer` (1 s) in a background task and raises `TimerTick` / `BrewStarted` / `BrewCompleted` / `BrewCancelled`. The UI layer marshals those onto the Avalonia UI thread via `Dispatcher.UIThread`.
 
-**Thread Safety Rules:**
-- State mutations happen inside `lock` blocks
-- Events are fired **outside** lock blocks to prevent deadlocks from re-entrant handlers
-- `BrewTimerViewModel` implements `IDisposable` to unsubscribe from events and prevent memory leaks
+**Thread-safety rules (all enforced in code today):**
+- Session state mutations are inside a single `lock (_lock)` block.
+- Events are fired **outside** that lock (re-entrant handlers used to deadlock).
+- Any VM that subscribes to these events implements `IDisposable` and unsubscribes in `Dispose()`.
 
-### 4. DI Lifetime Strategy
+### 2.4 DI lifetimes
+
+Registered in `src/BrewAlert.UI/App.axaml.cs → ConfigureServices`.
 
 | Registration | Lifetime | Reason |
 |---|---|---|
-| `MainWindowViewModel` | **Singleton** | Lives as long as the window — one instance for the entire app lifecycle |
-| `INavigationService` | **Singleton** | Shared navigation state across all ViewModels |
-| `IBrewTimerService` | **Singleton** | Single timer instance manages the active brew session |
-| `BrewTimerViewModel` | **Transient** | Fresh instance per navigation — prevents stale state |
-| `ProfileListViewModel` | **Transient** | Re-fetches profiles on each visit |
-| `SettingsViewModel` | **Transient** | Re-reads config on each visit |
+| `MainWindowViewModel` | Singleton | Lives for the whole window |
+| `INavigationService` | Singleton | Shared navigation state |
+| `IBrewTimerService` | Singleton | One active brew session at a time |
+| `BrewProfileService` | Singleton | Stateless helper |
+| `IProfileRepository` | Singleton | Stateless I/O facade |
+| `INotificationService` | Singleton | Either Teams or Console (resolved at startup) |
+| `BrewTimerViewModel` | Transient | Fresh instance per navigation (prevents stale state) |
+| `ProfileListViewModel` | Transient | Re-fetches profiles on each visit |
+| `SettingsViewModel` | Transient | Re-reads config on each visit |
 
-### 5. Configuration Hierarchy
+### 2.5 Notifier selection
+`INotificationService` is registered via a factory. If `Notifications:Teams:Enabled=true` **and** `WebhookUrl` is non-empty, we resolve `TeamsWebhookNotifier` (an `HttpClient`-based adaptive-card poster). Otherwise we fall back to `ConsoleNotifier` — which is what local dev and CI use.
+
+### 2.6 Configuration precedence
+
 ```
-appsettings.json (committed, defaults only)
+appsettings.json                     (committed, defaults only)
   ↓ overridden by
-appsettings.{Environment}.json (gitignored)
+appsettings.{DOTNET_ENVIRONMENT}.json  (optional, gitignored in practice)
   ↓ overridden by
-Environment variables (BREWALERT__*)
+Environment variables prefixed BREWALERT__
 ```
 
-### 6. Security
-- No secrets in source code
-- Webhook URLs via environment variables
-- `appsettings.Development.json` in `.gitignore`
+### 2.7 Security posture
+- No secrets in source.
+- Webhook URL supplied via env var (or gitignored env-specific `appsettings`).
+- `git diff --cached` is the last line of defence — use it.
 
-## Data Flow
+## 3. Data flow — happy path
 
 ```
 User taps profile card
@@ -94,31 +93,32 @@ User taps profile card
 ProfileListVM.SelectProfile()
   │
   ▼
-INavigationService.NavigateTo<BrewTimerVM>()  →  MainWindowVM.CurrentView updates
+INavigationService.NavigateTo<BrewTimerVM>()   →   MainWindowVM.CurrentView updates
   │
   ▼
 BrewTimerVM.StartBrew(profile)
   │
   ▼
-IBrewTimerService.Start(profile)  →  BrewStarted event
+IBrewTimerService.Start(profile)   →   BrewStarted event
   │
   ▼
-Timer loop (PeriodicTimer, 1s interval)
+PeriodicTimer loop (1 s)
   │
-  ├─ TimerTick event  →  BrewTimerVM (UI thread)  →  countdown display
+  ├─ TimerTick        →   BrewTimerVM (UI thread)   →   countdown display
   │
-  └─ BrewCompleted event  →  BrewTimerVM  →  INotificationService.SendBrewCompletedAsync()
-                                                      │
-                                                      ▼
-                                                HTTP POST → Teams Webhook (Adaptive Card)
+  └─ BrewCompleted    →   BrewTimerVM                →   INotificationService.SendBrewCompletedAsync()
+                                                              │
+                                                              ▼
+                                                   HTTP POST → Teams webhook (adaptive card)
+                                                   (or console log if Teams disabled)
 ```
 
-## Raspberry Pi Deployment
+## 4. Raspberry Pi deployment
 
-Target: Raspberry Pi 4/5 with 7" touchscreen (800x480)
+Target: Raspberry Pi 4 / 5 with a 7" touchscreen (800 × 480).
 
 ```bash
 dotnet publish src/BrewAlert.UI -c Release -r linux-arm64 --self-contained
 ```
 
-The app runs as a systemd service for auto-start on boot.
+The Pi runs the published output as a systemd service for auto-start on boot (service unit lives on the Pi, not in this repo).
