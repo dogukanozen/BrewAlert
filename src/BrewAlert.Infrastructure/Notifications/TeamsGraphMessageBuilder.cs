@@ -3,6 +3,7 @@ namespace BrewAlert.Infrastructure.Notifications;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Encodings.Web;
 using BrewAlert.Core.Models;
 
 /// <summary>
@@ -14,7 +15,7 @@ public static class TeamsGraphMessageBuilder
     private static readonly JsonSerializerOptions Options = new() 
     { 
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
     public static string BuildBrewCompletedPayload(BrewSession session)

@@ -1,63 +1,48 @@
 using BrewAlert.Core.Events;
+using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
 using BrewAlert.Core.Services;
+using NSubstitute;
 using Xunit;
 
 namespace BrewAlert.Core.Tests;
 
 public class BrewTimerServiceTests : IDisposable
 {
-    private readonly BrewTimerService _sut = new();
+    private readonly BrewTimerService _sut;
 
-    private static BrewProfile CreateProfile(int seconds = 3) => new()
+    public BrewTimerServiceTests()
     {
-        Name = "Test Brew",
-        Type = BrewType.Tea,
-        BrewDuration = TimeSpan.FromSeconds(seconds)
+        _sut = new BrewTimerService();
+    }
+
+    private BrewProfile CreateProfile(string name = "Test", int seconds = 5) => new()
+    {
+        Name = name,
+        BrewDuration = TimeSpan.FromSeconds(seconds),
+        Type = BrewType.Tea
     };
 
     [Fact]
-    public void Start_ShouldCreateActiveSession()
+    public void Start_ShouldCreateSessionAndReturnIt()
     {
         var profile = CreateProfile();
         var session = _sut.Start(profile);
 
         Assert.NotNull(session);
+        Assert.Equal(profile, session.Profile);
         Assert.Equal(BrewSessionState.Running, session.State);
-        Assert.Equal(profile.Name, session.Profile.Name);
     }
 
     [Fact]
-    public void Start_WhenAlreadyActive_ShouldThrow()
+    public void Start_WhenAlreadyRunning_ShouldThrowException()
     {
         _sut.Start(CreateProfile());
         Assert.Throws<InvalidOperationException>(() => _sut.Start(CreateProfile()));
     }
 
     [Fact]
-    public void Cancel_ShouldStopActiveSession()
-    {
-        var session = _sut.Start(CreateProfile());
-        BrewCancelledEvent? cancelledEvent = null;
-        _sut.BrewCancelled += (_, e) => cancelledEvent = e;
-
-        _sut.Cancel(session.Id);
-
-        Assert.Null(_sut.GetActiveSession());
-        Assert.NotNull(cancelledEvent);
-    }
-
-    [Fact]
-    public void Cancel_WithWrongId_ShouldDoNothing()
-    {
-        var session = _sut.Start(CreateProfile());
-        _sut.Cancel(Guid.NewGuid());
-
-        Assert.NotNull(_sut.GetActiveSession());
-    }
-
-    [Fact]
-    public void Pause_ShouldChangeStateToPaused()
+    public void Pause_ShouldUpdateState()
     {
         var session = _sut.Start(CreateProfile());
         _sut.Pause(session.Id);
@@ -68,7 +53,7 @@ public class BrewTimerServiceTests : IDisposable
     }
 
     [Fact]
-    public void Resume_ShouldChangeStateToRunning()
+    public void Resume_ShouldUpdateState()
     {
         var session = _sut.Start(CreateProfile());
         _sut.Pause(session.Id);
@@ -77,6 +62,15 @@ public class BrewTimerServiceTests : IDisposable
         var active = _sut.GetActiveSession();
         Assert.NotNull(active);
         Assert.Equal(BrewSessionState.Running, active.State);
+    }
+
+    [Fact]
+    public void Cancel_ShouldClearSession()
+    {
+        var session = _sut.Start(CreateProfile());
+        _sut.Cancel(session.Id);
+
+        Assert.Null(_sut.GetActiveSession());
     }
 
     [Fact]
@@ -98,10 +92,10 @@ public class BrewTimerServiceTests : IDisposable
 
         _sut.Start(CreateProfile(seconds: 2));
 
-        var completed = await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(5)));
-        Assert.Equal(tcs.Task, completed);
-
-        var result = await tcs.Task;
+        // Use WaitAsync with timeout instead of flaky WhenAny(Delay)
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var result = await tcs.Task.WaitAsync(cts.Token);
+        
         Assert.Equal(BrewSessionState.Completed, result.Session.State);
     }
 

@@ -55,7 +55,9 @@ public class ProfileListViewModelTests
             };
         }
 
-        await Task.WhenAny(tcs.Task, Task.Delay(1000));
+        // Wait for completion with timeout (avoiding flaky WhenAny(Delay))
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await tcs.Task.WaitAsync(cts.Token);
 
         // Assert
         Assert.Equal(2, vm.Profiles.Count);
