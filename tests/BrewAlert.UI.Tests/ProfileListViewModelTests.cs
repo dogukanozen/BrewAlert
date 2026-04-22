@@ -6,7 +6,10 @@ using BrewAlert.UI.Services;
 using BrewAlert.UI.ViewModels;
 using NSubstitute;
 using Xunit;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BrewAlert.UI.Tests;
@@ -34,14 +37,25 @@ public class ProfileListViewModelTests
         _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(profiles);
 
         // Act
+        var tcs = new TaskCompletionSource();
         var vm = new ProfileListViewModel(_profileService, _navigation);
         
-        // Wait for loading to complete without fixed delay
-        int attempts = 0;
-        while (vm.IsLoading && attempts++ < 10)
+        if (!vm.IsLoading)
         {
-            await Task.Delay(50);
+            tcs.SetResult();
         }
+        else
+        {
+            vm.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(vm.IsLoading) && !vm.IsLoading)
+                {
+                    tcs.TrySetResult();
+                }
+            };
+        }
+
+        await Task.WhenAny(tcs.Task, Task.Delay(1000));
 
         // Assert
         Assert.Equal(2, vm.Profiles.Count);

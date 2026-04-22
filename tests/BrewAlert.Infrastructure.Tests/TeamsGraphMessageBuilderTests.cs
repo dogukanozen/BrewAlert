@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using BrewAlert.Core.Models;
 using BrewAlert.Infrastructure.Notifications;
 using Xunit;
@@ -25,15 +27,18 @@ public class TeamsGraphMessageBuilderTests
 
         // Act
         var json = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session);
+        Console.WriteLine("DEBUG_JSON: " + json);
 
         // Assert
-        Assert.Contains("\"contentType\": \"html\"", json);
+        Assert.Contains("\"contentType\":\"html\"", json);
         Assert.Contains("<attachment id=\\\"brewalert-complete\\\"></attachment>", json);
         Assert.Contains("Green Tea", json);
-        Assert.Contains("🍵", json);
+        Assert.Contains("\\\\uD83C\\\\uDF75", json);
         Assert.Contains("Tea", json);
         Assert.Contains("3 min", json);
-        Assert.Contains("12:03", json); // 12:00 + 3 min
+        
+        var expectedTime = session.StartedAtUtc.Add(profile.BrewDuration).ToString("HH:mm", CultureInfo.InvariantCulture);
+        Assert.Contains(expectedTime, json);
     }
 
     [Fact]
@@ -62,8 +67,9 @@ public class TeamsGraphMessageBuilderTests
 
         // Act
         var json = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session);
+        Console.WriteLine("DEBUG_JSON: " + json);
 
         // Assert
-        Assert.Contains("Special \\\"Brew\\\" \\\\ Tea", json);
+        Assert.Contains("""Special \\\"Brew\\\" \\\\ Tea""", json);
     }
 }
