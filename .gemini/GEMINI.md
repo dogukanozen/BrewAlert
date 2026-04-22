@@ -1,14 +1,11 @@
-# BrewAlert
+# GEMINI.md
 
-Smart tea/coffee brewing timer for Raspberry Pi (ARM64) and Windows (x64).
+**Read [`../AGENT.md`](../AGENT.md) first.** It is the single source of truth for every agent. This file only exists so Gemini picks up the brief via its default entry point.
 
-## Tech Stack
-- **Framework**: .NET 10.0
-- **UI**: Avalonia UI (MVVM)
-- **Repo**: JSON-based
+Commit messages **MUST** follow [`../docs/commit-style.md`](../docs/commit-style.md).
 
-## Standards
-- Use C# 14/15 features.
-- Prefix interfaces with `I`.
-- Use `CommunityToolkit.Mvvm` (`[ObservableProperty]`).
-- UI styles in `BrewAlertTheme.axaml`.
+Gemini-specific reminders:
+- Framework: .NET 10 + Avalonia MVVM, `CommunityToolkit.Mvvm` (`[ObservableProperty]`).
+- C# 13 features OK; nullable reference types enabled; file-scoped namespaces; primary constructors for DI.
+- Interfaces are prefixed `I` and live in `src/BrewAlert.Core/Interfaces/`.
+- UI styles belong in `src/BrewAlert.UI/Themes/BrewAlertTheme.axaml`.
