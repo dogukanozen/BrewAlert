@@ -9,56 +9,70 @@
         <conv:TimeSpanToStringConverter x:Key="TimeSpanConverter" />
     </UserControl.Resources>
 
+    <!-- Use a Viewbox wrapper so entire timer UI scales with window size -->
     <Grid RowDefinitions="*,Auto">
         <!-- Timer Display -->
-        <StackPanel Grid.Row="0"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center"
-                    Spacing="16">
+        <ScrollViewer Grid.Row="0"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Spacing="12"
+                        Margin="16">
 
-            <!-- Profile Icon -->
-            <TextBlock Text="{Binding ProfileIcon}"
-                       FontSize="64"
-                       HorizontalAlignment="Center" />
+                <!-- Profile Icon — scales via Viewbox for any resolution -->
+                <Viewbox MaxHeight="100" Stretch="Uniform" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding ProfileIcon}"
+                               FontSize="80" />
+                </Viewbox>
 
-            <!-- Countdown -->
-            <TextBlock Text="{Binding Remaining, Converter={StaticResource TimeSpanConverter}}"
-                       Classes="brew-timer" />
+                <!-- Countdown — auto-scaling with Viewbox, no fixed height -->
+                <Viewbox MaxHeight="140"
+                         Stretch="Uniform"
+                         HorizontalAlignment="Center"
+                         Margin="0,8">
+                    <TextBlock Text="{Binding Remaining, Converter={StaticResource TimeSpanConverter}}"
+                               Classes="brew-timer" />
+                </Viewbox>
 
-            <!-- Progress Bar -->
-            <ProgressBar Value="{Binding Progress}"
-                         Maximum="1"
-                         Height="8"
-                         Width="400"
-                         CornerRadius="4"
-                         Foreground="{StaticResource BrewAccentBrush}"
-                         Background="{StaticResource BrewSurfaceBrush}" />
+                <!-- Progress Bar — stretches to fill available width -->
+                <ProgressBar Value="{Binding Progress}"
+                             Maximum="1"
+                             Height="10"
+                             HorizontalAlignment="Stretch"
+                             CornerRadius="5"
+                             Margin="24,0"
+                             Foreground="{StaticResource BrewAccentBrush}"
+                             Background="{StaticResource BrewSurfaceBrush}" />
 
-            <!-- Status -->
-            <TextBlock Text="{Binding StatusText}"
-                       Classes="brew-subtitle"
-                       HorizontalAlignment="Center" />
+                <!-- Status -->
+                <TextBlock Text="{Binding StatusText}"
+                           Classes="brew-subtitle"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center" />
 
-            <!-- Notification Status -->
-            <TextBlock Text="{Binding NotificationStatus}"
-                       Classes="brew-subtitle"
-                       HorizontalAlignment="Center"
-                       IsVisible="{Binding NotificationStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-        </StackPanel>
+                <!-- Notification Status -->
+                <TextBlock Text="{Binding NotificationStatus}"
+                           Classes="brew-subtitle"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           IsVisible="{Binding NotificationStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+        </ScrollViewer>
 
-        <!-- Action Buttons -->
-        <StackPanel Grid.Row="1"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Center"
-                    Spacing="16"
-                    Margin="0,0,0,24">
+        <!-- Action Buttons — wrap on narrow screens -->
+        <WrapPanel Grid.Row="1"
+                   HorizontalAlignment="Center"
+                   Margin="8,0,8,16">
 
             <!-- Pause button (visible when running and NOT paused) -->
             <Button Content="⏸ Pause"
                     Classes="brew-primary"
                     Command="{Binding PauseCommand}"
-                    IsVisible="{Binding IsRunning}"
-                    Width="160">
+                    Margin="6"
+                    MinWidth="140">
                 <Button.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
                         <Binding Path="IsRunning" />
@@ -71,7 +85,8 @@
             <Button Content="▶ Resume"
                     Classes="brew-primary"
                     Command="{Binding ResumeCommand}"
-                    Width="160">
+                    Margin="6"
+                    MinWidth="140">
                 <Button.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
                         <Binding Path="IsRunning" />
@@ -84,15 +99,17 @@
             <Button Content="✕ Cancel"
                     Classes="brew-danger"
                     Command="{Binding CancelCommand}"
-                    IsVisible="{Binding IsRunning}"
-                    Width="160" />
+                    Margin="6"
+                    MinWidth="140"
+                    IsVisible="{Binding IsRunning}" />
 
             <!-- Back (visible when completed) -->
             <Button Content="← Back to Brews"
                     Classes="brew-primary"
                     Command="{Binding BackToProfilesCommand}"
-                    IsVisible="{Binding IsCompleted}"
-                    Width="220" />
-        </StackPanel>
+                    Margin="6"
+                    MinWidth="140"
+                    IsVisible="{Binding IsCompleted}" />
+        </WrapPanel>
     </Grid>
 </UserControl>

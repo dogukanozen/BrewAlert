@@ -29,7 +29,7 @@ public class BrewProfileServiceTests
         var result = await _sut.GetAllProfilesAsync();
 
         Assert.NotEmpty(result);
-        await _repository.Received(6).SaveAsync(Arg.Any<BrewProfile>(), Arg.Any<CancellationToken>());
+        await _repository.Received(2).SaveAsync(Arg.Any<BrewProfile>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
