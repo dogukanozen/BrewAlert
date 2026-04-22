@@ -10,7 +10,7 @@ For day-to-day work most agents should read [`../AGENT.md`](../AGENT.md), not th
 │   Views │ ViewModels │ NavigationService │ DI    │
 ├─────────────────────────────────────────────────┤
 │             BrewAlert.Infrastructure             │
-│   Teams webhook │ JSON persistence │ Console     │
+│ Teams (Webhook/Graph) │ JSON persistence │ Console │
 ├─────────────────────────────────────────────────┤
 │                 BrewAlert.Core                   │
 │    Models │ Interfaces │ Services │ Events       │
@@ -23,7 +23,7 @@ Dependency direction is one-way: UI → Infrastructure → Core. Core has no pro
 ## 2. Key design decisions
 
 ### 2.1 Interfaces live in Core
-All services are consumed through interfaces under `BrewAlert.Core/Interfaces/`. That keeps the domain testable and lets us swap implementations (`TeamsWebhookNotifier` ↔ `ConsoleNotifier` is the live example — see §2.5).
+All services are consumed through interfaces under `BrewAlert.Core/Interfaces/`. That keeps the domain testable and lets us swap implementations (`TeamsGraphNotifier` ↔ `TeamsWebhookNotifier` ↔ `ConsoleNotifier`).
 
 ### 2.2 NavigationService (no service locator)
 ViewModels **never** touch `App.Services` / `IServiceProvider`. All view transitions go through `INavigationService`:
@@ -61,13 +61,16 @@ Registered in `src/BrewAlert.UI/App.axaml.cs → ConfigureServices`.
 | `IBrewTimerService` | Singleton | One active brew session at a time |
 | `BrewProfileService` | Singleton | Stateless helper |
 | `IProfileRepository` | Singleton | Stateless I/O facade |
-| `INotificationService` | Singleton | Either Teams or Console (resolved at startup) |
+| `INotificationService` | Singleton | Teams (Graph or Webhook) or Console |
 | `BrewTimerViewModel` | Transient | Fresh instance per navigation (prevents stale state) |
 | `ProfileListViewModel` | Transient | Re-fetches profiles on each visit |
 | `SettingsViewModel` | Transient | Re-reads config on each visit |
 
 ### 2.5 Notifier selection
-`INotificationService` is registered via a factory. If `Notifications:Teams:Enabled=true` **and** `WebhookUrl` is non-empty, we resolve `TeamsWebhookNotifier` (an `HttpClient`-based adaptive-card poster). Otherwise we fall back to `ConsoleNotifier` — which is what local dev and CI use.
+`INotificationService` is resolved via a factory pattern in `App.axaml.cs`. Selection priority:
+1. **Teams Graph API**: Selected if `BrewAlert:Notifications:TeamsGraph:Enabled=true` and all OAuth credentials (Tenant/Client/Secret) + ChatId are provided.
+2. **Teams Webhook**: Selected if Graph is disabled/unconfigured and `BrewAlert:Notifications:Teams:Enabled=true` + `WebhookUrl` is non-empty.
+3. **Console**: Fallback if no remote notifications are configured.
 
 ### 2.6 Configuration precedence
 
@@ -79,9 +82,11 @@ appsettings.{DOTNET_ENVIRONMENT}.json  (optional, gitignored in practice)
 Environment variables prefixed BREWALERT__
 ```
 
+Note: Environment variables map to the configuration hierarchy. For example, `BREWALERT__BrewAlert__Notifications__Teams__Enabled` maps to the Teams notification toggle.
+
 ### 2.7 Security posture
 - No secrets in source.
-- Webhook URL supplied via env var (or gitignored env-specific `appsettings`).
+- Webhook URLs and Client Secrets supplied via env vars (or gitignored env-specific `appsettings`).
 - `git diff --cached` is the last line of defence — use it.
 
 ## 3. Data flow — happy path
@@ -109,8 +114,8 @@ PeriodicTimer loop (1 s)
   └─ BrewCompleted    →   BrewTimerVM                →   INotificationService.SendBrewCompletedAsync()
                                                               │
                                                               ▼
-                                                   HTTP POST → Teams webhook (adaptive card)
-                                                   (or console log if Teams disabled)
+                                                   [Teams Graph | Teams Webhook | Console]
+                                                   (Notification sent to chosen provider)
 ```
 
 ## 4. Raspberry Pi deployment

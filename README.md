@@ -8,7 +8,7 @@ Built with [Avalonia UI](https://avaloniaui.net/) for cross-platform support —
 
 - Pre-configured brew profiles (Turkish Tea, French Press, Pour Over, …)
 - Visual countdown timer with pause / resume / cancel
-- Microsoft Teams notifications via Incoming Webhook
+- Microsoft Teams notifications (Graph API or Incoming Webhook)
 - Dark theme optimised for small screens
 - No secrets in the repository
 
@@ -17,7 +17,7 @@ Built with [Avalonia UI](https://avaloniaui.net/) for cross-platform support —
 ```
 src/
 ├── BrewAlert.Core/            # Business logic, models, interfaces (zero dependencies)
-├── BrewAlert.Infrastructure/  # Teams webhook, JSON persistence
+├── BrewAlert.Infrastructure/  # Teams notifications, JSON persistence
 └── BrewAlert.UI/              # Avalonia views + view models
 
 tests/
@@ -38,22 +38,33 @@ dotnet test                             # test
 
 ## Configure Teams notifications
 
+BrewAlert supports two notification methods. Configuration is handled via `appsettings.json` or environment variables (prefixed with `BREWALERT__`).
+
+### Option A: Microsoft Graph API (Recommended)
+Sends messages to a specific chat using an Azure AD App Registration.
+
+1. Create an App Registration with `Chat.ReadWrite` permission.
+2. Set environment variables:
+   ```bash
+   export BREWALERT__BrewAlert__Notifications__TeamsGraph__Enabled="true"
+   export BREWALERT__BrewAlert__Notifications__TeamsGraph__TenantId="your-tenant-id"
+   export BREWALERT__BrewAlert__Notifications__TeamsGraph__ClientId="your-client-id"
+   export BREWALERT__BrewAlert__Notifications__TeamsGraph__ClientSecret="your-client-secret"
+   export BREWALERT__BrewAlert__Notifications__TeamsGraph__ChatId="your-chat-id"
+   ```
+
+### Option B: Incoming Webhook
+Sends adaptive cards to a Teams channel.
+
 1. Create an [Incoming Webhook](https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook) in your Teams channel.
 2. Set environment variables:
 
    ```bash
-   # Linux / macOS
-   export BREWALERT__NOTIFICATIONS__TEAMS__WEBHOOKURL="https://outlook.office.com/webhook/..."
-   export BREWALERT__NOTIFICATIONS__TEAMS__ENABLED="true"
+   export BREWALERT__BrewAlert__Notifications__Teams__Enabled="true"
+   export BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl="https://outlook.office.com/webhook/..."
    ```
 
-   ```powershell
-   # Windows PowerShell
-   $env:BREWALERT__NOTIFICATIONS__TEAMS__WEBHOOKURL="https://outlook.office.com/webhook/..."
-   $env:BREWALERT__NOTIFICATIONS__TEAMS__ENABLED="true"
-   ```
-
-If the webhook is not configured, BrewAlert falls back to a console notifier (useful for local dev).
+If neither is configured, BrewAlert falls back to a console notifier (useful for local dev).
 
 ## Deploy to Raspberry Pi
 
