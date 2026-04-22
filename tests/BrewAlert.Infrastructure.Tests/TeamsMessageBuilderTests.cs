@@ -1,3 +1,4 @@
+using System.Text.Json;
 using BrewAlert.Core.Models;
 using BrewAlert.Infrastructure.Notifications;
 using Xunit;
@@ -79,8 +80,60 @@ public class TeamsMessageBuilderTests
 
         var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session);
 
-        // Should not contain unescaped quotes that would break JSON
         Assert.DoesNotContain("\"Special\"", payload);
         Assert.Contains("\\\"Special\\\"", payload);
+    }
+
+    [Fact]
+    public void BuildBrewCompletedPayload_ShouldProduceValidJson()
+    {
+        var session = new BrewSession
+        {
+            Profile = new BrewProfile
+            {
+                Name = "Green Tea",
+                Type = BrewType.Tea,
+                BrewDuration = TimeSpan.FromMinutes(3),
+                Icon = "🍵"
+            },
+            StartedAtUtc = DateTime.UtcNow,
+            EndsAtUtc = DateTime.UtcNow.AddMinutes(3),
+        };
+
+        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session);
+
+        var doc = JsonDocument.Parse(payload);
+        Assert.Equal("message", doc.RootElement.GetProperty("type").GetString());
+        Assert.Equal(JsonValueKind.Array, doc.RootElement.GetProperty("attachments").ValueKind);
+    }
+
+    [Fact]
+    public void BuildTestPayload_ShouldProduceValidJson()
+    {
+        var payload = TeamsMessageBuilder.BuildTestPayload();
+
+        var doc = JsonDocument.Parse(payload);
+        Assert.Equal("message", doc.RootElement.GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public void BuildBrewCompletedPayload_ShouldEscapeBackslashes()
+    {
+        var session = new BrewSession
+        {
+            Profile = new BrewProfile
+            {
+                Name = @"Brew\Test",
+                Type = BrewType.Custom,
+                BrewDuration = TimeSpan.FromMinutes(2),
+            },
+            StartedAtUtc = DateTime.UtcNow,
+            EndsAtUtc = DateTime.UtcNow.AddMinutes(2),
+        };
+
+        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session);
+
+        var ex = Record.Exception(() => JsonDocument.Parse(payload));
+        Assert.Null(ex);
     }
 }
