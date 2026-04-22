@@ -11,12 +11,8 @@ public sealed class BrewProfileService(IProfileRepository repository)
 {
     public static IReadOnlyList<BrewProfile> DefaultProfiles =>
     [
-        new() { Name = "Turkish Tea",   Type = BrewType.Tea,    BrewDuration = TimeSpan.FromMinutes(8),  Icon = "🍵", Description = "Classic Turkish tea" },
-        new() { Name = "Green Tea",     Type = BrewType.Tea,    BrewDuration = TimeSpan.FromMinutes(3),  Icon = "🍵", Description = "Light and delicate" },
-        new() { Name = "Black Tea",     Type = BrewType.Tea,    BrewDuration = TimeSpan.FromMinutes(5),  Icon = "🍵", Description = "Bold and strong" },
-        new() { Name = "French Press",  Type = BrewType.Coffee, BrewDuration = TimeSpan.FromMinutes(4),  Icon = "☕", Description = "Full-bodied coffee" },
-        new() { Name = "Pour Over",     Type = BrewType.Coffee, BrewDuration = TimeSpan.FromMinutes(3),  Icon = "☕", Description = "Clean and bright" },
-        new() { Name = "Espresso",      Type = BrewType.Coffee, BrewDuration = TimeSpan.FromSeconds(25), Icon = "☕", Description = "Quick and intense" },
+        new() { Name = "Çay",    Type = BrewType.Tea,    BrewDuration = TimeSpan.FromMinutes(15), Icon = "♨", Description = "Klasik Türk çayı" },
+        new() { Name = "Kahve",  Type = BrewType.Coffee, BrewDuration = TimeSpan.FromMinutes(10), Icon = "☕", Description = "Türk kahvesi" },
     ];
 
     /// <summary>
