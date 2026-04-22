@@ -3,13 +3,14 @@ name: CI
 on:
   push:
     branches: [main, develop]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,20 +27,15 @@ jobs:
         run: dotnet build --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal --logger "trx" --results-directory TestResults
-
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: TestResults/
+        run: dotnet test --no-build --configuration Release --verbosity normal
 
   publish-arm64:
+    # Build-only smoke check on main (no artifact upload to preserve free-tier storage).
+    # Uploads only happen on a version tag (v*), so releases are explicit.
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -49,8 +45,10 @@ jobs:
       - name: Publish (linux-arm64)
         run: dotnet publish src/BrewAlert.UI -c Release -r linux-arm64 --self-contained -o publish/
 
-      - name: Upload Artifact
+      - name: Upload Artifact (tagged releases only)
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: brewalert-linux-arm64
           path: publish/
+          retention-days: 14
