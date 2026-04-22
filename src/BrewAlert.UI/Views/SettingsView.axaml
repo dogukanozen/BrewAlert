@@ -7,42 +7,80 @@
     <ScrollViewer>
         <StackPanel Spacing="24" MaxWidth="500" Margin="16">
 
-            <TextBlock Text="Notification Settings"
+            <TextBlock Text="Bildirim Ayarları"
                        Classes="brew-title"
                        Margin="0,0,0,8" />
 
-            <!-- Webhook URL -->
-            <StackPanel Spacing="8">
-                <TextBlock Text="Teams Webhook URL"
+            <!-- Status -->
+            <Border Background="{StaticResource BrewSurfaceBrush}"
+                    CornerRadius="8"
+                    Padding="16">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="✅ Aktif — Teams Graph API"
+                                   FontWeight="SemiBold"
+                                   FontSize="15"
+                                   IsVisible="{Binding IsConfigured}" />
+                        <TextBlock Text="⚠️ Yapılandırılmamış"
+                                   FontWeight="SemiBold"
+                                   FontSize="15"
+                                   Foreground="OrangeRed"
+                                   IsVisible="{Binding !IsConfigured}" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" >
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Tenant ID"
+                                   Foreground="{StaticResource BrewTextSecondaryBrush}"
+                                   FontSize="13" Margin="0,0,16,6" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding TenantId}"
+                                   FontFamily="Consolas,Menlo,monospace"
+                                   FontSize="13" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Client ID"
+                                   Foreground="{StaticResource BrewTextSecondaryBrush}"
+                                   FontSize="13" Margin="0,0,16,6" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ClientId}"
+                                   FontFamily="Consolas,Menlo,monospace"
+                                   FontSize="13" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Chat ID"
+                                   Foreground="{StaticResource BrewTextSecondaryBrush}"
+                                   FontSize="13" Margin="0,0,16,0" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ChatId}"
+                                   FontFamily="Consolas,Menlo,monospace"
+                                   FontSize="12"
+                                   TextWrapping="Wrap" />
+                    </Grid>
+
+                    <TextBlock Text="Ayarları değiştirmek için appsettings.Development.json veya ortam değişkenlerini kullanın."
+                               Foreground="{StaticResource BrewTextSecondaryBrush}"
+                               FontSize="12"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- Actions -->
+            <StackPanel Spacing="12">
+                <TextBlock Text="Test"
                            Classes="brew-subtitle" />
-                <TextBox Text="{Binding WebhookUrl}"
-                         Watermark="https://outlook.office.com/webhook/..."
-                         PasswordChar="●"
-                         FontSize="14" />
-                <TextBlock Text="Configure via environment variable BREWALERT__NOTIFICATIONS__TEAMS__WEBHOOKURL for production."
-                           Foreground="{StaticResource BrewTextSecondaryBrush}"
-                           FontSize="12"
-                           TextWrapping="Wrap" />
+
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Button Content="Bağlantıyı Test Et"
+                            Classes="brew-primary"
+                            Command="{Binding TestConnectionCommand}"
+                            IsEnabled="{Binding !IsBusy}" />
+
+                    <Button Content="Test Bildirimi Gönder"
+                            Command="{Binding SendTestNotificationCommand}"
+                            IsEnabled="{Binding !IsBusy}" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding TestResult}"
+                           FontSize="15"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding TestResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </StackPanel>
 
-            <!-- Enabled Toggle -->
-            <StackPanel Orientation="Horizontal" Spacing="12">
-                <ToggleSwitch IsChecked="{Binding IsEnabled}"
-                              OnContent="Enabled"
-                              OffContent="Disabled" />
-            </StackPanel>
-
-            <!-- Test Button -->
-            <Button Content="Test Connection"
-                    Classes="brew-primary"
-                    Command="{Binding TestConnectionCommand}"
-                    IsEnabled="{Binding !IsTesting}"
-                    HorizontalAlignment="Left" />
-
-            <TextBlock Text="{Binding TestResult}"
-                       FontSize="16"
-                       TextWrapping="Wrap"
-                       IsVisible="{Binding TestResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         </StackPanel>
     </ScrollViewer>
 </UserControl>
