@@ -9,6 +9,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.claude
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -361,3 +362,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# BrewAlert Security — never commit secrets
+appsettings.Development.json
+appsettings.Production.json
+appsettings.*.local.json
+
+# Gemini / AI agent working files
+.gemini/
+.claude/

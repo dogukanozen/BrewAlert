@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BrewAlert.UI.ViewModels"
+             xmlns:conv="using:BrewAlert.UI.Converters"
+             x:Class="BrewAlert.UI.Views.BrewTimerView"
+             x:DataType="vm:BrewTimerViewModel">
+
+    <UserControl.Resources>
+        <conv:TimeSpanToStringConverter x:Key="TimeSpanConverter" />
+    </UserControl.Resources>
+
+    <Grid RowDefinitions="*,Auto">
+        <!-- Timer Display -->
+        <StackPanel Grid.Row="0"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="16">
+
+            <!-- Profile Icon -->
+            <TextBlock Text="{Binding ProfileIcon}"
+                       FontSize="64"
+                       HorizontalAlignment="Center" />
+
+            <!-- Countdown -->
+            <TextBlock Text="{Binding Remaining, Converter={StaticResource TimeSpanConverter}}"
+                       Classes="brew-timer" />
+
+            <!-- Progress Bar -->
+            <ProgressBar Value="{Binding Progress}"
+                         Maximum="1"
+                         Height="8"
+                         Width="400"
+                         CornerRadius="4"
+                         Foreground="{StaticResource BrewAccentBrush}"
+                         Background="{StaticResource BrewSurfaceBrush}" />
+
+            <!-- Status -->
+            <TextBlock Text="{Binding StatusText}"
+                       Classes="brew-subtitle"
+                       HorizontalAlignment="Center" />
+
+            <!-- Notification Status -->
+            <TextBlock Text="{Binding NotificationStatus}"
+                       Classes="brew-subtitle"
+                       HorizontalAlignment="Center"
+                       IsVisible="{Binding NotificationStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="16"
+                    Margin="0,0,0,24">
+
+            <!-- Pause button (visible when running and NOT paused) -->
+            <Button Content="⏸ Pause"
+                    Classes="brew-primary"
+                    Command="{Binding PauseCommand}"
+                    IsVisible="{Binding IsRunning}"
+                    Width="160">
+                <Button.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="IsRunning" />
+                        <Binding Path="!IsPaused" />
+                    </MultiBinding>
+                </Button.IsVisible>
+            </Button>
+
+            <!-- Resume button (visible when running and paused) -->
+            <Button Content="▶ Resume"
+                    Classes="brew-primary"
+                    Command="{Binding ResumeCommand}"
+                    Width="160">
+                <Button.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="IsRunning" />
+                        <Binding Path="IsPaused" />
+                    </MultiBinding>
+                </Button.IsVisible>
+            </Button>
+
+            <!-- Cancel (visible while running) -->
+            <Button Content="✕ Cancel"
+                    Classes="brew-danger"
+                    Command="{Binding CancelCommand}"
+                    IsVisible="{Binding IsRunning}"
+                    Width="160" />
+
+            <!-- Back (visible when completed) -->
+            <Button Content="← Back to Brews"
+                    Classes="brew-primary"
+                    Command="{Binding BackToProfilesCommand}"
+                    IsVisible="{Binding IsCompleted}"
+                    Width="220" />
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BrewAlert.UI.ViewModels"
+             x:Class="BrewAlert.UI.Views.ProfileListView"
+             x:DataType="vm:ProfileListViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Header -->
+        <TextBlock Grid.Row="0"
+                   Text="Select Your Brew"
+                   Classes="brew-title"
+                   Margin="0,0,0,16" />
+
+        <!-- Profile Cards Grid -->
+        <ScrollViewer Grid.Row="1">
+            <ItemsControl ItemsSource="{Binding Profiles}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Command="{Binding $parent[ItemsControl].((vm:ProfileListViewModel)DataContext).SelectProfileCommand}"
+                                CommandParameter="{Binding}"
+                                Margin="8"
+                                Padding="0"
+                                Background="Transparent"
+                                CornerRadius="16">
+                            <Border Classes="brew-card"
+                                    Width="220" Height="140">
+                                <StackPanel VerticalAlignment="Center"
+                                            HorizontalAlignment="Center"
+                                            Spacing="8">
+                                    <TextBlock Text="{Binding Icon}"
+                                               FontSize="36"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding Name}"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource BrewTextPrimaryBrush}"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding Description}"
+                                               FontSize="13"
+                                               Foreground="{StaticResource BrewTextSecondaryBrush}"
+                                               HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

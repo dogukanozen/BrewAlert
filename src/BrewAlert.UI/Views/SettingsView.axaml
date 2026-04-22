@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BrewAlert.UI.ViewModels"
+             x:Class="BrewAlert.UI.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+    <ScrollViewer>
+        <StackPanel Spacing="24" MaxWidth="500" Margin="16">
+
+            <TextBlock Text="Notification Settings"
+                       Classes="brew-title"
+                       Margin="0,0,0,8" />
+
+            <!-- Webhook URL -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="Teams Webhook URL"
+                           Classes="brew-subtitle" />
+                <TextBox Text="{Binding WebhookUrl}"
+                         Watermark="https://outlook.office.com/webhook/..."
+                         PasswordChar="●"
+                         FontSize="14" />
+                <TextBlock Text="Configure via environment variable BREWALERT__NOTIFICATIONS__TEAMS__WEBHOOKURL for production."
+                           Foreground="{StaticResource BrewTextSecondaryBrush}"
+                           FontSize="12"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- Enabled Toggle -->
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <ToggleSwitch IsChecked="{Binding IsEnabled}"
+                              OnContent="Enabled"
+                              OffContent="Disabled" />
+            </StackPanel>
+
+            <!-- Test Button -->
+            <Button Content="Test Connection"
+                    Classes="brew-primary"
+                    Command="{Binding TestConnectionCommand}"
+                    IsEnabled="{Binding !IsTesting}"
+                    HorizontalAlignment="Left" />
+
+            <TextBlock Text="{Binding TestResult}"
+                       FontSize="16"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding TestResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

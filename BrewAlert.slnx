@@ -1,3 +1,11 @@
 <Solution>
-  <Project Path="BrewAlert/BrewAlert.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/BrewAlert.Core/BrewAlert.Core.csproj" />
+    <Project Path="src/BrewAlert.Infrastructure/BrewAlert.Infrastructure.csproj" />
+    <Project Path="src/BrewAlert.UI/BrewAlert.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BrewAlert.Core.Tests/BrewAlert.Core.Tests.csproj" />
+    <Project Path="tests/BrewAlert.Infrastructure.Tests/BrewAlert.Infrastructure.Tests.csproj" />
+  </Folder>
 </Solution>
