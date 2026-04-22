@@ -66,6 +66,8 @@ public partial class App : Application
         services.AddSingleton<IConfiguration>(configuration);
         services.Configure<TeamsNotificationOptions>(
             configuration.GetSection(TeamsNotificationOptions.SectionPath));
+        services.Configure<TeamsGraphOptions>(
+            configuration.GetSection(TeamsGraphOptions.SectionPath));
 
         // Core services
         services.AddSingleton<IBrewTimerService, BrewTimerService>();
@@ -75,14 +77,27 @@ public partial class App : Application
         services.AddSingleton<IProfileRepository>(sp =>
             new JsonProfileRepository(sp.GetRequiredService<ILogger<JsonProfileRepository>>()));
 
-        // Notification service — Teams if configured, otherwise Console fallback
+        // Notification service — TeamsGraph → TeamsWebhook → Console (first configured wins)
         services.AddHttpClient<TeamsWebhookNotifier>();
+        services.AddHttpClient<TeamsGraphNotifier>();
         services.AddSingleton<INotificationService>(sp =>
         {
-            var options = configuration.GetSection(TeamsNotificationOptions.SectionPath)
+            var graphOptions = configuration.GetSection(TeamsGraphOptions.SectionPath)
+                .Get<TeamsGraphOptions>();
+
+            if (graphOptions is { Enabled: true }
+                && !string.IsNullOrWhiteSpace(graphOptions.TenantId)
+                && !string.IsNullOrWhiteSpace(graphOptions.ClientId)
+                && !string.IsNullOrWhiteSpace(graphOptions.ClientSecret)
+                && !string.IsNullOrWhiteSpace(graphOptions.ChatId))
+            {
+                return sp.GetRequiredService<TeamsGraphNotifier>();
+            }
+
+            var webhookOptions = configuration.GetSection(TeamsNotificationOptions.SectionPath)
                 .Get<TeamsNotificationOptions>();
 
-            if (options is { Enabled: true } && !string.IsNullOrWhiteSpace(options.WebhookUrl))
+            if (webhookOptions is { Enabled: true } && !string.IsNullOrWhiteSpace(webhookOptions.WebhookUrl))
             {
                 return sp.GetRequiredService<TeamsWebhookNotifier>();
             }
