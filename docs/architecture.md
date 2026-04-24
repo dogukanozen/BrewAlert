@@ -23,7 +23,7 @@ Dependency direction is one-way: UI → Infrastructure → Core. Core has no pro
 ## 2. Key design decisions
 
 ### 2.1 Interfaces live in Core
-All services are consumed through interfaces under `BrewAlert.Core/Interfaces/`. That keeps the domain testable and lets us swap implementations (`TeamsGraphNotifier` ↔ `TeamsWebhookNotifier` ↔ `ConsoleNotifier`).
+All services are consumed through interfaces under `BrewAlert.Core/Interfaces/`. That keeps the domain testable and lets us swap implementations (`TeamsWebhookNotifier` ↔ `TeamsGraphNotifier` ↔ `ConsoleNotifier`).
 
 ### 2.2 NavigationService (no service locator)
 ViewModels **never** touch `App.Services` / `IServiceProvider`. All view transitions go through `INavigationService`:
@@ -68,9 +68,9 @@ Registered in `src/BrewAlert.UI/App.axaml.cs → ConfigureServices`.
 
 ### 2.5 Notifier selection
 `INotificationService` is resolved via a factory pattern in `App.axaml.cs`. Selection priority:
-1. **Teams Graph API**: Selected if `BrewAlert:Notifications:TeamsGraph:Enabled=true` and all OAuth credentials (Tenant/Client/Secret) + ChatId are provided.
-2. **Teams Webhook**: Selected if Graph is disabled/unconfigured and `BrewAlert:Notifications:Teams:Enabled=true` + `WebhookUrl` is non-empty.
-3. **Console**: Fallback if no remote notifications are configured.
+1. **Teams Graph API** (`TeamsGraphNotifier`): Selected if `BrewAlert:Notifications:TeamsGraph:Enabled=true` and all OAuth credentials (Tenant/Client/Secret) + ChatId are provided. Requires `Chat.ReadWrite.All` application permission **and** Resource-Specific Consent (RSC) on the target chat; without RSC the API returns 403.
+2. **Teams Webhook** (`TeamsWebhookNotifier`): Selected if Graph is disabled/unconfigured and `BrewAlert:Notifications:Teams:Enabled=true` + `WebhookUrl` is non-empty. Sends an Adaptive Card JSON body to a Power Automate HTTP trigger; the flow posts it via a "Post a card in a chat or channel" action. **Recommended path** — no Azure AD app registration or RSC required.
+3. **Console** (`ConsoleNotifier`): Fallback if no remote notifications are configured.
 
 ### 2.6 Configuration precedence
 

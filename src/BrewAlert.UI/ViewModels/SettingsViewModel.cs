@@ -29,21 +29,28 @@ public partial class SettingsViewModel : ViewModelBase
 
     public SettingsViewModel(
         INotificationService notificationService,
-        IOptions<TeamsGraphOptions> options,
+        IOptions<TeamsGraphOptions> graphOptions,
+        IOptions<TeamsNotificationOptions> webhookOptions,
         BrewProfileService profileService)
     {
         _notificationService = notificationService;
         _profileService = profileService;
-        var o = options.Value;
+        var g = graphOptions.Value;
+        var w = webhookOptions.Value;
 
-        TenantId = Mask(o.TenantId);
-        ClientId = Mask(o.ClientId);
-        ChatId = o.ChatId;
-        IsConfigured = o.Enabled
-            && !string.IsNullOrWhiteSpace(o.TenantId)
-            && !string.IsNullOrWhiteSpace(o.ClientId)
-            && !string.IsNullOrWhiteSpace(o.ClientSecret)
-            && !string.IsNullOrWhiteSpace(o.ChatId);
+        TenantId = Mask(g.TenantId);
+        ClientId = Mask(g.ClientId);
+        ChatId = g.ChatId;
+
+        var graphConfigured = g.Enabled
+            && !string.IsNullOrWhiteSpace(g.TenantId)
+            && !string.IsNullOrWhiteSpace(g.ClientId)
+            && !string.IsNullOrWhiteSpace(g.ClientSecret)
+            && !string.IsNullOrWhiteSpace(g.ChatId);
+
+        var webhookConfigured = w.Enabled && !string.IsNullOrWhiteSpace(w.WebhookUrl);
+
+        IsConfigured = graphConfigured || webhookConfigured;
 
         _ = LoadProfilesAsync();
     }
@@ -85,7 +92,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (!IsConfigured)
         {
-            TestResult = "❌ Teams Graph yapılandırılmamış. appsettings.Development.json dosyasını kontrol et.";
+            TestResult = "❌ Bildirim servisi yapılandırılmamış. appsettings.json dosyasını kontrol et.";
             return;
         }
 
@@ -111,7 +118,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (!IsConfigured)
         {
-            TestResult = "❌ Teams Graph yapılandırılmamış. appsettings.Development.json dosyasını kontrol et.";
+            TestResult = "❌ Bildirim servisi yapılandırılmamış. appsettings.json dosyasını kontrol et.";
             return;
         }
 

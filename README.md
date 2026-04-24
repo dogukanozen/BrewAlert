@@ -8,7 +8,7 @@ Built with [Avalonia UI](https://avaloniaui.net/) for cross-platform support —
 
 - Pre-configured brew profiles (Turkish Tea, French Press, Pour Over, …)
 - Visual countdown timer with pause / resume / cancel
-- Microsoft Teams notifications (Graph API or Incoming Webhook)
+- Microsoft Teams Adaptive Card notifications (Power Automate webhook or Graph API)
 - Dark theme optimised for small screens
 - No secrets in the repository
 
@@ -38,33 +38,46 @@ dotnet test                             # test
 
 ## Configure Teams notifications
 
-BrewAlert supports two notification methods. Configuration is handled via `appsettings.json` or environment variables (prefixed with `BREWALERT__`).
+BrewAlert supports two notification backends. The first one that is fully configured wins. If neither is set up, it falls back to a console notifier (useful for local dev).
 
-### Option A: Microsoft Graph API (Recommended)
-Sends messages to a specific chat using an Azure AD App Registration.
+Configuration is via `appsettings.json` or environment variables prefixed with `BREWALERT__`.
 
-1. Create an App Registration with `Chat.ReadWrite` permission.
-2. Set environment variables:
+### Option A: Power Automate Webhook (Recommended)
+
+Sends an Adaptive Card to any Teams channel or chat via a Power Automate flow. No Azure AD app registration needed.
+
+1. In [flow.microsoft.com](https://flow.microsoft.com), create an **Instant cloud flow** with trigger **"When a HTTP request is received"**.
+2. Add a **"Post a card in a chat or channel"** action; set the **Adaptive Card** field to `triggerBody()`.
+3. Copy the generated HTTP POST URL from the trigger step.
+4. Set the URL in config:
+
+   ```bash
+   export BREWALERT__BrewAlert__Notifications__Teams__Enabled="true"
+   export BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl="https://your-flow-url..."
+   ```
+
+   Or directly in `appsettings.json`:
+
+   ```json
+   "Teams": { "Enabled": true, "WebhookUrl": "https://your-flow-url..." }
+   ```
+
+### Option B: Microsoft Graph API
+
+Posts to a specific Teams chat via an Azure AD App Registration (client credentials flow).
+
+> **Limitation:** `POST /chats/{id}/messages` with application-only tokens requires Resource-Specific Consent (RSC) on the target chat in addition to the `Chat.ReadWrite.All` permission. Without RSC the API returns 403. Use Option A unless you specifically need Graph.
+
+1. Create an App Registration, add `Chat.ReadWrite.All` **Application** permission, grant admin consent, and configure RSC for the target chat.
+2. Set the credentials:
+
    ```bash
    export BREWALERT__BrewAlert__Notifications__TeamsGraph__Enabled="true"
    export BREWALERT__BrewAlert__Notifications__TeamsGraph__TenantId="your-tenant-id"
    export BREWALERT__BrewAlert__Notifications__TeamsGraph__ClientId="your-client-id"
    export BREWALERT__BrewAlert__Notifications__TeamsGraph__ClientSecret="your-client-secret"
-   export BREWALERT__BrewAlert__Notifications__TeamsGraph__ChatId="your-chat-id"
+   export BREWALERT__BrewAlert__Notifications__TeamsGraph__ChatId="19:xxx@thread.v2"
    ```
-
-### Option B: Incoming Webhook
-Sends adaptive cards to a Teams channel.
-
-1. Create an [Incoming Webhook](https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook) in your Teams channel.
-2. Set environment variables:
-
-   ```bash
-   export BREWALERT__BrewAlert__Notifications__Teams__Enabled="true"
-   export BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl="https://outlook.office.com/webhook/..."
-   ```
-
-If neither is configured, BrewAlert falls back to a console notifier (useful for local dev).
 
 ## Deploy to Raspberry Pi
 
