@@ -22,11 +22,14 @@ public class SettingsViewModelTests
         _profileService = new BrewProfileService(_repository);
     }
 
+    private static IOptions<TeamsNotificationOptions> EmptyWebhookOptions() =>
+        Options.Create(new TeamsNotificationOptions());
+
     [Fact]
     public void Constructor_MasksSensitiveInformation()
     {
         // Arrange
-        var options = Options.Create(new TeamsGraphOptions
+        var graphOptions = Options.Create(new TeamsGraphOptions
         {
             TenantId = "12345678-90ab-cdef-1234-567890abcdef",
             ClientId = "abcdef12-3456-7890-abcd-ef1234567890",
@@ -35,24 +38,24 @@ public class SettingsViewModelTests
         });
 
         // Act
-        var vm = new SettingsViewModel(_notificationService, options, _profileService);
+        var vm = new SettingsViewModel(_notificationService, graphOptions, EmptyWebhookOptions(), _profileService);
 
         // Assert
         Assert.StartsWith("12345678", vm.TenantId);
         Assert.Contains("••••••••", vm.TenantId);
-        Assert.Equal("19:abc@thread.v2", vm.ChatId); // ChatId is not masked
+        Assert.Equal("19:abc@thread.v2", vm.ChatId);
     }
 
     [Fact]
     public async Task TestConnection_SetsResult()
     {
         // Arrange
-        var options = Options.Create(new TeamsGraphOptions
+        var graphOptions = Options.Create(new TeamsGraphOptions
         {
             TenantId = "T", ClientId = "C", ClientSecret = "S", ChatId = "CH", Enabled = true
         });
         _notificationService.TestConnectionAsync().Returns(true);
-        var vm = new SettingsViewModel(_notificationService, options, _profileService);
+        var vm = new SettingsViewModel(_notificationService, graphOptions, EmptyWebhookOptions(), _profileService);
 
         // Act
         await vm.TestConnectionCommand.ExecuteAsync(null);
