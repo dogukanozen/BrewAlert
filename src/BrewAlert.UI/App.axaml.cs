@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.IO;
 using System.Linq;
 
 namespace BrewAlert.UI;
@@ -46,10 +47,16 @@ public partial class App : Application
 
     private static IServiceProvider ConfigureServices()
     {
+        var preferencesPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "BrewAlert",
+            "preferences.json");
+
         var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production"}.json", optional: true)
+            .AddJsonFile(preferencesPath, optional: true, reloadOnChange: true)
             .AddEnvironmentVariables("BREWALERT__")
             .Build();
 
@@ -68,6 +75,8 @@ public partial class App : Application
             configuration.GetSection(TeamsNotificationOptions.SectionPath));
         services.Configure<TeamsGraphOptions>(
             configuration.GetSection(TeamsGraphOptions.SectionPath));
+        services.Configure<NotificationProviderOptions>(
+            configuration.GetSection(NotificationProviderOptions.SectionPath));
 
         // Core services
         services.AddSingleton<IBrewTimerService, BrewTimerService>();
@@ -77,33 +86,13 @@ public partial class App : Application
         services.AddSingleton<IProfileRepository>(sp =>
             new JsonProfileRepository(sp.GetRequiredService<ILogger<JsonProfileRepository>>()));
 
-        // Notification service — TeamsGraph → TeamsWebhook → Console (first configured wins)
+        // Notification services — active back-end selected via BrewAlert:Notifications:Provider
+        // ("Graph" | "Webhook" | "Console"). RoutingNotificationService reads IOptionsMonitor
+        // on every call so switching the provider in preferences.json is instant.
         services.AddHttpClient<TeamsWebhookNotifier>();
         services.AddHttpClient<TeamsGraphNotifier>();
-        services.AddSingleton<INotificationService>(sp =>
-        {
-            var graphOptions = configuration.GetSection(TeamsGraphOptions.SectionPath)
-                .Get<TeamsGraphOptions>();
-
-            if (graphOptions is { Enabled: true }
-                && !string.IsNullOrWhiteSpace(graphOptions.TenantId)
-                && !string.IsNullOrWhiteSpace(graphOptions.ClientId)
-                && !string.IsNullOrWhiteSpace(graphOptions.ClientSecret)
-                && !string.IsNullOrWhiteSpace(graphOptions.ChatId))
-            {
-                return sp.GetRequiredService<TeamsGraphNotifier>();
-            }
-
-            var webhookOptions = configuration.GetSection(TeamsNotificationOptions.SectionPath)
-                .Get<TeamsNotificationOptions>();
-
-            if (webhookOptions is { Enabled: true } && !string.IsNullOrWhiteSpace(webhookOptions.WebhookUrl))
-            {
-                return sp.GetRequiredService<TeamsWebhookNotifier>();
-            }
-
-            return new ConsoleNotifier(sp.GetRequiredService<ILogger<ConsoleNotifier>>());
-        });
+        services.AddSingleton<ConsoleNotifier>();
+        services.AddSingleton<INotificationService, RoutingNotificationService>();
 
         // Navigation — Singleton so all ViewModels share the same navigation state
         services.AddSingleton<INavigationService, NavigationService>();

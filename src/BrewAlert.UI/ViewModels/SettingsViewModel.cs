@@ -5,47 +5,122 @@ using BrewAlert.Infrastructure.Configuration;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Options;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using System;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace BrewAlert.UI.ViewModels;
 
 public partial class SettingsViewModel : ViewModelBase
 {
     private readonly INotificationService _notificationService;
-
     private readonly BrewProfileService _profileService;
+    private readonly string _preferencesPath;
 
     [ObservableProperty] private string _testResult = string.Empty;
     [ObservableProperty] private bool _isBusy;
+    [ObservableProperty] private string _selectedProvider;
 
+    // Graph config display
     public string TenantId { get; }
     public string ClientId { get; }
     public string ChatId { get; }
-    public bool IsConfigured { get; }
+    public bool IsGraphConfigured { get; }
+
+    // Webhook config display
+    public string WebhookUrl { get; }
+    public bool IsWebhookConfigured { get; }
+
+    public bool IsGraphSelected => SelectedProvider == NotificationProvider.Graph;
+    public bool IsWebhookSelected => SelectedProvider == NotificationProvider.Webhook;
+
+    /// <summary>True when the currently selected provider is fully configured.</summary>
+    public bool IsConfigured => SelectedProvider switch
+    {
+        NotificationProvider.Graph => IsGraphConfigured,
+        NotificationProvider.Webhook => IsWebhookConfigured,
+        _ => false,
+    };
 
     public ObservableCollection<EditableProfileViewModel> Profiles { get; } = new();
 
     public SettingsViewModel(
         INotificationService notificationService,
-        IOptions<TeamsGraphOptions> options,
+        IOptions<TeamsGraphOptions> graphOptions,
+        IOptions<TeamsNotificationOptions> webhookOptions,
+        IOptions<NotificationProviderOptions> providerOptions,
         BrewProfileService profileService)
     {
         _notificationService = notificationService;
         _profileService = profileService;
-        var o = options.Value;
+        _preferencesPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "BrewAlert",
+            "preferences.json");
 
-        TenantId = Mask(o.TenantId);
-        ClientId = Mask(o.ClientId);
-        ChatId = o.ChatId;
-        IsConfigured = o.Enabled
-            && !string.IsNullOrWhiteSpace(o.TenantId)
-            && !string.IsNullOrWhiteSpace(o.ClientId)
-            && !string.IsNullOrWhiteSpace(o.ClientSecret)
-            && !string.IsNullOrWhiteSpace(o.ChatId);
+        var g = graphOptions.Value;
+        TenantId = Mask(g.TenantId);
+        ClientId = Mask(g.ClientId);
+        ChatId = g.ChatId;
+        IsGraphConfigured = !string.IsNullOrWhiteSpace(g.TenantId)
+            && !string.IsNullOrWhiteSpace(g.ClientId)
+            && !string.IsNullOrWhiteSpace(g.ClientSecret)
+            && !string.IsNullOrWhiteSpace(g.ChatId);
+
+        var w = webhookOptions.Value;
+        WebhookUrl = Mask(w.WebhookUrl);
+        IsWebhookConfigured = !string.IsNullOrWhiteSpace(w.WebhookUrl);
+
+        _selectedProvider = providerOptions.Value.Provider;
 
         _ = LoadProfilesAsync();
+    }
+
+    partial void OnSelectedProviderChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsGraphSelected));
+        OnPropertyChanged(nameof(IsWebhookSelected));
+        OnPropertyChanged(nameof(IsConfigured));
+    }
+
+    [RelayCommand]
+    private async Task SetProvider(string provider)
+    {
+        if (SelectedProvider == provider) return;
+
+        IsBusy = true;
+        try
+        {
+            await SaveProviderPreferenceAsync(provider);
+            SelectedProvider = provider;
+            TestResult = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            TestResult = $"❌ Tercih kaydedilemedi: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task SaveProviderPreferenceAsync(string provider)
+    {
+        var dir = Path.GetDirectoryName(_preferencesPath)!;
+        Directory.CreateDirectory(dir);
+
+        var json = JsonSerializer.Serialize(new
+        {
+            BrewAlert = new
+            {
+                Notifications = new { Provider = provider }
+            }
+        }, new JsonSerializerOptions { WriteIndented = true });
+
+        await File.WriteAllTextAsync(_preferencesPath, json);
     }
 
     private async Task LoadProfilesAsync()
@@ -64,13 +139,11 @@ public partial class SettingsViewModel : ViewModelBase
         try
         {
             var currentProfiles = await _profileService.GetAllProfilesAsync();
-            // Call repository directly or use service if we had a clear method.
-            // But deleting one by one is safe here.
             foreach (var p in currentProfiles)
             {
                 await _profileService.DeleteProfileAsync(p.Id);
             }
-            
+
             Profiles.Clear();
             await LoadProfilesAsync();
         }
@@ -85,7 +158,8 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (!IsConfigured)
         {
-            TestResult = "❌ Teams Graph yapılandırılmamış. appsettings.Development.json dosyasını kontrol et.";
+            var channel = SelectedProvider == NotificationProvider.Graph ? "Teams Graph" : "Teams Webhook";
+            TestResult = $"❌ {channel} yapılandırılmamış. appsettings.Development.json dosyasını kontrol et.";
             return;
         }
 
@@ -111,7 +185,8 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (!IsConfigured)
         {
-            TestResult = "❌ Teams Graph yapılandırılmamış. appsettings.Development.json dosyasını kontrol et.";
+            var channel = SelectedProvider == NotificationProvider.Graph ? "Teams Graph" : "Teams Webhook";
+            TestResult = $"❌ {channel} yapılandırılmamış. appsettings.Development.json dosyasını kontrol et.";
             return;
         }
 
