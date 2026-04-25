@@ -18,7 +18,7 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IOptionsMonitor<TeamsGraphOptions> _optionsMonitor;
     private readonly ILogger<TeamsGraphNotifier> _logger;
-    private readonly IDisposable _subscription;
+    private readonly IDisposable? _subscription;
     
     private string? _cachedToken;
     private DateTimeOffset _tokenExpiry = DateTimeOffset.MinValue;
@@ -84,7 +84,7 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
         }
     }
 
-    public void Dispose() => _subscription.Dispose();
+    public void Dispose() => _subscription?.Dispose();
 
     private async Task<string> GetAccessTokenAsync(TeamsGraphOptions opts, CancellationToken ct)
     {
