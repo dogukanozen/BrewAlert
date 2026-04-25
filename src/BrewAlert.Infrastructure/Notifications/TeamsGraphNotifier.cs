@@ -24,12 +24,6 @@ public sealed class TeamsGraphNotifier(
 
     public async Task<NotificationResult> SendBrewCompletedAsync(BrewSession session, CancellationToken ct = default)
     {
-        if (!_options.Enabled)
-        {
-            logger.LogInformation("Teams Graph notifications are disabled. Skipping session {SessionId}.", session.Id);
-            return NotificationResult.Success();
-        }
-
         if (!IsConfigured(out var missing))
             return NotificationResult.Failure($"TeamsGraph not fully configured. Missing: {missing}");
 

@@ -20,12 +20,6 @@ public sealed class TeamsWebhookNotifier(
 
     public async Task<NotificationResult> SendBrewCompletedAsync(BrewSession session, CancellationToken ct = default)
     {
-        if (!_options.Enabled)
-        {
-            logger.LogInformation("Teams notifications are disabled. Skipping notification for session {SessionId}.", session.Id);
-            return NotificationResult.Success();
-        }
-
         if (string.IsNullOrWhiteSpace(_options.WebhookUrl))
         {
             logger.LogWarning("Teams webhook URL is not configured.");

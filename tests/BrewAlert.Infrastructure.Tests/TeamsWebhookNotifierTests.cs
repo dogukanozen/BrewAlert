@@ -28,14 +28,12 @@ public class TeamsWebhookNotifierTests
     };
 
     private static (TeamsWebhookNotifier sut, FakeHttpMessageHandler handler) CreateSut(
-        bool enabled = true,
         string webhookUrl = ValidWebhookUrl)
     {
         var handler = new FakeHttpMessageHandler();
         var httpClient = new HttpClient(handler);
         var options = Options.Create(new TeamsNotificationOptions
         {
-            Enabled = enabled,
             WebhookUrl = webhookUrl,
             TimeoutSeconds = 30
         });
@@ -44,17 +42,6 @@ public class TeamsWebhookNotifierTests
             options,
             NullLogger<TeamsWebhookNotifier>.Instance);
         return (sut, handler);
-    }
-
-    [Fact]
-    public async Task SendBrewCompletedAsync_WhenDisabled_ReturnsSuccessWithoutPosting()
-    {
-        var (sut, handler) = CreateSut(enabled: false);
-
-        var result = await sut.SendBrewCompletedAsync(CreateSession());
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal(0, handler.CallCount);
     }
 
     [Fact]
