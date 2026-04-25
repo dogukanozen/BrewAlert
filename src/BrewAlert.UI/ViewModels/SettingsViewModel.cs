@@ -43,6 +43,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         NotificationProvider.Graph => IsGraphConfigured,
         NotificationProvider.Webhook => IsWebhookConfigured,
+        NotificationProvider.Console => true,
         _ => false,
     };
 
@@ -119,8 +120,11 @@ public partial class SettingsViewModel : ViewModelBase
                 var existingJson = await File.ReadAllTextAsync(_preferencesPath);
                 root = JsonNode.Parse(existingJson) ?? new JsonObject();
             }
-            catch
+            catch (Exception)
             {
+                // If file is corrupted, backup and start fresh rather than silently losing data
+                var backupPath = _preferencesPath + ".bak";
+                try { File.Copy(_preferencesPath, backupPath, true); } catch { /* ignore backup failure */ }
                 root = new JsonObject();
             }
         }
@@ -172,7 +176,12 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (!IsConfigured)
         {
-            var channel = SelectedProvider == NotificationProvider.Graph ? "Teams Graph" : "Teams Webhook";
+            var channel = SelectedProvider switch
+            {
+                NotificationProvider.Graph => "Teams Graph",
+                NotificationProvider.Webhook => "Teams Webhook",
+                _ => SelectedProvider
+            };
             TestResult = $"❌ {channel} yapılandırılmamış. appsettings.Development.json dosyasını kontrol et.";
             return;
         }
@@ -199,7 +208,12 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (!IsConfigured)
         {
-            var channel = SelectedProvider == NotificationProvider.Graph ? "Teams Graph" : "Teams Webhook";
+            var channel = SelectedProvider switch
+            {
+                NotificationProvider.Graph => "Teams Graph",
+                NotificationProvider.Webhook => "Teams Webhook",
+                _ => SelectedProvider
+            };
             TestResult = $"❌ {channel} yapılandırılmamış. appsettings.Development.json dosyasını kontrol et.";
             return;
         }

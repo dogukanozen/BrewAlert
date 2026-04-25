@@ -36,10 +36,10 @@ public sealed class RoutingNotificationService(
         var provider = providerOptions.CurrentValue.Provider;
         logger.LogDebug("Resolving notification back-end: {Provider}", provider);
 
-        return provider switch
+        return provider?.ToLowerInvariant() switch
         {
-            NotificationProvider.Graph => graphNotifier,
-            NotificationProvider.Webhook => webhookNotifier,
+            "graph" => graphNotifier,
+            "webhook" => webhookNotifier,
             _ => consoleNotifier,
         };
     }
