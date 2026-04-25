@@ -6,6 +6,7 @@ using BrewAlert.Infrastructure.Configuration;
 using BrewAlert.Infrastructure.Notifications;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 using Xunit;
 
 namespace BrewAlert.Infrastructure.Tests;
@@ -44,8 +45,12 @@ public class TeamsGraphNotifierTests
     {
         var handler = new SequentialFakeHttpHandler();
         var httpClient = new HttpClient(handler);
+
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient(Arg.Any<string>()).Returns(httpClient);
+
         var options = Options.Create(opts ?? ValidOptions());
-        var sut = new TeamsGraphNotifier(httpClient, options, NullLogger<TeamsGraphNotifier>.Instance);
+        var sut = new TeamsGraphNotifier(factory, options, NullLogger<TeamsGraphNotifier>.Instance);
         return (sut, handler);
     }
 

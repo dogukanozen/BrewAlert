@@ -4,6 +4,7 @@ using BrewAlert.Infrastructure.Configuration;
 using BrewAlert.Infrastructure.Notifications;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 using Xunit;
 
 namespace BrewAlert.Infrastructure.Tests;
@@ -32,13 +33,17 @@ public class TeamsWebhookNotifierTests
     {
         var handler = new FakeHttpMessageHandler();
         var httpClient = new HttpClient(handler);
+
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient(Arg.Any<string>()).Returns(httpClient);
+
         var options = Options.Create(new TeamsNotificationOptions
         {
             WebhookUrl = webhookUrl,
             TimeoutSeconds = 30
         });
         var sut = new TeamsWebhookNotifier(
-            httpClient,
+            factory,
             options,
             NullLogger<TeamsWebhookNotifier>.Instance);
         return (sut, handler);

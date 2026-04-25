@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using BrewAlert.Core;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Services;
 using BrewAlert.Infrastructure.Configuration;
@@ -47,10 +48,7 @@ public partial class App : Application
 
     private static IServiceProvider ConfigureServices()
     {
-        var preferencesPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "BrewAlert",
-            "preferences.json");
+        var preferencesPath = BrewAlertConstants.PreferencesPath;
 
         var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
@@ -89,8 +87,9 @@ public partial class App : Application
         // Notification services — active back-end selected via BrewAlert:Notifications:Provider
         // ("Graph" | "Webhook" | "Console"). RoutingNotificationService reads IOptionsMonitor
         // on every call so switching the provider in preferences.json is instant.
-        services.AddHttpClient<TeamsWebhookNotifier>();
-        services.AddHttpClient<TeamsGraphNotifier>();
+        services.AddHttpClient();
+        services.AddSingleton<TeamsWebhookNotifier>();
+        services.AddSingleton<TeamsGraphNotifier>();
         services.AddSingleton<ConsoleNotifier>();
         services.AddSingleton<INotificationService, RoutingNotificationService>();
 

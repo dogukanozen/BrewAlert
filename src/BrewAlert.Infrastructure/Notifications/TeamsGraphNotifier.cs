@@ -14,9 +14,9 @@ using Microsoft.Extensions.Options;
 /// Uses client-credentials OAuth flow; token is cached until 60 seconds before expiry.
 /// </summary>
 public sealed class TeamsGraphNotifier(
-    HttpClient httpClient,
+    IHttpClientFactory httpClientFactory,
     IOptions<TeamsGraphOptions> options,
-    ILogger<TeamsGraphNotifier> logger) : INotificationService, IDisposable
+    ILogger<TeamsGraphNotifier> logger) : INotificationService
 {
     private readonly TeamsGraphOptions _options = options.Value;
     private string? _cachedToken;
@@ -64,8 +64,6 @@ public sealed class TeamsGraphNotifier(
         }
     }
 
-    public void Dispose() => httpClient.Dispose();
-
     private async Task<string> GetAccessTokenAsync(CancellationToken ct)
     {
         // Serve cached token if still valid (with 60s buffer)
@@ -81,7 +79,8 @@ public sealed class TeamsGraphNotifier(
             new("scope", "https://graph.microsoft.com/.default"),
         ]);
 
-        var response = await httpClient.PostAsync(tokenUrl, body, ct);
+        var client = httpClientFactory.CreateClient(nameof(TeamsGraphNotifier));
+        var response = await client.PostAsync(tokenUrl, body, ct);
         var json = await response.Content.ReadAsStringAsync(ct);
 
         if (!response.IsSuccessStatusCode)
@@ -111,7 +110,8 @@ public sealed class TeamsGraphNotifier(
         using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await httpClient.SendAsync(request, ct);
+        var client = httpClientFactory.CreateClient(nameof(TeamsGraphNotifier));
+        var response = await client.SendAsync(request, ct);
 
         if (response.IsSuccessStatusCode)
             return NotificationResult.Success();

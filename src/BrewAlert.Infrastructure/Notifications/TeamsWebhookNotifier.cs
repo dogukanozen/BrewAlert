@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 /// Sends brew notifications to Microsoft Teams via Incoming Webhook.
 /// </summary>
 public sealed class TeamsWebhookNotifier(
-    HttpClient httpClient,
+    IHttpClientFactory httpClientFactory,
     IOptions<TeamsNotificationOptions> options,
     ILogger<TeamsWebhookNotifier> logger) : INotificationService
 {
@@ -32,7 +32,8 @@ public sealed class TeamsWebhookNotifier(
             var content = new StringContent(payload, Encoding.UTF8);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-            var response = await httpClient.PostAsync(_options.WebhookUrl, content, ct);
+            var client = httpClientFactory.CreateClient(nameof(TeamsWebhookNotifier));
+            var response = await client.PostAsync(_options.WebhookUrl, content, ct);
 
             if (response.IsSuccessStatusCode)
             {
@@ -62,7 +63,8 @@ public sealed class TeamsWebhookNotifier(
             var content = new StringContent(payload, Encoding.UTF8);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-            var response = await httpClient.PostAsync(_options.WebhookUrl, content, ct);
+            var client = httpClientFactory.CreateClient(nameof(TeamsWebhookNotifier));
+            var response = await client.PostAsync(_options.WebhookUrl, content, ct);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)

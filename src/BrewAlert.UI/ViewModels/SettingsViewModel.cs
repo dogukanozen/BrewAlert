@@ -1,3 +1,4 @@
+using BrewAlert.Core;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
 using BrewAlert.Core.Services;
@@ -9,6 +10,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 namespace BrewAlert.UI.ViewModels;
@@ -55,10 +57,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         _notificationService = notificationService;
         _profileService = profileService;
-        _preferencesPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "BrewAlert",
-            "preferences.json");
+        _preferencesPath = BrewAlertConstants.PreferencesPath;
 
         var g = graphOptions.Value;
         TenantId = Mask(g.TenantId);
@@ -112,14 +111,29 @@ public partial class SettingsViewModel : ViewModelBase
         var dir = Path.GetDirectoryName(_preferencesPath)!;
         Directory.CreateDirectory(dir);
 
-        var json = JsonSerializer.Serialize(new
+        JsonNode root;
+        if (File.Exists(_preferencesPath))
         {
-            BrewAlert = new
+            try
             {
-                Notifications = new { Provider = provider }
+                var existingJson = await File.ReadAllTextAsync(_preferencesPath);
+                root = JsonNode.Parse(existingJson) ?? new JsonObject();
             }
-        }, new JsonSerializerOptions { WriteIndented = true });
+            catch
+            {
+                root = new JsonObject();
+            }
+        }
+        else
+        {
+            root = new JsonObject();
+        }
 
+        var brewAlert = root["BrewAlert"] ?? (root["BrewAlert"] = new JsonObject());
+        var notifications = brewAlert["Notifications"] ?? (brewAlert["Notifications"] = new JsonObject());
+        notifications["Provider"] = provider;
+
+        var json = root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(_preferencesPath, json);
     }
 
