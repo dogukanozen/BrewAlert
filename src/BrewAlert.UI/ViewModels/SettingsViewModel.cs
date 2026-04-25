@@ -15,15 +15,16 @@ using System.Threading.Tasks;
 
 namespace BrewAlert.UI.ViewModels;
 
-public partial class SettingsViewModel : ViewModelBase
+public partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private readonly INotificationService _notificationService;
     private readonly BrewProfileService _profileService;
     private readonly IPreferencesService _preferencesService;
+    private readonly IDisposable? _configSubscription;
 
     [ObservableProperty] private string _testResult = string.Empty;
     [ObservableProperty] private bool _isBusy;
-    [ObservableProperty] private string _selectedProvider;
+    [ObservableProperty] private string _selectedProvider = string.Empty;
 
     // Graph config display
     public string TenantId { get; }
@@ -74,11 +75,19 @@ public partial class SettingsViewModel : ViewModelBase
         WebhookUrl = Mask(w.WebhookUrl);
         IsWebhookConfigured = !string.IsNullOrWhiteSpace(w.WebhookUrl);
 
-        // Set property instead of backing field to trigger OnSelectedProviderChanged
+        // Sync with external config changes (e.g. manual file edit)
+        _configSubscription = providerOptions.OnChange(opt => 
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => SelectedProvider = opt.Provider);
+        });
+
+        // Initialize state
         SelectedProvider = providerOptions.CurrentValue.Provider;
 
         _ = LoadProfilesAsync();
     }
+
+    public void Dispose() => _configSubscription?.Dispose();
 
     partial void OnSelectedProviderChanged(string value)
     {

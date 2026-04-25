@@ -16,8 +16,16 @@ public sealed class JsonPreferencesService(ILogger<JsonPreferencesService> logge
 
     public async Task<string?> GetNotificationProviderAsync()
     {
-        var root = await ReadRootAsync();
-        return root?["BrewAlert"]?["Notifications"]?["Provider"]?.GetValue<string>();
+        await _lock.WaitAsync();
+        try
+        {
+            var root = await ReadRootAsync();
+            return root?["BrewAlert"]?["Notifications"]?["Provider"]?.GetValue<string>();
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     public async Task SaveNotificationProviderAsync(string provider)
@@ -52,12 +60,17 @@ public sealed class JsonPreferencesService(ILogger<JsonPreferencesService> logge
             var json = await File.ReadAllTextAsync(_path);
             return JsonNode.Parse(json) as JsonObject;
         }
+        catch (JsonException ex)
+        {
+            logger.LogError(ex, "Preferences file is corrupted. Creating backup.");
+            var backupPath = _path + ".bak";
+            try { File.Copy(_path, backupPath, true); } catch { /* ignore backup failure */ }
+            return null;
+        }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to parse preferences file. Creating backup.");
-            var backupPath = _path + ".bak";
-            try { File.Copy(_path, backupPath, true); } catch { /* ignore */ }
-            return null;
+            logger.LogError(ex, "Failed to read preferences file (IO error?).");
+            throw; // Rethrow IO-related errors to avoid overwriting a busy file
         }
     }
 }
