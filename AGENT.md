@@ -17,7 +17,7 @@ Everything else is opened on-demand from §3.
 
 ## 2. Project in one paragraph
 
-BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams webhook when the brew completes. Runs on Windows x64 and Raspberry Pi linux-arm64. Three layers: **Core** (pure domain, zero deps) ← **Infrastructure** (Teams, JSON) ← **UI** (Avalonia + `CommunityToolkit.Mvvm`). Dependency direction is one-way; never reverse it.
+BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams Adaptive Card when the brew completes. Runs on Windows x64 and Raspberry Pi linux-arm64. Three layers: **Core** (pure domain, zero deps) ← **Infrastructure** (Teams, JSON) ← **UI** (Avalonia + `CommunityToolkit.Mvvm`). Dependency direction is one-way; never reverse it. The recommended notification path is **Power Automate webhook** (`TeamsWebhookNotifier`); Graph API (`TeamsGraphNotifier`) is available but requires RSC on the target chat.
 
 ## 3. Request → files (low-token lookup)
 
@@ -27,7 +27,8 @@ BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams w
 | profile, brew type, defaults | `src/BrewAlert.Core/Services/BrewProfileService.cs`, `Models/BrewProfile.cs`, `Models/BrewType.cs` |
 | session state | `src/BrewAlert.Core/Models/BrewSession.cs` |
 | load/save profile, JSON file | `src/BrewAlert.Infrastructure/Persistence/JsonProfileRepository.cs` |
-| teams, webhook, adaptive card | `src/BrewAlert.Infrastructure/Notifications/TeamsWebhookNotifier.cs`, `TeamsMessageBuilder.cs`, `Configuration/TeamsNotificationOptions.cs` |
+| teams, webhook, adaptive card, power automate | `src/BrewAlert.Infrastructure/Notifications/TeamsWebhookNotifier.cs`, `TeamsMessageBuilder.cs`, `Configuration/TeamsNotificationOptions.cs` |
+| teams graph api, graph notifier | `src/BrewAlert.Infrastructure/Notifications/TeamsGraphNotifier.cs`, `TeamsGraphMessageBuilder.cs`, `Configuration/TeamsGraphOptions.cs` |
 | console notifier / fallback | `src/BrewAlert.Infrastructure/Notifications/ConsoleNotifier.cs` |
 | view, xaml, style, theme | `src/BrewAlert.UI/Views/`, `src/BrewAlert.UI/Themes/` |
 | viewmodel, binding, command | `src/BrewAlert.UI/ViewModels/` |
@@ -51,7 +52,7 @@ All of the following are verified against the current code. If you see a change 
    - **Singleton**: `MainWindowViewModel`, `INavigationService`, `IBrewTimerService`, `BrewProfileService`, `IProfileRepository`, `INotificationService`.
    - **Transient**: `BrewTimerViewModel`, `ProfileListViewModel`, `SettingsViewModel` — fresh instance per navigation so state never goes stale.
 5. **Dependency direction** UI → Infrastructure → Core. Never add a reverse reference.
-6. **No secrets in repo.** Webhook URL via env var `BREWALERT__NOTIFICATIONS__TEAMS__WEBHOOKURL` or gitignored `appsettings.Development.json`. `git diff --cached` before committing.
+6. **No secrets in repo.** Webhook URL via env var `BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl` or gitignored `appsettings.Development.json`. `git diff --cached` before committing.
 7. **No new CI artifact uploads** without user approval — repo is on free-tier GitHub. `ci.yml` currently uploads only on `v*` tags.
 8. **No direct pushes to `main`.** Everything goes through a feature branch + PR.
 

@@ -8,6 +8,7 @@ using NSubstitute;
 using Xunit;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System;
 
 namespace BrewAlert.UI.Tests;
 
@@ -46,7 +47,7 @@ public class SettingsViewModelTests
         // Assert
         Assert.StartsWith("12345678", vm.TenantId);
         Assert.Contains("••••••••", vm.TenantId);
-        Assert.Equal("19:abc@thread.v2", vm.ChatId); // ChatId is not masked
+        Assert.Equal("19:abc@thread.v2", vm.ChatId);
     }
 
     [Fact]

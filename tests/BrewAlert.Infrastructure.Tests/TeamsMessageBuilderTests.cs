@@ -29,7 +29,7 @@ public class TeamsMessageBuilderTests
 
         Assert.Contains("Turkish Tea", payload);
         Assert.Contains("Tea", payload);
-        Assert.Contains("8 min", payload);
+        Assert.Contains("8 dk", payload);
         Assert.Contains("AdaptiveCard", payload);
     }
 
@@ -51,7 +51,7 @@ public class TeamsMessageBuilderTests
 
         var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session);
 
-        Assert.Contains("25 sec", payload);
+        Assert.Contains("25 sn", payload);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class TeamsMessageBuilderTests
     {
         var payload = TeamsMessageBuilder.BuildTestPayload();
 
-        Assert.Contains("Connection Test Successful", payload);
+        Assert.Contains("Bağlantı testi başarılı", payload);
         Assert.Contains("AdaptiveCard", payload);
     }
 
@@ -103,8 +103,8 @@ public class TeamsMessageBuilderTests
         var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session);
 
         var doc = JsonDocument.Parse(payload);
-        Assert.Equal("message", doc.RootElement.GetProperty("type").GetString());
-        Assert.Equal(JsonValueKind.Array, doc.RootElement.GetProperty("attachments").ValueKind);
+        Assert.Equal("AdaptiveCard", doc.RootElement.GetProperty("type").GetString());
+        Assert.Equal(JsonValueKind.Array, doc.RootElement.GetProperty("body").ValueKind);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public class TeamsMessageBuilderTests
         var payload = TeamsMessageBuilder.BuildTestPayload();
 
         var doc = JsonDocument.Parse(payload);
-        Assert.Equal("message", doc.RootElement.GetProperty("type").GetString());
+        Assert.Equal("AdaptiveCard", doc.RootElement.GetProperty("type").GetString());
     }
 
     [Fact]
