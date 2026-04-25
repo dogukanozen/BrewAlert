@@ -13,10 +13,10 @@ using Microsoft.Extensions.Options;
 /// </summary>
 public sealed class TeamsWebhookNotifier(
     IHttpClientFactory httpClientFactory,
-    IOptions<TeamsNotificationOptions> options,
+    IOptionsMonitor<TeamsNotificationOptions> options,
     ILogger<TeamsWebhookNotifier> logger) : INotificationService
 {
-    private readonly TeamsNotificationOptions _options = options.Value;
+    private TeamsNotificationOptions _options => options.CurrentValue;
 
     public async Task<NotificationResult> SendBrewCompletedAsync(BrewSession session, CancellationToken ct = default)
     {

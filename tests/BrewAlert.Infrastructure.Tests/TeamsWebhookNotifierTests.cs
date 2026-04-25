@@ -37,11 +37,13 @@ public class TeamsWebhookNotifierTests
         var factory = Substitute.For<IHttpClientFactory>();
         factory.CreateClient(Arg.Any<string>()).Returns(httpClient);
 
-        var options = Options.Create(new TeamsNotificationOptions
+        var options = Substitute.For<IOptionsMonitor<TeamsNotificationOptions>>();
+        options.CurrentValue.Returns(new TeamsNotificationOptions
         {
             WebhookUrl = webhookUrl,
             TimeoutSeconds = 30
         });
+
         var sut = new TeamsWebhookNotifier(
             factory,
             options,

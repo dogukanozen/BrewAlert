@@ -14,6 +14,7 @@ using BrewAlert.UI.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.IO;
 using System.Linq;
@@ -88,6 +89,20 @@ public partial class App : Application
         // ("Graph" | "Webhook" | "Console"). RoutingNotificationService reads IOptionsMonitor
         // on every call so switching the provider in preferences.json is instant.
         services.AddHttpClient();
+        services.AddHttpClient(nameof(TeamsWebhookNotifier))
+            .ConfigureHttpClient((sp, client) =>
+            {
+                var opts = sp.GetRequiredService<IOptionsMonitor<TeamsNotificationOptions>>().CurrentValue;
+                if (opts.TimeoutSeconds > 0) client.Timeout = TimeSpan.FromSeconds(opts.TimeoutSeconds);
+            });
+
+        services.AddHttpClient(nameof(TeamsGraphNotifier))
+            .ConfigureHttpClient((sp, client) =>
+            {
+                var opts = sp.GetRequiredService<IOptionsMonitor<TeamsGraphOptions>>().CurrentValue;
+                if (opts.TimeoutSeconds > 0) client.Timeout = TimeSpan.FromSeconds(opts.TimeoutSeconds);
+            });
+
         services.AddSingleton<TeamsWebhookNotifier>();
         services.AddSingleton<TeamsGraphNotifier>();
         services.AddSingleton<ConsoleNotifier>();

@@ -51,16 +51,16 @@ public partial class SettingsViewModel : ViewModelBase
 
     public SettingsViewModel(
         INotificationService notificationService,
-        IOptions<TeamsGraphOptions> graphOptions,
-        IOptions<TeamsNotificationOptions> webhookOptions,
-        IOptions<NotificationProviderOptions> providerOptions,
+        IOptionsMonitor<TeamsGraphOptions> graphOptions,
+        IOptionsMonitor<TeamsNotificationOptions> webhookOptions,
+        IOptionsMonitor<NotificationProviderOptions> providerOptions,
         BrewProfileService profileService)
     {
         _notificationService = notificationService;
         _profileService = profileService;
         _preferencesPath = BrewAlertConstants.PreferencesPath;
 
-        var g = graphOptions.Value;
+        var g = graphOptions.CurrentValue;
         TenantId = Mask(g.TenantId);
         ClientId = Mask(g.ClientId);
         ChatId = g.ChatId;
@@ -69,11 +69,11 @@ public partial class SettingsViewModel : ViewModelBase
             && !string.IsNullOrWhiteSpace(g.ClientSecret)
             && !string.IsNullOrWhiteSpace(g.ChatId);
 
-        var w = webhookOptions.Value;
+        var w = webhookOptions.CurrentValue;
         WebhookUrl = Mask(w.WebhookUrl);
         IsWebhookConfigured = !string.IsNullOrWhiteSpace(w.WebhookUrl);
 
-        _selectedProvider = providerOptions.Value.Provider;
+        _selectedProvider = providerOptions.CurrentValue.Provider;
 
         _ = LoadProfilesAsync();
     }
@@ -112,32 +112,27 @@ public partial class SettingsViewModel : ViewModelBase
         var dir = Path.GetDirectoryName(_preferencesPath)!;
         Directory.CreateDirectory(dir);
 
-        JsonNode root;
+        JsonNode? root = null;
         if (File.Exists(_preferencesPath))
         {
             try
             {
                 var existingJson = await File.ReadAllTextAsync(_preferencesPath);
-                root = JsonNode.Parse(existingJson) ?? new JsonObject();
+                root = JsonNode.Parse(existingJson);
             }
             catch (Exception)
             {
-                // If file is corrupted, backup and start fresh rather than silently losing data
                 var backupPath = _preferencesPath + ".bak";
                 try { File.Copy(_preferencesPath, backupPath, true); } catch { /* ignore backup failure */ }
-                root = new JsonObject();
             }
         }
-        else
-        {
-            root = new JsonObject();
-        }
 
-        var brewAlert = root["BrewAlert"] ?? (root["BrewAlert"] = new JsonObject());
-        var notifications = brewAlert["Notifications"] ?? (brewAlert["Notifications"] = new JsonObject());
+        var rootObj = (root as JsonObject) ?? new JsonObject();
+        var brewAlert = (rootObj["BrewAlert"] as JsonObject) ?? (rootObj["BrewAlert"] = new JsonObject());
+        var notifications = (brewAlert["Notifications"] as JsonObject) ?? (brewAlert["Notifications"] = new JsonObject());
         notifications["Provider"] = provider;
 
-        var json = root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        var json = rootObj.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(_preferencesPath, json);
     }
 

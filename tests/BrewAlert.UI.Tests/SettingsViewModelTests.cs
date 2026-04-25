@@ -18,11 +18,18 @@ public class SettingsViewModelTests
     private readonly IProfileRepository _repository = Substitute.For<IProfileRepository>();
     private readonly BrewProfileService _profileService;
 
-    private static readonly IOptions<TeamsNotificationOptions> DefaultWebhookOptions =
-        Options.Create(new TeamsNotificationOptions());
+    private static IOptionsMonitor<T> CreateMonitor<T>(T value) where T : class, new()
+    {
+        var monitor = Substitute.For<IOptionsMonitor<T>>();
+        monitor.CurrentValue.Returns(value);
+        return monitor;
+    }
 
-    private static readonly IOptions<NotificationProviderOptions> DefaultProviderOptions =
-        Options.Create(new NotificationProviderOptions { Provider = NotificationProvider.Graph });
+    private readonly IOptionsMonitor<TeamsNotificationOptions> DefaultWebhookOptions =
+        CreateMonitor(new TeamsNotificationOptions());
+
+    private readonly IOptionsMonitor<NotificationProviderOptions> DefaultProviderOptions =
+        CreateMonitor(new NotificationProviderOptions { Provider = NotificationProvider.Graph });
 
     public SettingsViewModelTests()
     {
@@ -33,7 +40,7 @@ public class SettingsViewModelTests
     public void Constructor_MasksSensitiveInformation()
     {
         // Arrange
-        var graphOptions = Options.Create(new TeamsGraphOptions
+        var graphOptions = CreateMonitor(new TeamsGraphOptions
         {
             TenantId = "12345678-90ab-cdef-1234-567890abcdef",
             ClientId = "abcdef12-3456-7890-abcd-ef1234567890",
@@ -54,7 +61,7 @@ public class SettingsViewModelTests
     public async Task TestConnection_SetsResult_WhenGraphConfigured()
     {
         // Arrange
-        var graphOptions = Options.Create(new TeamsGraphOptions
+        var graphOptions = CreateMonitor(new TeamsGraphOptions
         {
             TenantId = "T", ClientId = "C", ClientSecret = "S", ChatId = "CH"
         });
@@ -72,7 +79,7 @@ public class SettingsViewModelTests
     [Fact]
     public void IsGraphConfigured_TrueWhenAllGraphFieldsSet()
     {
-        var graphOptions = Options.Create(new TeamsGraphOptions
+        var graphOptions = CreateMonitor(new TeamsGraphOptions
         {
             TenantId = "T", ClientId = "C", ClientSecret = "S", ChatId = "CH"
         });
@@ -85,13 +92,13 @@ public class SettingsViewModelTests
     [Fact]
     public void IsWebhookConfigured_TrueWhenUrlSet()
     {
-        var webhookOptions = Options.Create(new TeamsNotificationOptions
+        var webhookOptions = CreateMonitor(new TeamsNotificationOptions
         {
             WebhookUrl = "https://example.webhook.office.com/xxx"
         });
-        var providerOptions = Options.Create(new NotificationProviderOptions { Provider = NotificationProvider.Webhook });
+        var providerOptions = CreateMonitor(new NotificationProviderOptions { Provider = NotificationProvider.Webhook });
         var vm = new SettingsViewModel(
-            _notificationService, Options.Create(new TeamsGraphOptions()), webhookOptions, providerOptions, _profileService);
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, providerOptions, _profileService);
 
         Assert.True(vm.IsWebhookConfigured);
         Assert.True(vm.IsConfigured);

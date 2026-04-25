@@ -15,10 +15,10 @@ using Microsoft.Extensions.Options;
 /// </summary>
 public sealed class TeamsGraphNotifier(
     IHttpClientFactory httpClientFactory,
-    IOptions<TeamsGraphOptions> options,
+    IOptionsMonitor<TeamsGraphOptions> options,
     ILogger<TeamsGraphNotifier> logger) : INotificationService
 {
-    private readonly TeamsGraphOptions _options = options.Value;
+    private TeamsGraphOptions _options => options.CurrentValue;
     private string? _cachedToken;
     private DateTimeOffset _tokenExpiry = DateTimeOffset.MinValue;
 

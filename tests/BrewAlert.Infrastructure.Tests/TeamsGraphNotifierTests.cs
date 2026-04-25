@@ -49,7 +49,9 @@ public class TeamsGraphNotifierTests
         var factory = Substitute.For<IHttpClientFactory>();
         factory.CreateClient(Arg.Any<string>()).Returns(httpClient);
 
-        var options = Options.Create(opts ?? ValidOptions());
+        var options = Substitute.For<IOptionsMonitor<TeamsGraphOptions>>();
+        options.CurrentValue.Returns(opts ?? ValidOptions());
+
         var sut = new TeamsGraphNotifier(factory, options, NullLogger<TeamsGraphNotifier>.Instance);
         return (sut, handler);
     }
