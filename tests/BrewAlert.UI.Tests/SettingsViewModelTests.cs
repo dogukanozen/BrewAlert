@@ -16,6 +16,7 @@ public class SettingsViewModelTests
 {
     private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
     private readonly IProfileRepository _repository = Substitute.For<IProfileRepository>();
+    private readonly IPreferencesService _preferencesService = Substitute.For<IPreferencesService>();
     private readonly BrewProfileService _profileService;
 
     private static IOptionsMonitor<T> CreateMonitor<T>(T value) where T : class, new()
@@ -49,7 +50,7 @@ public class SettingsViewModelTests
 
         // Act
         var vm = new SettingsViewModel(
-            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions, _profileService);
+            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions, _profileService, _preferencesService);
 
         // Assert
         Assert.StartsWith("12345678", vm.TenantId);
@@ -67,7 +68,7 @@ public class SettingsViewModelTests
         });
         _notificationService.TestConnectionAsync().Returns(true);
         var vm = new SettingsViewModel(
-            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions, _profileService);
+            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions, _profileService, _preferencesService);
 
         // Act
         await vm.TestConnectionCommand.ExecuteAsync(null);
@@ -84,7 +85,7 @@ public class SettingsViewModelTests
             TenantId = "T", ClientId = "C", ClientSecret = "S", ChatId = "CH"
         });
         var vm = new SettingsViewModel(
-            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions, _profileService);
+            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions, _profileService, _preferencesService);
 
         Assert.True(vm.IsGraphConfigured);
     }
@@ -98,7 +99,7 @@ public class SettingsViewModelTests
         });
         var providerOptions = CreateMonitor(new NotificationProviderOptions { Provider = NotificationProvider.Webhook });
         var vm = new SettingsViewModel(
-            _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, providerOptions, _profileService);
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, providerOptions, _profileService, _preferencesService);
 
         Assert.True(vm.IsWebhookConfigured);
         Assert.True(vm.IsConfigured);

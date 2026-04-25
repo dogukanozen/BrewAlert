@@ -84,6 +84,7 @@ public partial class App : Application
         // Infrastructure
         services.AddSingleton<IProfileRepository>(sp =>
             new JsonProfileRepository(sp.GetRequiredService<ILogger<JsonProfileRepository>>()));
+        services.AddSingleton<IPreferencesService, JsonPreferencesService>();
 
         // Notification services — active back-end selected via BrewAlert:Notifications:Provider
         // ("Graph" | "Webhook" | "Console"). RoutingNotificationService reads IOptionsMonitor

@@ -19,7 +19,7 @@ public partial class SettingsViewModel : ViewModelBase
 {
     private readonly INotificationService _notificationService;
     private readonly BrewProfileService _profileService;
-    private readonly string _preferencesPath;
+    private readonly IPreferencesService _preferencesService;
 
     [ObservableProperty] private string _testResult = string.Empty;
     [ObservableProperty] private bool _isBusy;
@@ -54,11 +54,12 @@ public partial class SettingsViewModel : ViewModelBase
         IOptionsMonitor<TeamsGraphOptions> graphOptions,
         IOptionsMonitor<TeamsNotificationOptions> webhookOptions,
         IOptionsMonitor<NotificationProviderOptions> providerOptions,
-        BrewProfileService profileService)
+        BrewProfileService profileService,
+        IPreferencesService preferencesService)
     {
         _notificationService = notificationService;
         _profileService = profileService;
-        _preferencesPath = BrewAlertConstants.PreferencesPath;
+        _preferencesService = preferencesService;
 
         var g = graphOptions.CurrentValue;
         TenantId = Mask(g.TenantId);
@@ -73,7 +74,8 @@ public partial class SettingsViewModel : ViewModelBase
         WebhookUrl = Mask(w.WebhookUrl);
         IsWebhookConfigured = !string.IsNullOrWhiteSpace(w.WebhookUrl);
 
-        _selectedProvider = providerOptions.CurrentValue.Provider;
+        // Set property instead of backing field to trigger OnSelectedProviderChanged
+        SelectedProvider = providerOptions.CurrentValue.Provider;
 
         _ = LoadProfilesAsync();
     }
@@ -93,7 +95,7 @@ public partial class SettingsViewModel : ViewModelBase
         IsBusy = true;
         try
         {
-            await SaveProviderPreferenceAsync(provider);
+            await _preferencesService.SaveNotificationProviderAsync(provider);
             SelectedProvider = provider;
             TestResult = string.Empty;
         }
@@ -105,35 +107,6 @@ public partial class SettingsViewModel : ViewModelBase
         {
             IsBusy = false;
         }
-    }
-
-    private async Task SaveProviderPreferenceAsync(string provider)
-    {
-        var dir = Path.GetDirectoryName(_preferencesPath)!;
-        Directory.CreateDirectory(dir);
-
-        JsonNode? root = null;
-        if (File.Exists(_preferencesPath))
-        {
-            try
-            {
-                var existingJson = await File.ReadAllTextAsync(_preferencesPath);
-                root = JsonNode.Parse(existingJson);
-            }
-            catch (Exception)
-            {
-                var backupPath = _preferencesPath + ".bak";
-                try { File.Copy(_preferencesPath, backupPath, true); } catch { /* ignore backup failure */ }
-            }
-        }
-
-        var rootObj = (root as JsonObject) ?? new JsonObject();
-        var brewAlert = (rootObj["BrewAlert"] as JsonObject) ?? (rootObj["BrewAlert"] = new JsonObject());
-        var notifications = (brewAlert["Notifications"] as JsonObject) ?? (brewAlert["Notifications"] = new JsonObject());
-        notifications["Provider"] = provider;
-
-        var json = rootObj.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-        await File.WriteAllTextAsync(_preferencesPath, json);
     }
 
     private async Task LoadProfilesAsync()
@@ -177,7 +150,7 @@ public partial class SettingsViewModel : ViewModelBase
                 NotificationProvider.Webhook => "Teams Webhook",
                 _ => SelectedProvider
             };
-            TestResult = $"❌ {channel} yapılandırılmamış. appsettings.Development.json dosyasını kontrol et.";
+            TestResult = $"❌ {channel} yapılandırılmamış. Uygulama ayarlarını kontrol edin.";
             return;
         }
 
@@ -209,7 +182,7 @@ public partial class SettingsViewModel : ViewModelBase
                 NotificationProvider.Webhook => "Teams Webhook",
                 _ => SelectedProvider
             };
-            TestResult = $"❌ {channel} yapılandırılmamış. appsettings.Development.json dosyasını kontrol et.";
+            TestResult = $"❌ {channel} yapılandırılmamış. Uygulama ayarlarını kontrol edin.";
             return;
         }
 
