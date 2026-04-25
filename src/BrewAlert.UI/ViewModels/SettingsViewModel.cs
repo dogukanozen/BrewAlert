@@ -120,10 +120,17 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     private async Task LoadProfilesAsync()
     {
-        var profiles = await _profileService.GetAllProfilesAsync();
-        foreach (var p in profiles)
+        try
         {
-            Profiles.Add(new EditableProfileViewModel(p, _profileService));
+            var profiles = await _profileService.GetAllProfilesAsync();
+            foreach (var p in profiles)
+            {
+                Profiles.Add(new EditableProfileViewModel(p, _profileService));
+            }
+        }
+        catch (Exception ex)
+        {
+            TestResult = $"❌ Profiller yüklenemedi: {ex.Message}";
         }
     }
 

@@ -43,7 +43,11 @@ public sealed class JsonPreferencesService(ILogger<JsonPreferencesService> logge
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
             var json = root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-            await File.WriteAllTextAsync(_path, json);
+            
+            // Atomic write: write to temp file first, then move
+            var tempPath = _path + ".tmp";
+            await File.WriteAllTextAsync(tempPath, json);
+            File.Move(tempPath, _path, true);
         }
         finally
         {

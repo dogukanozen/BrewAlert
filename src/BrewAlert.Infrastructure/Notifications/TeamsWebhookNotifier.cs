@@ -16,11 +16,10 @@ public sealed class TeamsWebhookNotifier(
     IOptionsMonitor<TeamsNotificationOptions> options,
     ILogger<TeamsWebhookNotifier> logger) : INotificationService
 {
-    private TeamsNotificationOptions _options => options.CurrentValue;
-
     public async Task<NotificationResult> SendBrewCompletedAsync(BrewSession session, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(_options.WebhookUrl))
+        var opts = options.CurrentValue;
+        if (string.IsNullOrWhiteSpace(opts.WebhookUrl))
         {
             logger.LogWarning("Teams webhook URL is not configured.");
             return NotificationResult.Failure("Webhook URL is not configured.");
@@ -32,8 +31,8 @@ public sealed class TeamsWebhookNotifier(
             var content = new StringContent(payload, Encoding.UTF8);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-            var client = httpClientFactory.CreateClient(nameof(TeamsWebhookNotifier));
-            var response = await client.PostAsync(_options.WebhookUrl, content, ct);
+            var client = CreateClient(opts);
+            var response = await client.PostAsync(opts.WebhookUrl, content, ct);
 
             if (response.IsSuccessStatusCode)
             {
@@ -54,7 +53,8 @@ public sealed class TeamsWebhookNotifier(
 
     public async Task<bool> TestConnectionAsync(CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(_options.WebhookUrl))
+        var opts = options.CurrentValue;
+        if (string.IsNullOrWhiteSpace(opts.WebhookUrl))
             return false;
 
         try
@@ -63,8 +63,8 @@ public sealed class TeamsWebhookNotifier(
             var content = new StringContent(payload, Encoding.UTF8);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-            var client = httpClientFactory.CreateClient(nameof(TeamsWebhookNotifier));
-            var response = await client.PostAsync(_options.WebhookUrl, content, ct);
+            var client = CreateClient(opts);
+            var response = await client.PostAsync(opts.WebhookUrl, content, ct);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -72,5 +72,15 @@ public sealed class TeamsWebhookNotifier(
             logger.LogError(ex, "Teams connection test failed.");
             return false;
         }
+    }
+
+    private HttpClient CreateClient(TeamsNotificationOptions opts)
+    {
+        var client = httpClientFactory.CreateClient(nameof(TeamsWebhookNotifier));
+        if (opts.TimeoutSeconds > 0)
+        {
+            client.Timeout = TimeSpan.FromSeconds(opts.TimeoutSeconds);
+        }
+        return client;
     }
 }
