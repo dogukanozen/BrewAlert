@@ -6,6 +6,7 @@ using BrewAlert.Infrastructure.Configuration;
 using BrewAlert.Infrastructure.Notifications;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 using Xunit;
 
 namespace BrewAlert.Infrastructure.Tests;
@@ -29,7 +30,6 @@ public class TeamsGraphNotifierTests
 
     private static TeamsGraphOptions ValidOptions() => new()
     {
-        Enabled = true,
         TenantId = "tenant-id",
         ClientId = "client-id",
         ClientSecret = "client-secret",
@@ -45,22 +45,15 @@ public class TeamsGraphNotifierTests
     {
         var handler = new SequentialFakeHttpHandler();
         var httpClient = new HttpClient(handler);
-        var options = Options.Create(opts ?? ValidOptions());
-        var sut = new TeamsGraphNotifier(httpClient, options, NullLogger<TeamsGraphNotifier>.Instance);
+
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient(Arg.Any<string>()).Returns(httpClient);
+
+        var options = Substitute.For<IOptionsMonitor<TeamsGraphOptions>>();
+        options.CurrentValue.Returns(opts ?? ValidOptions());
+
+        var sut = new TeamsGraphNotifier(factory, options, NullLogger<TeamsGraphNotifier>.Instance);
         return (sut, handler);
-    }
-
-    [Fact]
-    public async Task SendBrewCompletedAsync_WhenDisabled_ReturnsSuccessWithoutPosting()
-    {
-        var opts = ValidOptions();
-        opts.Enabled = false;
-        var (sut, handler) = CreateSut(opts);
-
-        var result = await sut.SendBrewCompletedAsync(CreateSession());
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal(0, handler.CallCount);
     }
 
     [Fact]

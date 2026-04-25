@@ -1,3 +1,4 @@
+using BrewAlert.Core;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
 using BrewAlert.Core.Services;
@@ -5,62 +6,131 @@ using BrewAlert.Infrastructure.Configuration;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Options;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using System;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Threading.Tasks;
 
 namespace BrewAlert.UI.ViewModels;
 
-public partial class SettingsViewModel : ViewModelBase
+public partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private readonly INotificationService _notificationService;
-
     private readonly BrewProfileService _profileService;
+    private readonly IPreferencesService _preferencesService;
+    private readonly IDisposable? _configSubscription;
 
     [ObservableProperty] private string _testResult = string.Empty;
     [ObservableProperty] private bool _isBusy;
+    [ObservableProperty] private string _selectedProvider = string.Empty;
 
+    // Graph config display
     public string TenantId { get; }
     public string ClientId { get; }
     public string ChatId { get; }
-    public bool IsConfigured { get; }
+    public bool IsGraphConfigured { get; }
+
+    // Webhook config display
+    public string WebhookUrl { get; }
+    public bool IsWebhookConfigured { get; }
+
+    public bool IsGraphSelected => SelectedProvider == NotificationProvider.Graph;
+    public bool IsWebhookSelected => SelectedProvider == NotificationProvider.Webhook;
+
+    /// <summary>True when the currently selected provider is fully configured.</summary>
+    public bool IsConfigured => SelectedProvider switch
+    {
+        NotificationProvider.Graph => IsGraphConfigured,
+        NotificationProvider.Webhook => IsWebhookConfigured,
+        NotificationProvider.Console => true,
+        _ => false,
+    };
 
     public ObservableCollection<EditableProfileViewModel> Profiles { get; } = new();
 
     public SettingsViewModel(
         INotificationService notificationService,
-        IOptions<TeamsGraphOptions> graphOptions,
-        IOptions<TeamsNotificationOptions> webhookOptions,
-        BrewProfileService profileService)
+        IOptionsMonitor<TeamsGraphOptions> graphOptions,
+        IOptionsMonitor<TeamsNotificationOptions> webhookOptions,
+        IOptionsMonitor<NotificationProviderOptions> providerOptions,
+        BrewProfileService profileService,
+        IPreferencesService preferencesService)
     {
         _notificationService = notificationService;
         _profileService = profileService;
-        var g = graphOptions.Value;
-        var w = webhookOptions.Value;
+        _preferencesService = preferencesService;
 
+        var g = graphOptions.CurrentValue;
         TenantId = Mask(g.TenantId);
         ClientId = Mask(g.ClientId);
         ChatId = g.ChatId;
-
-        var graphConfigured = g.Enabled
-            && !string.IsNullOrWhiteSpace(g.TenantId)
+        IsGraphConfigured = !string.IsNullOrWhiteSpace(g.TenantId)
             && !string.IsNullOrWhiteSpace(g.ClientId)
             && !string.IsNullOrWhiteSpace(g.ClientSecret)
             && !string.IsNullOrWhiteSpace(g.ChatId);
 
-        var webhookConfigured = w.Enabled && !string.IsNullOrWhiteSpace(w.WebhookUrl);
+        var w = webhookOptions.CurrentValue;
+        WebhookUrl = Mask(w.WebhookUrl);
+        IsWebhookConfigured = !string.IsNullOrWhiteSpace(w.WebhookUrl);
 
-        IsConfigured = graphConfigured || webhookConfigured;
+        // Sync with external config changes (e.g. manual file edit)
+        _configSubscription = providerOptions.OnChange(opt => 
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => SelectedProvider = opt.Provider);
+        });
+
+        // Initialize state
+        SelectedProvider = providerOptions.CurrentValue.Provider;
 
         _ = LoadProfilesAsync();
     }
 
+    public void Dispose() => _configSubscription?.Dispose();
+
+    partial void OnSelectedProviderChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsGraphSelected));
+        OnPropertyChanged(nameof(IsWebhookSelected));
+        OnPropertyChanged(nameof(IsConfigured));
+    }
+
+    [RelayCommand]
+    private async Task SetProvider(string provider)
+    {
+        if (SelectedProvider == provider) return;
+
+        IsBusy = true;
+        try
+        {
+            await _preferencesService.SaveNotificationProviderAsync(provider);
+            SelectedProvider = provider;
+            TestResult = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            TestResult = $"❌ Tercih kaydedilemedi: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     private async Task LoadProfilesAsync()
     {
-        var profiles = await _profileService.GetAllProfilesAsync();
-        foreach (var p in profiles)
+        try
         {
-            Profiles.Add(new EditableProfileViewModel(p, _profileService));
+            var profiles = await _profileService.GetAllProfilesAsync();
+            foreach (var p in profiles)
+            {
+                Profiles.Add(new EditableProfileViewModel(p, _profileService));
+            }
+        }
+        catch (Exception ex)
+        {
+            TestResult = $"❌ Profiller yüklenemedi: {ex.Message}";
         }
     }
 
@@ -71,13 +141,11 @@ public partial class SettingsViewModel : ViewModelBase
         try
         {
             var currentProfiles = await _profileService.GetAllProfilesAsync();
-            // Call repository directly or use service if we had a clear method.
-            // But deleting one by one is safe here.
             foreach (var p in currentProfiles)
             {
                 await _profileService.DeleteProfileAsync(p.Id);
             }
-            
+
             Profiles.Clear();
             await LoadProfilesAsync();
         }
@@ -92,7 +160,13 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (!IsConfigured)
         {
-            TestResult = "❌ Bildirim servisi yapılandırılmamış. appsettings.json dosyasını kontrol et.";
+            var channel = SelectedProvider switch
+            {
+                NotificationProvider.Graph => "Teams Graph",
+                NotificationProvider.Webhook => "Teams Webhook",
+                _ => SelectedProvider
+            };
+            TestResult = $"❌ {channel} yapılandırılmamış. Uygulama ayarlarını kontrol edin.";
             return;
         }
 
@@ -118,7 +192,13 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (!IsConfigured)
         {
-            TestResult = "❌ Bildirim servisi yapılandırılmamış. appsettings.json dosyasını kontrol et.";
+            var channel = SelectedProvider switch
+            {
+                NotificationProvider.Graph => "Teams Graph",
+                NotificationProvider.Webhook => "Teams Webhook",
+                _ => SelectedProvider
+            };
+            TestResult = $"❌ {channel} yapılandırılmamış. Uygulama ayarlarını kontrol edin.";
             return;
         }
 

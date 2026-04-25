@@ -4,6 +4,7 @@ using BrewAlert.Infrastructure.Configuration;
 using BrewAlert.Infrastructure.Notifications;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 using Xunit;
 
 namespace BrewAlert.Infrastructure.Tests;
@@ -28,33 +29,26 @@ public class TeamsWebhookNotifierTests
     };
 
     private static (TeamsWebhookNotifier sut, FakeHttpMessageHandler handler) CreateSut(
-        bool enabled = true,
         string webhookUrl = ValidWebhookUrl)
     {
         var handler = new FakeHttpMessageHandler();
         var httpClient = new HttpClient(handler);
-        var options = Options.Create(new TeamsNotificationOptions
+
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient(Arg.Any<string>()).Returns(httpClient);
+
+        var options = Substitute.For<IOptionsMonitor<TeamsNotificationOptions>>();
+        options.CurrentValue.Returns(new TeamsNotificationOptions
         {
-            Enabled = enabled,
             WebhookUrl = webhookUrl,
             TimeoutSeconds = 30
         });
+
         var sut = new TeamsWebhookNotifier(
-            httpClient,
+            factory,
             options,
             NullLogger<TeamsWebhookNotifier>.Instance);
         return (sut, handler);
-    }
-
-    [Fact]
-    public async Task SendBrewCompletedAsync_WhenDisabled_ReturnsSuccessWithoutPosting()
-    {
-        var (sut, handler) = CreateSut(enabled: false);
-
-        var result = await sut.SendBrewCompletedAsync(CreateSession());
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal(0, handler.CallCount);
     }
 
     [Fact]
