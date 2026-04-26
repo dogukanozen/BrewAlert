@@ -12,7 +12,7 @@ public sealed class BrewProfileService(IProfileRepository repository)
     public static IReadOnlyList<BrewProfile> DefaultProfiles =>
     [
         new() { Name = "Çay",    Type = BrewType.Tea,    BrewDuration = TimeSpan.FromMinutes(15), Icon = "♨", Description = "Klasik Türk çayı" },
-        new() { Name = "Kahve",  Type = BrewType.Coffee, BrewDuration = TimeSpan.FromMinutes(10), Icon = "☕", Description = "Türk kahvesi" },
+        new() { Name = "Filtre Kahve", Type = BrewType.Coffee, BrewDuration = TimeSpan.FromMinutes(4), Icon = "☕", Description = "Filtre kahve" },
     ];
 
     /// <summary>
