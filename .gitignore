@@ -366,5 +366,6 @@ FodyWeavers.xsd
 appsettings.Development.json
 appsettings.Production.json
 appsettings.*.local.json
+preferences.json
 
 .claude/
