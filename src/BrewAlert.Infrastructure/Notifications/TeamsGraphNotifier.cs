@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 /// <summary>
 /// Sends brew notifications to a Microsoft Teams chat via Microsoft Graph API.
 /// Uses client-credentials OAuth flow; token is cached until 60 seconds before expiry.
+/// Token refresh is protected by a SemaphoreSlim to prevent concurrent re-fetches.
 /// </summary>
 public sealed class TeamsGraphNotifier : INotificationService, IDisposable
 {
@@ -19,7 +20,8 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
     private readonly IOptionsMonitor<TeamsGraphOptions> _optionsMonitor;
     private readonly ILogger<TeamsGraphNotifier> _logger;
     private readonly IDisposable? _subscription;
-    
+    private readonly SemaphoreSlim _tokenSemaphore = new(1, 1);
+
     private string? _cachedToken;
     private DateTimeOffset _tokenExpiry = DateTimeOffset.MinValue;
 
@@ -84,43 +86,55 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
         }
     }
 
-    public void Dispose() => _subscription?.Dispose();
+    public void Dispose()
+    {
+        _subscription?.Dispose();
+        _tokenSemaphore.Dispose();
+    }
 
     private async Task<string> GetAccessTokenAsync(TeamsGraphOptions opts, CancellationToken ct)
     {
-        // Serve cached token if still valid (with 60s buffer)
-        if (_cachedToken is not null && DateTimeOffset.UtcNow < _tokenExpiry)
-            return _cachedToken;
-
-        var tokenUrl = $"https://login.microsoftonline.com/{opts.TenantId}/oauth2/v2.0/token";
-
-        var body = new FormUrlEncodedContent([
-            new("grant_type", "client_credentials"),
-            new("client_id", opts.ClientId),
-            new("client_secret", opts.ClientSecret),
-            new("scope", "https://graph.microsoft.com/.default"),
-        ]);
-
-        var client = _httpClientFactory.CreateClient(nameof(TeamsGraphNotifier));
-        var response = await client.PostAsync(tokenUrl, body, ct);
-        var json = await response.Content.ReadAsStringAsync(ct);
-
-        if (!response.IsSuccessStatusCode)
+        await _tokenSemaphore.WaitAsync(ct);
+        try
         {
-            _logger.LogError("Token request failed {StatusCode}: {Body}", response.StatusCode, json);
-            throw new HttpRequestException($"Token request failed: {(int)response.StatusCode}");
+            // Re-check inside the semaphore in case another thread refreshed first
+            if (_cachedToken is not null && DateTimeOffset.UtcNow < _tokenExpiry)
+                return _cachedToken;
+
+            var tokenUrl = $"https://login.microsoftonline.com/{opts.TenantId}/oauth2/v2.0/token";
+
+            var body = new FormUrlEncodedContent([
+                new("grant_type", "client_credentials"),
+                new("client_id", opts.ClientId),
+                new("client_secret", opts.ClientSecret),
+                new("scope", "https://graph.microsoft.com/.default"),
+            ]);
+
+            var client = _httpClientFactory.CreateClient(nameof(TeamsGraphNotifier));
+            var response = await client.PostAsync(tokenUrl, body, ct);
+            var json = await response.Content.ReadAsStringAsync(ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Token request failed {StatusCode}: {Body}", response.StatusCode, json);
+                throw new HttpRequestException($"Token request failed: {(int)response.StatusCode}");
+            }
+
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var accessToken = root.GetProperty("access_token").GetString()
+                ?? throw new InvalidOperationException("access_token missing from response.");
+            var expiresIn = root.GetProperty("expires_in").GetInt32();
+
+            _cachedToken = accessToken;
+            _tokenExpiry = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60);
+
+            return _cachedToken;
         }
-
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-        var accessToken = root.GetProperty("access_token").GetString()
-            ?? throw new InvalidOperationException("access_token missing from response.");
-        var expiresIn = root.GetProperty("expires_in").GetInt32();
-
-        _cachedToken = accessToken;
-        _tokenExpiry = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60);
-
-        return _cachedToken;
+        finally
+        {
+            _tokenSemaphore.Release();
+        }
     }
 
     private async Task<NotificationResult> PostToChatAsync(TeamsGraphOptions opts, string token, string payload, CancellationToken ct)

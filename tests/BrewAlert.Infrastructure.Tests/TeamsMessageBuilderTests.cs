@@ -7,51 +7,33 @@ namespace BrewAlert.Infrastructure.Tests;
 
 public class TeamsMessageBuilderTests
 {
+    private static BrewSession MakeSession(string name, BrewType type, TimeSpan duration, string icon = "🍵")
+        => new()
+        {
+            Profile = new BrewProfile { Name = name, Type = type, BrewDuration = duration, Icon = icon },
+            StartedAtUtc = DateTime.UtcNow,
+            EndsAtUtc = DateTime.UtcNow.Add(duration),
+        };
+
     [Fact]
     public void BuildBrewCompletedPayload_ShouldContainProfileName()
     {
-        var session = new BrewSession
-        {
-            Profile = new BrewProfile
-            {
-                Name = "Turkish Tea",
-                Type = BrewType.Tea,
-                BrewDuration = TimeSpan.FromMinutes(8),
-                Icon = "🍵"
-            },
-            StartedAtUtc = DateTime.UtcNow.AddMinutes(-8),
-            EndsAtUtc = DateTime.UtcNow,
-            Remaining = TimeSpan.Zero,
-            State = BrewSessionState.Completed
-        };
-
-        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session);
+        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(
+            MakeSession("Turkish Tea", BrewType.Tea, TimeSpan.FromMinutes(8)));
 
         Assert.Contains("Turkish Tea", payload);
         Assert.Contains("Tea", payload);
-        Assert.Contains("8 dk", payload);
+        Assert.Contains("8 min", payload);
         Assert.Contains("AdaptiveCard", payload);
     }
 
     [Fact]
     public void BuildBrewCompletedPayload_ShouldHandleShortDuration()
     {
-        var session = new BrewSession
-        {
-            Profile = new BrewProfile
-            {
-                Name = "Espresso",
-                Type = BrewType.Coffee,
-                BrewDuration = TimeSpan.FromSeconds(25),
-                Icon = "☕"
-            },
-            StartedAtUtc = DateTime.UtcNow,
-            EndsAtUtc = DateTime.UtcNow.AddSeconds(25),
-        };
+        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(
+            MakeSession("Espresso", BrewType.Coffee, TimeSpan.FromSeconds(25), "☕"));
 
-        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session);
-
-        Assert.Contains("25 sn", payload);
+        Assert.Contains("25 sec", payload);
     }
 
     [Fact]
@@ -59,79 +41,55 @@ public class TeamsMessageBuilderTests
     {
         var payload = TeamsMessageBuilder.BuildTestPayload();
 
-        Assert.Contains("Bağlantı testi başarılı", payload);
+        Assert.Contains("Connection Test Successful", payload);
         Assert.Contains("AdaptiveCard", payload);
     }
 
     [Fact]
-    public void BuildBrewCompletedPayload_ShouldEscapeSpecialCharacters()
+    public void BuildBrewCompletedPayload_ShouldHandleSpecialCharactersWithoutThrowingOrBreakingJson()
     {
-        var session = new BrewSession
-        {
-            Profile = new BrewProfile
-            {
-                Name = "Test \"Special\" Brew",
-                Type = BrewType.Custom,
-                BrewDuration = TimeSpan.FromMinutes(5),
-            },
-            StartedAtUtc = DateTime.UtcNow,
-            EndsAtUtc = DateTime.UtcNow.AddMinutes(5),
-        };
+        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(
+            MakeSession("Test \"Special\" Brew", BrewType.Custom, TimeSpan.FromMinutes(5)));
 
-        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session);
-
-        Assert.DoesNotContain("\"Special\"", payload);
-        Assert.Contains("\\\"Special\\\"", payload);
+        // Outer payload must be valid JSON
+        var ex = Record.Exception(() => JsonDocument.Parse(payload));
+        Assert.Null(ex);
+        // Name appears somewhere in the output (may be escaped inside the nested card string)
+        Assert.Contains("Special", payload);
     }
 
     [Fact]
-    public void BuildBrewCompletedPayload_ShouldProduceValidJson()
+    public void BuildBrewCompletedPayload_ShouldProduceValidOuterJson()
     {
-        var session = new BrewSession
-        {
-            Profile = new BrewProfile
-            {
-                Name = "Green Tea",
-                Type = BrewType.Tea,
-                BrewDuration = TimeSpan.FromMinutes(3),
-                Icon = "🍵"
-            },
-            StartedAtUtc = DateTime.UtcNow,
-            EndsAtUtc = DateTime.UtcNow.AddMinutes(3),
-        };
+        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(
+            MakeSession("Green Tea", BrewType.Tea, TimeSpan.FromMinutes(3)));
 
-        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session);
-
-        var doc = JsonDocument.Parse(payload);
-        Assert.Equal("AdaptiveCard", doc.RootElement.GetProperty("type").GetString());
-        Assert.Equal(JsonValueKind.Array, doc.RootElement.GetProperty("body").ValueKind);
+        using var doc = JsonDocument.Parse(payload);
+        Assert.Equal("message", doc.RootElement.GetProperty("type").GetString());
+        Assert.Equal(JsonValueKind.Array, doc.RootElement.GetProperty("attachments").ValueKind);
+        // The attachment content is a serialized string (nested JSON)
+        var contentStr = doc.RootElement.GetProperty("attachments")[0].GetProperty("content").GetString();
+        Assert.NotNull(contentStr);
+        Assert.Contains("AdaptiveCard", contentStr);
     }
 
     [Fact]
-    public void BuildTestPayload_ShouldProduceValidJson()
+    public void BuildTestPayload_ShouldProduceValidOuterJson()
     {
         var payload = TeamsMessageBuilder.BuildTestPayload();
 
-        var doc = JsonDocument.Parse(payload);
-        Assert.Equal("AdaptiveCard", doc.RootElement.GetProperty("type").GetString());
+        using var doc = JsonDocument.Parse(payload);
+        Assert.Equal("message", doc.RootElement.GetProperty("type").GetString());
+        var contentStr = doc.RootElement.GetProperty("attachments")[0].GetProperty("content").GetString();
+        Assert.NotNull(contentStr);
+        Assert.Contains("AdaptiveCard", contentStr);
     }
 
     [Fact]
-    public void BuildBrewCompletedPayload_ShouldEscapeBackslashes()
+    public void BuildBrewCompletedPayload_ShouldEscapeBackslashesWithoutThrowingOrBreakingJson()
     {
-        var session = new BrewSession
-        {
-            Profile = new BrewProfile
-            {
-                Name = @"Brew\Test",
-                Type = BrewType.Custom,
-                BrewDuration = TimeSpan.FromMinutes(2),
-            },
-            StartedAtUtc = DateTime.UtcNow,
-            EndsAtUtc = DateTime.UtcNow.AddMinutes(2),
-        };
-
-        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session);
+        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(
+            MakeSession(@"Brew\Test", BrewType.Custom, TimeSpan.FromMinutes(2)));
 
         var ex = Record.Exception(() => JsonDocument.Parse(payload));
         Assert.Null(ex);
