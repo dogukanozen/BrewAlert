@@ -1,5 +1,6 @@
 namespace BrewAlert.UI.Services;
 
+using Avalonia.Threading;
 using BrewAlert.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -18,7 +19,10 @@ public sealed class LocalizationService : ILocalizationService, IDisposable
     public LocalizationService(IOptionsMonitor<LanguageOptions> options)
     {
         _currentLanguage = options.CurrentValue.Language;
-        _changeListener = options.OnChange(opt => SetLanguage(opt.Language));
+        // IOptionsMonitor.OnChange fires on a background thread; marshal to the UI
+        // thread so LanguageChanged handlers can update observable properties safely.
+        _changeListener = options.OnChange(opt =>
+            Dispatcher.UIThread.Post(() => SetLanguage(opt.Language)));
     }
 
     public void SetLanguage(string language)

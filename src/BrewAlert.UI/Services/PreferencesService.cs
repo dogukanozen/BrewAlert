@@ -6,24 +6,42 @@ using BrewAlert.UI.Constants;
 
 /// <summary>
 /// Reads and writes user preferences to %AppData%\BrewAlert\preferences.json.
-/// Uses a read-merge-write pattern so individual saves don't clobber each other.
+/// Uses a read-merge-write pattern protected by a SemaphoreSlim so concurrent
+/// async callers never interleave their read-modify-write cycles.
 /// </summary>
 public sealed class PreferencesService : IPreferencesService
 {
     private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
+    private readonly SemaphoreSlim _fileSemaphore = new(1, 1);
 
     public async Task SaveNotificationProviderAsync(string provider, CancellationToken ct = default)
     {
-        var prefs = await ReadAsync(ct);
-        prefs.NotificationProvider = provider;
-        await WriteAsync(prefs, ct);
+        await _fileSemaphore.WaitAsync(ct);
+        try
+        {
+            var prefs = await ReadAsync(ct);
+            prefs.NotificationProvider = provider;
+            await WriteAsync(prefs, ct);
+        }
+        finally
+        {
+            _fileSemaphore.Release();
+        }
     }
 
     public async Task SaveLanguageAsync(string language, CancellationToken ct = default)
     {
-        var prefs = await ReadAsync(ct);
-        prefs.Language = language;
-        await WriteAsync(prefs, ct);
+        await _fileSemaphore.WaitAsync(ct);
+        try
+        {
+            var prefs = await ReadAsync(ct);
+            prefs.Language = language;
+            await WriteAsync(prefs, ct);
+        }
+        finally
+        {
+            _fileSemaphore.Release();
+        }
     }
 
     private static async Task<PreferencesData> ReadAsync(CancellationToken ct)
@@ -49,10 +67,13 @@ public sealed class PreferencesService : IPreferencesService
 
             return data;
         }
-        catch
+        catch (JsonException)
         {
+            // Corrupted JSON — reset to defaults so the next write repairs the file.
             return new PreferencesData();
         }
+        // FileNotFoundException, UnauthorizedAccessException, etc. propagate so the
+        // caller can surface a meaningful error rather than silently losing data.
     }
 
     private static async Task WriteAsync(PreferencesData prefs, CancellationToken ct)

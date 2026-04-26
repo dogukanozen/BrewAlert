@@ -251,6 +251,10 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             NewProfileName = string.Empty;
             NewProfileDuration = 5;
         }
+        catch (Exception ex)
+        {
+            TestResult = string.Format(_loc.Get("ErrorPrefix"), ex.Message);
+        }
         finally
         {
             IsBusy = false;
@@ -386,10 +390,19 @@ public partial class EditableProfileViewModel : ViewModelBase
         }
     }
 
+    [ObservableProperty] private string _deleteErrorText = string.Empty;
+
     [RelayCommand]
     private async Task Delete()
     {
-        await _service.DeleteProfileAsync(_profile.Id);
-        IsDeleted = true;
+        try
+        {
+            await _service.DeleteProfileAsync(_profile.Id);
+            IsDeleted = true;
+        }
+        catch (Exception ex)
+        {
+            DeleteErrorText = ex.Message;
+        }
     }
 }
