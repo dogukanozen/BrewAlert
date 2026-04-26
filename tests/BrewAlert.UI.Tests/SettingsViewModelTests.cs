@@ -2,6 +2,8 @@ using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
 using BrewAlert.Core.Services;
 using BrewAlert.Infrastructure.Configuration;
+using BrewAlert.UI.Services;
+using IPreferencesService = BrewAlert.UI.Services.IPreferencesService;
 using BrewAlert.UI.ViewModels;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -17,6 +19,7 @@ public class SettingsViewModelTests
     private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
     private readonly IProfileRepository _repository = Substitute.For<IProfileRepository>();
     private readonly IPreferencesService _preferencesService = Substitute.For<IPreferencesService>();
+    private readonly ILocalizationService _loc = CreateEnglishLoc();
     private readonly BrewProfileService _profileService;
 
     private static IOptionsMonitor<T> CreateMonitor<T>(T value) where T : class, new()
@@ -24,6 +27,14 @@ public class SettingsViewModelTests
         var monitor = Substitute.For<IOptionsMonitor<T>>();
         monitor.CurrentValue.Returns(value);
         return monitor;
+    }
+
+    private static ILocalizationService CreateEnglishLoc()
+    {
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+        loc.CurrentLanguage.Returns("English");
+        return loc;
     }
 
     private readonly IOptionsMonitor<TeamsNotificationOptions> DefaultWebhookOptions =
@@ -50,12 +61,15 @@ public class SettingsViewModelTests
 
         // Act
         var vm = new SettingsViewModel(
-            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions, _profileService, _preferencesService);
+            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, _loc);
 
         // Assert
         Assert.StartsWith("12345678", vm.TenantId);
         Assert.Contains("••••••••", vm.TenantId);
-        Assert.Equal("19:abc@thread.v2", vm.ChatId);
+        // ChatId is now also masked — verify masking applied
+        Assert.StartsWith("19:abc@t", vm.ChatId);
+        Assert.Contains("••••••••", vm.ChatId);
     }
 
     [Fact]
@@ -68,13 +82,14 @@ public class SettingsViewModelTests
         });
         _notificationService.TestConnectionAsync().Returns(true);
         var vm = new SettingsViewModel(
-            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions, _profileService, _preferencesService);
+            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, _loc);
 
         // Act
         await vm.TestConnectionCommand.ExecuteAsync(null);
 
-        // Assert
-        Assert.Contains("başarılı", vm.TestResult);
+        // Assert — loc mock returns the key as value, so result is "ConnectionSuccess"
+        Assert.Contains("ConnectionSuccess", vm.TestResult);
     }
 
     [Fact]
@@ -85,7 +100,8 @@ public class SettingsViewModelTests
             TenantId = "T", ClientId = "C", ClientSecret = "S", ChatId = "CH"
         });
         var vm = new SettingsViewModel(
-            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions, _profileService, _preferencesService);
+            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, _loc);
 
         Assert.True(vm.IsGraphConfigured);
     }
@@ -99,7 +115,8 @@ public class SettingsViewModelTests
         });
         var providerOptions = CreateMonitor(new NotificationProviderOptions { Provider = NotificationProvider.Webhook });
         var vm = new SettingsViewModel(
-            _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, providerOptions, _profileService, _preferencesService);
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, providerOptions,
+            _profileService, _preferencesService, _loc);
 
         Assert.True(vm.IsWebhookConfigured);
         Assert.True(vm.IsConfigured);

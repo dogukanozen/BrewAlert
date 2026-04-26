@@ -19,10 +19,14 @@ public class ProfileListViewModelTests
     private readonly BrewProfileService _profileService;
     private readonly IProfileRepository _repository = Substitute.For<IProfileRepository>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
+    private readonly ILocalizationService _loc;
 
     public ProfileListViewModelTests()
     {
         _profileService = new BrewProfileService(_repository);
+        _loc = Substitute.For<ILocalizationService>();
+        _loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+        _loc.CurrentLanguage.Returns("English");
     }
 
     [AvaloniaFact]
@@ -38,8 +42,8 @@ public class ProfileListViewModelTests
 
         // Act
         var tcs = new TaskCompletionSource();
-        var vm = new ProfileListViewModel(_profileService, _navigation);
-        
+        var vm = new ProfileListViewModel(_profileService, _navigation, _loc);
+
         if (!vm.IsLoading)
         {
             tcs.SetResult();
@@ -72,16 +76,21 @@ public class ProfileListViewModelTests
         var timerService = Substitute.For<IBrewTimerService>();
         timerService.Start(Arg.Any<BrewProfile>()).Returns(new BrewSession { Profile = profile });
 
+        var timerLoc = Substitute.For<ILocalizationService>();
+        timerLoc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+        timerLoc.CurrentLanguage.Returns("English");
+
         // Use real instance because StartBrew is not virtual
         var timerVm = new BrewTimerViewModel(
             timerService,
             Substitute.For<INotificationService>(),
-            _navigation);
-            
-        var vm = new ProfileListViewModel(_profileService, _navigation);
-        
-        // Setup navigation to return vm then timerVm
-        _navigation.CurrentView.Returns(vm, timerVm);
+            _navigation,
+            timerLoc);
+
+        var vm = new ProfileListViewModel(_profileService, _navigation, _loc);
+
+        // After NavigateTo<BrewTimerViewModel>(), CurrentView should return timerVm
+        _navigation.CurrentView.Returns(timerVm);
 
         // Act
         vm.SelectProfileCommand.Execute(profile);
