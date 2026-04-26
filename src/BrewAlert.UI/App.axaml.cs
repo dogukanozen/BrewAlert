@@ -2,13 +2,14 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
-using BrewAlert.Core;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Services;
 using BrewAlert.Infrastructure.Configuration;
 using BrewAlert.Infrastructure.Notifications;
 using BrewAlert.Infrastructure.Persistence;
+using BrewAlert.UI.Constants;
 using BrewAlert.UI.Services;
+using UIPreferencesService = BrewAlert.UI.Services.IPreferencesService;
 using BrewAlert.UI.ViewModels;
 using BrewAlert.UI.Views;
 using Microsoft.Extensions.Configuration;
@@ -16,13 +17,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
-using System.IO;
 using System.Linq;
 
 namespace BrewAlert.UI;
 
 public partial class App : Application
 {
+    private IServiceProvider? _services;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -33,15 +35,15 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             DisableAvaloniaDataAnnotationValidation();
-            var services = ConfigureServices();
+            _services = ConfigureServices();
 
-            // MainWindowViewModel is Singleton — resolve once and attach to the window
-            var mainVm = services.GetRequiredService<MainWindowViewModel>();
-
-            desktop.MainWindow = new MainWindow
+            desktop.ShutdownRequested += (_, _) =>
             {
-                DataContext = mainVm,
+                if (_services is IDisposable d) d.Dispose();
             };
+
+            var mainVm = _services.GetRequiredService<MainWindowViewModel>();
+            desktop.MainWindow = new MainWindow { DataContext = mainVm };
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -49,13 +51,11 @@ public partial class App : Application
 
     private static IServiceProvider ConfigureServices()
     {
-        var preferencesPath = BrewAlertConstants.PreferencesPath;
-
         var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production"}.json", optional: true)
-            .AddJsonFile(preferencesPath, optional: true, reloadOnChange: true)
+            .AddJsonFile(BrewAlertPaths.Preferences, optional: true, reloadOnChange: true)
             .AddEnvironmentVariables("BREWALERT__")
             .Build();
 
@@ -76,6 +76,8 @@ public partial class App : Application
             configuration.GetSection(TeamsGraphOptions.SectionPath));
         services.Configure<NotificationProviderOptions>(
             configuration.GetSection(NotificationProviderOptions.SectionPath));
+        services.Configure<LanguageOptions>(
+            configuration.GetSection(LanguageOptions.SectionPath));
 
         // Core services
         services.AddSingleton<IBrewTimerService, BrewTimerService>();
@@ -84,11 +86,8 @@ public partial class App : Application
         // Infrastructure
         services.AddSingleton<IProfileRepository>(sp =>
             new JsonProfileRepository(sp.GetRequiredService<ILogger<JsonProfileRepository>>()));
-        services.AddSingleton<IPreferencesService, JsonPreferencesService>();
 
         // Notification services — active back-end selected via BrewAlert:Notifications:Provider
-        // ("Graph" | "Webhook" | "Console"). RoutingNotificationService reads IOptionsMonitor
-        // on every call so switching the provider in preferences.json is instant.
         services.AddHttpClient();
         services.AddHttpClient(nameof(TeamsWebhookNotifier))
             .ConfigureHttpClient((sp, client) =>
@@ -109,13 +108,15 @@ public partial class App : Application
         services.AddSingleton<ConsoleNotifier>();
         services.AddSingleton<INotificationService, RoutingNotificationService>();
 
-        // Navigation — Singleton so all ViewModels share the same navigation state
+        // Preferences & localization
+        services.AddSingleton<UIPreferencesService, PreferencesService>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
+
+        // Navigation
         services.AddSingleton<INavigationService, NavigationService>();
 
         // ViewModels
-        // MainWindowViewModel is Singleton — it lives as long as the window
         services.AddSingleton<MainWindowViewModel>();
-        // Child ViewModels are Transient — fresh instance per navigation
         services.AddTransient<BrewTimerViewModel>();
         services.AddTransient<ProfileListViewModel>();
         services.AddTransient<SettingsViewModel>();
@@ -128,8 +129,6 @@ public partial class App : Application
         var plugins = BindingPlugins.DataValidators
             .OfType<DataAnnotationsValidationPlugin>().ToArray();
         foreach (var plugin in plugins)
-        {
             BindingPlugins.DataValidators.Remove(plugin);
-        }
     }
 }

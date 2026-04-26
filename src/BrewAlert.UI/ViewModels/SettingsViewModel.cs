@@ -1,16 +1,14 @@
-using BrewAlert.Core;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
 using BrewAlert.Core.Services;
 using BrewAlert.Infrastructure.Configuration;
+using BrewAlert.UI.Services;
+using IPreferencesService = BrewAlert.UI.Services.IPreferencesService;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 namespace BrewAlert.UI.ViewModels;
@@ -20,33 +18,55 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly INotificationService _notificationService;
     private readonly BrewProfileService _profileService;
     private readonly IPreferencesService _preferencesService;
-    private readonly IDisposable? _configSubscription;
+    private readonly ILocalizationService _loc;
+    private readonly IOptionsMonitor<TeamsGraphOptions> _graphOptions;
+    private readonly IOptionsMonitor<TeamsNotificationOptions> _webhookOptions;
 
     [ObservableProperty] private string _testResult = string.Empty;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _selectedProvider = string.Empty;
+    [ObservableProperty] private string _currentLanguage = string.Empty;
 
-    // Graph config display
-    public string TenantId { get; }
-    public string ClientId { get; }
-    public string ChatId { get; }
-    public bool IsGraphConfigured { get; }
+    // Localized UI labels
+    [ObservableProperty] private string _durationSettingsTitle = string.Empty;
+    [ObservableProperty] private string _resetButtonText = string.Empty;
+    [ObservableProperty] private string _notificationSettingsTitle = string.Empty;
+    [ObservableProperty] private string _notificationChannelLabel = string.Empty;
+    [ObservableProperty] private string _activeChannelLabel = string.Empty;
+    [ObservableProperty] private string _testTitle = string.Empty;
+    [ObservableProperty] private string _testConnectionText = string.Empty;
+    [ObservableProperty] private string _sendTestNotificationText = string.Empty;
+    [ObservableProperty] private string _languageLabel = string.Empty;
+    [ObservableProperty] private string _addProfileText = string.Empty;
+    [ObservableProperty] private string _webhookStatusText = string.Empty;
+    [ObservableProperty] private string _graphStatusText = string.Empty;
+    [ObservableProperty] private string _webhookHintText = string.Empty;
+    [ObservableProperty] private string _graphHintText = string.Empty;
 
-    // Webhook config display
-    public string WebhookUrl { get; }
-    public bool IsWebhookConfigured { get; }
+    // Graph config display (masked)
+    public string TenantId { get; private set; } = string.Empty;
+    public string ClientId { get; private set; } = string.Empty;
+    public string ChatId { get; private set; } = string.Empty;
+    public bool IsGraphConfigured { get; private set; }
+
+    // Webhook config display (masked)
+    public string WebhookUrl { get; private set; } = string.Empty;
+    public bool IsWebhookConfigured { get; private set; }
 
     public bool IsGraphSelected => SelectedProvider == NotificationProvider.Graph;
     public bool IsWebhookSelected => SelectedProvider == NotificationProvider.Webhook;
 
-    /// <summary>True when the currently selected provider is fully configured.</summary>
     public bool IsConfigured => SelectedProvider switch
     {
         NotificationProvider.Graph => IsGraphConfigured,
         NotificationProvider.Webhook => IsWebhookConfigured,
-        NotificationProvider.Console => true,
         _ => false,
     };
+
+    // New profile form
+    [ObservableProperty] private string _newProfileName = string.Empty;
+    [ObservableProperty] private int _newProfileDuration = 5;
+    [ObservableProperty] private BrewType _newProfileType = BrewType.Tea;
 
     public ObservableCollection<EditableProfileViewModel> Profiles { get; } = new();
 
@@ -56,38 +76,68 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         IOptionsMonitor<TeamsNotificationOptions> webhookOptions,
         IOptionsMonitor<NotificationProviderOptions> providerOptions,
         BrewProfileService profileService,
-        IPreferencesService preferencesService)
+        IPreferencesService preferencesService,
+        ILocalizationService loc)
     {
         _notificationService = notificationService;
+        _graphOptions = graphOptions;
+        _webhookOptions = webhookOptions;
         _profileService = profileService;
         _preferencesService = preferencesService;
+        _loc = loc;
 
-        var g = graphOptions.CurrentValue;
+        _selectedProvider = providerOptions.CurrentValue.Provider;
+        _currentLanguage = loc.CurrentLanguage;
+
+        RefreshConfigDisplay();
+        _loc.LanguageChanged += OnLanguageChanged;
+        RefreshLocalizedStrings();
+
+        _ = LoadProfilesAsync();
+    }
+
+    private void RefreshConfigDisplay()
+    {
+        var g = _graphOptions.CurrentValue;
         TenantId = Mask(g.TenantId);
         ClientId = Mask(g.ClientId);
-        ChatId = g.ChatId;
+        ChatId = Mask(g.ChatId);
         IsGraphConfigured = !string.IsNullOrWhiteSpace(g.TenantId)
             && !string.IsNullOrWhiteSpace(g.ClientId)
             && !string.IsNullOrWhiteSpace(g.ClientSecret)
             && !string.IsNullOrWhiteSpace(g.ChatId);
 
-        var w = webhookOptions.CurrentValue;
+        var w = _webhookOptions.CurrentValue;
         WebhookUrl = Mask(w.WebhookUrl);
         IsWebhookConfigured = !string.IsNullOrWhiteSpace(w.WebhookUrl);
-
-        // Sync with external config changes (e.g. manual file edit)
-        _configSubscription = providerOptions.OnChange(opt => 
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => SelectedProvider = opt.Provider);
-        });
-
-        // Initialize state
-        SelectedProvider = providerOptions.CurrentValue.Provider;
-
-        _ = LoadProfilesAsync();
     }
 
-    public void Dispose() => _configSubscription?.Dispose();
+    private void RefreshLocalizedStrings()
+    {
+        DurationSettingsTitle = _loc.Get("DurationSettings");
+        ResetButtonText = _loc.Get("ResetToDefaults");
+        NotificationSettingsTitle = _loc.Get("NotificationSettings");
+        NotificationChannelLabel = _loc.Get("NotificationChannel");
+        ActiveChannelLabel = _loc.Get("ActiveChannel");
+        TestTitle = _loc.Get("TestTitle");
+        TestConnectionText = _loc.Get("TestConnection");
+        SendTestNotificationText = _loc.Get("SendTestNotification");
+        LanguageLabel = _loc.Get("Language");
+        AddProfileText = _loc.Get("AddProfile");
+        WebhookStatusText = IsWebhookConfigured ? _loc.Get("WebhookConfigured") : _loc.Get("NotConfigured");
+        GraphStatusText = IsGraphConfigured ? _loc.Get("GraphConfigured") : _loc.Get("NotConfigured");
+        WebhookHintText = _loc.Get("WebhookHint");
+        GraphHintText = _loc.Get("GraphHint");
+
+        foreach (var p in Profiles)
+            p.RefreshLocalization(_loc);
+    }
+
+    private void OnLanguageChanged(string lang)
+    {
+        CurrentLanguage = lang;
+        RefreshLocalizedStrings();
+    }
 
     partial void OnSelectedProviderChanged(string value)
     {
@@ -100,7 +150,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private async Task SetProvider(string provider)
     {
         if (SelectedProvider == provider) return;
-
         IsBusy = true;
         try
         {
@@ -110,7 +159,27 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
-            TestResult = $"❌ Tercih kaydedilemedi: {ex.Message}";
+            TestResult = string.Format(_loc.Get("SaveFailed"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task SetLanguage(string language)
+    {
+        if (CurrentLanguage == language) return;
+        IsBusy = true;
+        try
+        {
+            await _preferencesService.SaveLanguageAsync(language);
+            _loc.SetLanguage(language);
+        }
+        catch (Exception ex)
+        {
+            TestResult = string.Format(_loc.Get("SaveFailed"), ex.Message);
         }
         finally
         {
@@ -120,18 +189,10 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     private async Task LoadProfilesAsync()
     {
-        try
-        {
-            var profiles = await _profileService.GetAllProfilesAsync();
-            foreach (var p in profiles)
-            {
-                Profiles.Add(new EditableProfileViewModel(p, _profileService));
-            }
-        }
-        catch (Exception ex)
-        {
-            TestResult = $"❌ Profiller yüklenemedi: {ex.Message}";
-        }
+        var profiles = await _profileService.GetAllProfilesAsync();
+        Profiles.Clear();
+        foreach (var p in profiles)
+            Profiles.Add(new EditableProfileViewModel(p, _profileService, _loc));
     }
 
     [RelayCommand]
@@ -140,14 +201,55 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         IsBusy = true;
         try
         {
-            var currentProfiles = await _profileService.GetAllProfilesAsync();
-            foreach (var p in currentProfiles)
-            {
+            var current = await _profileService.GetAllProfilesAsync();
+            foreach (var p in current)
                 await _profileService.DeleteProfileAsync(p.Id);
-            }
-
             Profiles.Clear();
             await LoadProfilesAsync();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void IncreaseDuration()
+    {
+        if (NewProfileDuration < 120) NewProfileDuration++;
+    }
+
+    [RelayCommand]
+    private void DecreaseDuration()
+    {
+        if (NewProfileDuration > 1) NewProfileDuration--;
+    }
+
+    [RelayCommand]
+    private async Task AddProfile()
+    {
+        if (string.IsNullOrWhiteSpace(NewProfileName) || NewProfileDuration < 1) return;
+
+        IsBusy = true;
+        try
+        {
+            var profile = new BrewProfile
+            {
+                Name = NewProfileName.Trim(),
+                Type = NewProfileType,
+                BrewDuration = TimeSpan.FromMinutes(NewProfileDuration),
+                Icon = NewProfileType switch
+                {
+                    BrewType.Tea => "♨",
+                    BrewType.Coffee => "☕",
+                    _ => "🫖",
+                },
+            };
+
+            await _profileService.SaveProfileAsync(profile);
+            Profiles.Add(new EditableProfileViewModel(profile, _profileService, _loc));
+            NewProfileName = string.Empty;
+            NewProfileDuration = 5;
         }
         finally
         {
@@ -160,26 +262,21 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     {
         if (!IsConfigured)
         {
-            var channel = SelectedProvider switch
-            {
-                NotificationProvider.Graph => "Teams Graph",
-                NotificationProvider.Webhook => "Teams Webhook",
-                _ => SelectedProvider
-            };
-            TestResult = $"❌ {channel} yapılandırılmamış. Uygulama ayarlarını kontrol edin.";
+            var channel = SelectedProvider == NotificationProvider.Graph ? "Teams Graph" : "Teams Webhook";
+            TestResult = string.Format(_loc.Get("NotConfiguredError"), channel);
             return;
         }
 
         IsBusy = true;
-        TestResult = "Bağlanıyor...";
+        TestResult = _loc.Get("Connecting");
         try
         {
             var success = await _notificationService.TestConnectionAsync();
-            TestResult = success ? "✅ Bağlantı başarılı! Test kartı gönderildi." : "❌ Bağlantı başarısız.";
+            TestResult = success ? _loc.Get("ConnectionSuccess") : _loc.Get("ConnectionFailed");
         }
         catch (Exception ex)
         {
-            TestResult = $"❌ Hata: {ex.Message}";
+            TestResult = string.Format(_loc.Get("ErrorPrefix"), ex.Message);
         }
         finally
         {
@@ -192,18 +289,13 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     {
         if (!IsConfigured)
         {
-            var channel = SelectedProvider switch
-            {
-                NotificationProvider.Graph => "Teams Graph",
-                NotificationProvider.Webhook => "Teams Webhook",
-                _ => SelectedProvider
-            };
-            TestResult = $"❌ {channel} yapılandırılmamış. Uygulama ayarlarını kontrol edin.";
+            var channel = SelectedProvider == NotificationProvider.Graph ? "Teams Graph" : "Teams Webhook";
+            TestResult = string.Format(_loc.Get("NotConfiguredError"), channel);
             return;
         }
 
         IsBusy = true;
-        TestResult = "Gönderiliyor...";
+        TestResult = _loc.Get("Sending");
         try
         {
             var fakeSession = new BrewSession
@@ -223,12 +315,12 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
             var result = await _notificationService.SendBrewCompletedAsync(fakeSession);
             TestResult = result.IsSuccess
-                ? "✅ Test bildirimi gönderildi!"
-                : $"❌ Gönderilemedi: {result.ErrorMessage}";
+                ? _loc.Get("TestNotificationSent")
+                : string.Format(_loc.Get("CouldNotSend"), result.ErrorMessage);
         }
         catch (Exception ex)
         {
-            TestResult = $"❌ Hata: {ex.Message}";
+            TestResult = string.Format(_loc.Get("ErrorPrefix"), ex.Message);
         }
         finally
         {
@@ -237,26 +329,42 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     }
 
     private static string Mask(string value) =>
-        string.IsNullOrWhiteSpace(value) ? "(boş)" :
+        string.IsNullOrWhiteSpace(value) ? "(empty)" :
         value.Length <= 8 ? new string('●', value.Length) :
         value[..8] + "••••••••";
+
+    public void Dispose()
+    {
+        _loc.LanguageChanged -= OnLanguageChanged;
+    }
 }
 
 public partial class EditableProfileViewModel : ViewModelBase
 {
     private readonly BrewProfile _profile;
     private readonly BrewProfileService _service;
+    private ILocalizationService _loc;
 
     public string Name => _profile.Name;
     public string Icon => _profile.Icon;
 
     [ObservableProperty] private TimeSpan _duration;
+    [ObservableProperty] private string _deleteButtonText = string.Empty;
+    [ObservableProperty] private bool _isDeleted;
 
-    public EditableProfileViewModel(BrewProfile profile, BrewProfileService service)
+    public EditableProfileViewModel(BrewProfile profile, BrewProfileService service, ILocalizationService loc)
     {
         _profile = profile;
         _service = service;
+        _loc = loc;
         Duration = profile.BrewDuration;
+        DeleteButtonText = loc.Get("DeleteProfile");
+    }
+
+    public void RefreshLocalization(ILocalizationService loc)
+    {
+        _loc = loc;
+        DeleteButtonText = loc.Get("DeleteProfile");
     }
 
     [RelayCommand]
@@ -276,5 +384,12 @@ public partial class EditableProfileViewModel : ViewModelBase
             _profile.BrewDuration = Duration;
             await _service.SaveProfileAsync(_profile);
         }
+    }
+
+    [RelayCommand]
+    private async Task Delete()
+    {
+        await _service.DeleteProfileAsync(_profile.Id);
+        IsDeleted = true;
     }
 }
