@@ -10,13 +10,14 @@ namespace BrewAlert.UI.ViewModels;
 
 /// <summary>
 /// ViewModel for the active brew countdown screen.
-/// Implements <see cref="IDisposable"/> to unsubscribe from timer events and prevent memory leaks.
+/// Implements IDisposable to unsubscribe from timer and localization events.
 /// </summary>
 public partial class BrewTimerViewModel : ViewModelBase, IDisposable
 {
     private readonly IBrewTimerService _timerService;
     private readonly INotificationService _notificationService;
     private readonly INavigationService _navigation;
+    private readonly ILocalizationService _loc;
 
     [ObservableProperty] private string _profileName = string.Empty;
     [ObservableProperty] private string _profileIcon = "☕";
@@ -26,8 +27,14 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _isRunning;
     [ObservableProperty] private bool _isPaused;
     [ObservableProperty] private bool _isCompleted;
-    [ObservableProperty] private string _statusText = "Ready";
+    [ObservableProperty] private string _statusText = string.Empty;
     [ObservableProperty] private string _notificationStatus = string.Empty;
+
+    // Localized button labels (bound from AXAML)
+    [ObservableProperty] private string _pauseButtonText = string.Empty;
+    [ObservableProperty] private string _resumeButtonText = string.Empty;
+    [ObservableProperty] private string _cancelButtonText = string.Empty;
+    [ObservableProperty] private string _backButtonText = string.Empty;
 
     private Guid _activeSessionId;
     private bool _disposed;
@@ -35,17 +42,31 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
     public BrewTimerViewModel(
         IBrewTimerService timerService,
         INotificationService notificationService,
-        INavigationService navigation)
+        INavigationService navigation,
+        ILocalizationService loc)
     {
         _timerService = timerService;
         _notificationService = notificationService;
         _navigation = navigation;
+        _loc = loc;
 
         _timerService.TimerTick += OnTimerTick;
         _timerService.BrewCompleted += OnBrewCompleted;
+        _loc.LanguageChanged += OnLanguageChanged;
+
+        RefreshLocalizedStrings();
     }
 
-    /// <summary>Start a new brew session with the given profile.</summary>
+    private void RefreshLocalizedStrings()
+    {
+        PauseButtonText = _loc.Get("PauseButton");
+        ResumeButtonText = _loc.Get("ResumeButton");
+        CancelButtonText = _loc.Get("CancelButton");
+        BackButtonText = _loc.Get("BackButton");
+    }
+
+    private void OnLanguageChanged(string _) => RefreshLocalizedStrings();
+
     public void StartBrew(BrewProfile profile)
     {
         ProfileName = profile.Name;
@@ -56,7 +77,7 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
         IsRunning = true;
         IsPaused = false;
         IsCompleted = false;
-        StatusText = "Brewing...";
+        StatusText = _loc.Get("Brewing");
         NotificationStatus = string.Empty;
 
         var session = _timerService.Start(profile);
@@ -68,7 +89,7 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
     {
         _timerService.Pause(_activeSessionId);
         IsPaused = true;
-        StatusText = "Paused";
+        StatusText = _loc.Get("Paused");
     }
 
     [RelayCommand]
@@ -76,7 +97,7 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
     {
         _timerService.Resume(_activeSessionId);
         IsPaused = false;
-        StatusText = "Brewing...";
+        StatusText = _loc.Get("Brewing");
     }
 
     [RelayCommand]
@@ -84,7 +105,8 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
     {
         _timerService.Cancel(_activeSessionId);
         IsRunning = false;
-        StatusText = "Cancelled";
+        StatusText = _loc.Get("Cancelled");
+        Dispose();
         _navigation.NavigateTo<ProfileListViewModel>();
     }
 
@@ -102,9 +124,7 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
             if (_disposed) return;
             Remaining = remaining;
             if (TotalDuration > TimeSpan.Zero)
-            {
                 Progress = 1.0 - (remaining.TotalSeconds / TotalDuration.TotalSeconds);
-            }
         });
     }
 
@@ -117,13 +137,13 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
             IsCompleted = true;
             Progress = 1.0;
             Remaining = TimeSpan.Zero;
-            StatusText = "Ready! ☕";
+            StatusText = _loc.Get("Ready");
 
-            NotificationStatus = "Sending notification...";
+            NotificationStatus = _loc.Get("SendingNotification");
             var result = await _notificationService.SendBrewCompletedAsync(e.Session);
             NotificationStatus = result.IsSuccess
-                ? "✅ Notification sent!"
-                : $"⚠️ {result.ErrorMessage}";
+                ? _loc.Get("NotificationSent")
+                : string.Format(_loc.Get("CouldNotSend"), result.ErrorMessage);
         });
     }
 
@@ -133,5 +153,6 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
         _disposed = true;
         _timerService.TimerTick -= OnTimerTick;
         _timerService.BrewCompleted -= OnBrewCompleted;
+        _loc.LanguageChanged -= OnLanguageChanged;
     }
 }
