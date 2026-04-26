@@ -15,11 +15,29 @@ public class BrewTimerViewModelTests
     private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
 
+    private static ILocalizationService CreateEnglishLoc()
+    {
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get("PauseButton").Returns("⏸ Pause");
+        loc.Get("ResumeButton").Returns("▶ Resume");
+        loc.Get("CancelButton").Returns("✕ Cancel");
+        loc.Get("BackButton").Returns("← Back to Brews");
+        loc.Get("Brewing").Returns("Brewing...");
+        loc.Get("Paused").Returns("Paused");
+        loc.Get("Cancelled").Returns("Cancelled");
+        loc.Get("Ready").Returns("Ready! ☕");
+        loc.Get("SendingNotification").Returns("Sending notification...");
+        loc.Get("NotificationSent").Returns("✅ Notification sent!");
+        loc.Get("CouldNotSend").Returns("❌ Could not send: {0}");
+        loc.CurrentLanguage.Returns("English");
+        return loc;
+    }
+
     [AvaloniaFact]
     public void StartBrew_SetsPropertiesAndStartsTimer()
     {
         // Arrange
-        var vm = new BrewTimerViewModel(_timerService, _notificationService, _navigation);
+        var vm = new BrewTimerViewModel(_timerService, _notificationService, _navigation, CreateEnglishLoc());
         var profile = new BrewProfile
         {
             Name = "Coffee",
@@ -43,7 +61,7 @@ public class BrewTimerViewModelTests
     public void PauseCommand_CallsTimerService()
     {
         // Arrange
-        var vm = new BrewTimerViewModel(_timerService, _notificationService, _navigation);
+        var vm = new BrewTimerViewModel(_timerService, _notificationService, _navigation, CreateEnglishLoc());
         var profile = new BrewProfile { Name = "Test", BrewDuration = TimeSpan.FromMinutes(1) };
         var session = new BrewSession { Profile = profile };
         _timerService.Start(profile).Returns(session);
@@ -62,7 +80,7 @@ public class BrewTimerViewModelTests
     public void CancelCommand_NavigatesBack()
     {
         // Arrange
-        var vm = new BrewTimerViewModel(_timerService, _notificationService, _navigation);
+        var vm = new BrewTimerViewModel(_timerService, _notificationService, _navigation, CreateEnglishLoc());
         var profile = new BrewProfile { Name = "Test", BrewDuration = TimeSpan.FromMinutes(1) };
         _timerService.Start(profile).Returns(new BrewSession { Profile = profile });
         vm.StartBrew(profile);

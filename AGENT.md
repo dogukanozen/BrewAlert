@@ -29,7 +29,10 @@ BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams A
 | load/save profile, JSON file | `src/BrewAlert.Infrastructure/Persistence/JsonProfileRepository.cs` |
 | teams, webhook, adaptive card, power automate | `src/BrewAlert.Infrastructure/Notifications/TeamsWebhookNotifier.cs`, `TeamsMessageBuilder.cs`, `Configuration/TeamsNotificationOptions.cs` |
 | teams graph api, graph notifier | `src/BrewAlert.Infrastructure/Notifications/TeamsGraphNotifier.cs`, `TeamsGraphMessageBuilder.cs`, `Configuration/TeamsGraphOptions.cs` |
+| notification routing, provider selection | `src/BrewAlert.Infrastructure/Notifications/RoutingNotificationService.cs`, `Configuration/NotificationProviderOptions.cs` |
 | console notifier / fallback | `src/BrewAlert.Infrastructure/Notifications/ConsoleNotifier.cs` |
+| language, localization, TR, EN, Turkish, English | `src/BrewAlert.UI/Services/ILocalizationService.cs`, `LocalizationService.cs`, `AppLanguage.cs`, `src/BrewAlert.Infrastructure/Configuration/LanguageOptions.cs` |
+| preferences, provider setting, settings save | `src/BrewAlert.UI/Services/IPreferencesService.cs`, `PreferencesService.cs`, `Constants/BrewAlertPaths.cs` |
 | view, xaml, style, theme | `src/BrewAlert.UI/Views/`, `src/BrewAlert.UI/Themes/` |
 | viewmodel, binding, command | `src/BrewAlert.UI/ViewModels/` |
 | navigation, switch view | `src/BrewAlert.UI/Services/INavigationService.cs`, `NavigationService.cs` |
@@ -37,7 +40,7 @@ BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams A
 | CI, build, release | `.github/workflows/ci.yml` |
 | commit message format | `docs/commit-style.md` |
 | PR template | `.github/pull_request_template.md` |
-| tests | `tests/BrewAlert.Core.Tests/`, `tests/BrewAlert.Infrastructure.Tests/` |
+| tests | `tests/BrewAlert.Core.Tests/`, `tests/BrewAlert.Infrastructure.Tests/`, `tests/BrewAlert.UI.Tests/` |
 
 If the request maps to nothing here, **ask** the user instead of scanning the whole repo.
 
@@ -47,12 +50,12 @@ All of the following are verified against the current code. If you see a change 
 
 1. **No service locator.** ViewModels never call `App.Services`, `IServiceProvider`, or `GetRequiredService<T>()`. Use `INavigationService` for view transitions and constructor injection for everything else. (see `BrewTimerViewModel.cs`, `App.axaml.cs`)
 2. **Events fire outside `lock` blocks.** In `BrewTimerService` every `TimerTick` / `BrewStarted` / `BrewCompleted` / `BrewCancelled` invocation happens after the lock is released. Re-entrant handlers used to deadlock. (see `BrewTimerService.cs:53, 73, 143`)
-3. **Timer subscribers implement `IDisposable`** and unsubscribe in `Dispose()`. Required for any VM holding `IBrewTimerService` events. (see `BrewTimerViewModel.cs:130`)
+3. **Event subscribers implement `IDisposable`** and unsubscribe in `Dispose()`. Required for any VM holding `IBrewTimerService` events (`TimerTick`, `BrewStarted`, etc.) **and** `ILocalizationService.LanguageChanged`. (see `BrewTimerViewModel.cs`)
 4. **DI lifetimes** (in `App.axaml.cs:ConfigureServices`):
-   - **Singleton**: `MainWindowViewModel`, `INavigationService`, `IBrewTimerService`, `BrewProfileService`, `IProfileRepository`, `INotificationService`.
+   - **Singleton**: `MainWindowViewModel`, `INavigationService`, `IBrewTimerService`, `BrewProfileService`, `IProfileRepository`, `INotificationService`, `IPreferencesService`, `ILocalizationService`.
    - **Transient**: `BrewTimerViewModel`, `ProfileListViewModel`, `SettingsViewModel` — fresh instance per navigation so state never goes stale.
 5. **Dependency direction** UI → Infrastructure → Core. Never add a reverse reference.
-6. **No secrets in repo.** Webhook URL via env var `BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl` or gitignored `appsettings.Development.json`. `git diff --cached` before committing.
+6. **No secrets in repo.** Webhook URL via env var `BREWALERT__Notifications__Teams__WebhookUrl` or gitignored `appsettings.Development.json`. `git diff --cached` before committing. `preferences.json` is gitignored.
 7. **No new CI artifact uploads** without user approval — repo is on free-tier GitHub. `ci.yml` currently uploads only on `v*` tags.
 8. **No direct pushes to `main`.** Everything goes through a feature branch + PR.
 

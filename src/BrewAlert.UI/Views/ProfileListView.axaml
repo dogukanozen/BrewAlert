@@ -4,15 +4,23 @@
              x:Class="BrewAlert.UI.Views.ProfileListView"
              x:DataType="vm:ProfileListViewModel">
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,Auto,*">
         <!-- Header -->
         <TextBlock Grid.Row="0"
-                   Text="Select Your Brew"
+                   Text="{Binding PageTitle}"
                    Classes="brew-title"
-                   Margin="0,0,0,12" />
+                   Margin="0,0,0,4" />
+
+        <!-- Loading indicator -->
+        <TextBlock Grid.Row="1"
+                   Text="{Binding LoadingText}"
+                   Classes="brew-subtitle"
+                   HorizontalAlignment="Center"
+                   Margin="0,4,0,8"
+                   IsVisible="{Binding IsLoading}" />
 
         <!-- Profile Cards — WrapPanel auto-flows cards to fill available width -->
-        <ScrollViewer Grid.Row="1">
+        <ScrollViewer Grid.Row="2">
             <ItemsControl ItemsSource="{Binding Profiles}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>

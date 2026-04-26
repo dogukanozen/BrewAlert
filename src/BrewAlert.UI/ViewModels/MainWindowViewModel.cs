@@ -1,4 +1,5 @@
-using BrewAlert.Core.Models;
+using BrewAlert.Core.Events;
+using BrewAlert.Core.Interfaces;
 using BrewAlert.UI.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -6,12 +7,15 @@ using CommunityToolkit.Mvvm.Input;
 namespace BrewAlert.UI.ViewModels;
 
 /// <summary>
-/// Root ViewModel — subscribes to <see cref="INavigationService"/> for view changes.
+/// Root ViewModel — subscribes to <see cref="INavigationService"/> for view changes
+/// and to <see cref="IBrewTimerService.BrewStarted"/> for window title updates.
 /// No direct DI container access.
 /// </summary>
 public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private readonly INavigationService _navigation;
+    private readonly IBrewTimerService _timerService;
+    private readonly ILocalizationService _loc;
 
     [ObservableProperty]
     private ViewModelBase _currentView = null!;
@@ -19,10 +23,23 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _title = "BrewAlert";
 
-    public MainWindowViewModel(INavigationService navigation)
+    [ObservableProperty]
+    private string _brewsNavText = string.Empty;
+
+    public MainWindowViewModel(
+        INavigationService navigation,
+        IBrewTimerService timerService,
+        ILocalizationService loc)
     {
         _navigation = navigation;
+        _timerService = timerService;
+        _loc = loc;
+
         _navigation.CurrentViewChanged += HandleNavigationViewChanged;
+        _timerService.BrewStarted += OnBrewStarted;
+        _loc.LanguageChanged += OnLanguageChanged;
+
+        BrewsNavText = _loc.Get("BrewsNavButton");
 
         // Start on the profile list screen
         _navigation.NavigateTo<ProfileListViewModel>();
@@ -42,21 +59,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Title = "Settings";
     }
 
-    /// <summary>
-    /// Navigate to the timer view and start a brew session.
-    /// Called from <see cref="ProfileListViewModel"/>.
-    /// </summary>
-    public void StartBrew(BrewProfile profile)
+    private void OnBrewStarted(object? sender, BrewStartedEvent e)
     {
-        // Navigate to a fresh BrewTimerViewModel, then kick off the brew
-        _navigation.NavigateTo<BrewTimerViewModel>();
-
-        if (_navigation.CurrentView is BrewTimerViewModel timerVm)
-        {
-            timerVm.StartBrew(profile);
-        }
-
-        Title = $"{profile.Icon} {profile.Name}";
+        Title = $"{e.Session.Profile.Icon} {e.Session.Profile.Name}";
     }
 
     private void HandleNavigationViewChanged(ViewModelBase viewModel)
@@ -64,8 +69,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         CurrentView = viewModel;
     }
 
+    private void OnLanguageChanged(string _)
+    {
+        BrewsNavText = _loc.Get("BrewsNavButton");
+    }
+
     public void Dispose()
     {
         _navigation.CurrentViewChanged -= HandleNavigationViewChanged;
+        _timerService.BrewStarted -= OnBrewStarted;
+        _loc.LanguageChanged -= OnLanguageChanged;
     }
 }

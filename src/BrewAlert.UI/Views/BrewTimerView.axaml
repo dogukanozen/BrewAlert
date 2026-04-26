@@ -68,7 +68,7 @@
                    Margin="8,0,8,16">
 
             <!-- Pause button (visible when running and NOT paused) -->
-            <Button Content="⏸ Pause"
+            <Button Content="{Binding PauseButtonText}"
                     Classes="brew-primary"
                     Command="{Binding PauseCommand}"
                     Margin="6"
@@ -82,7 +82,7 @@
             </Button>
 
             <!-- Resume button (visible when running and paused) -->
-            <Button Content="▶ Resume"
+            <Button Content="{Binding ResumeButtonText}"
                     Classes="brew-primary"
                     Command="{Binding ResumeCommand}"
                     Margin="6"
@@ -96,7 +96,7 @@
             </Button>
 
             <!-- Cancel (visible while running) -->
-            <Button Content="✕ Cancel"
+            <Button Content="{Binding CancelButtonText}"
                     Classes="brew-danger"
                     Command="{Binding CancelCommand}"
                     Margin="6"
@@ -104,7 +104,7 @@
                     IsVisible="{Binding IsRunning}" />
 
             <!-- Back (visible when completed) -->
-            <Button Content="← Back to Brews"
+            <Button Content="{Binding BackButtonText}"
                     Classes="brew-primary"
                     Command="{Binding BackToProfilesCommand}"
                     Margin="6"
