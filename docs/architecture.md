@@ -48,7 +48,7 @@ Why: all dependencies visible in the constructor, VMs unit-testable with a mocke
 **Thread-safety rules (all enforced in code today):**
 - Session state mutations are inside a single `lock (_lock)` block.
 - Events are fired **outside** that lock (re-entrant handlers used to deadlock).
-- Any VM that subscribes to these events implements `IDisposable` and unsubscribes in `Dispose()`.
+- Any VM that subscribes to these events **or to `ILocalizationService.LanguageChanged`** implements `IDisposable` and unsubscribes in `Dispose()`.
 
 ### 2.4 DI lifetimes
 
@@ -61,28 +61,59 @@ Registered in `src/BrewAlert.UI/App.axaml.cs → ConfigureServices`.
 | `IBrewTimerService` | Singleton | One active brew session at a time |
 | `BrewProfileService` | Singleton | Stateless helper |
 | `IProfileRepository` | Singleton | Stateless I/O facade |
-| `INotificationService` | Singleton | Teams (Graph or Webhook) or Console |
+| `INotificationService` | Singleton | Routing facade → Teams (Graph or Webhook) or Console |
+| `IPreferencesService` | Singleton | Persists user preferences to `preferences.json` |
+| `ILocalizationService` | Singleton | Runtime EN/TR string table; fires `LanguageChanged` |
 | `BrewTimerViewModel` | Transient | Fresh instance per navigation (prevents stale state) |
 | `ProfileListViewModel` | Transient | Re-fetches profiles on each visit |
 | `SettingsViewModel` | Transient | Re-reads config on each visit |
 
 ### 2.5 Notifier selection
-`INotificationService` is resolved via a factory pattern in `App.axaml.cs`. Selection priority:
-1. **Teams Graph API** (`TeamsGraphNotifier`): Selected if `BrewAlert:Notifications:TeamsGraph:Enabled=true` and all OAuth credentials (Tenant/Client/Secret) + ChatId are provided. Requires `Chat.ReadWrite.All` application permission **and** Resource-Specific Consent (RSC) on the target chat; without RSC the API returns 403.
-2. **Teams Webhook** (`TeamsWebhookNotifier`): Selected if Graph is disabled/unconfigured and `BrewAlert:Notifications:Teams:Enabled=true` + `WebhookUrl` is non-empty. Sends an Adaptive Card JSON body to a Power Automate HTTP trigger; the flow posts it via a "Post a card in a chat or channel" action. **Recommended path** — no Azure AD app registration or RSC required.
-3. **Console** (`ConsoleNotifier`): Fallback if no remote notifications are configured.
+
+`INotificationService` is resolved by `RoutingNotificationService` (singleton), which reads `IOptionsMonitor<NotificationProviderOptions>` on every call. This means changing `BrewAlert:Notifications:Provider` in `preferences.json` takes effect immediately without a restart.
+
+Available providers:
+
+| `Provider` value | Notifier used |
+|---|---|
+| `"Graph"` | `TeamsGraphNotifier` — OAuth2 client credentials, posts to Graph `chats/{id}/messages` |
+| `"Webhook"` | `TeamsWebhookNotifier` — HTTP POST to Teams Incoming Webhook URL |
+| `"Console"` (default) | `ConsoleNotifier` — logs to stdout; useful for development |
+
+Set the active provider in `%AppData%\BrewAlert\preferences.json`:
+```json
+{
+  "BrewAlert": {
+    "Notifications": {
+      "Provider": "Webhook"
+    }
+  }
+}
+```
+Or via environment variable: `BREWALERT__Notifications__Provider=Webhook`
 
 ### 2.6 Configuration precedence
 
 ```
-appsettings.json                     (committed, defaults only)
+appsettings.json                       (committed, defaults only)
   ↓ overridden by
 appsettings.{DOTNET_ENVIRONMENT}.json  (optional, gitignored in practice)
+  ↓ overridden by
+%AppData%\BrewAlert\preferences.json   (user preferences, written by Settings screen)
   ↓ overridden by
 Environment variables prefixed BREWALERT__
 ```
 
-Note: Environment variables map to the configuration hierarchy. For example, `BREWALERT__BrewAlert__Notifications__Teams__Enabled` maps to the Teams notification toggle.
+Environment variable mapping examples (prefix `BREWALERT__` replaces the `BrewAlert:` root segment):
+
+| Config key | Environment variable |
+|---|---|
+| `BrewAlert:Notifications:Provider` | `BREWALERT__Notifications__Provider` |
+| `BrewAlert:Notifications:Teams:WebhookUrl` | `BREWALERT__Notifications__Teams__WebhookUrl` |
+| `BrewAlert:Notifications:TeamsGraph:TenantId` | `BREWALERT__Notifications__TeamsGraph__TenantId` |
+| `BrewAlert:Notifications:TeamsGraph:ClientId` | `BREWALERT__Notifications__TeamsGraph__ClientId` |
+| `BrewAlert:Notifications:TeamsGraph:ClientSecret` | `BREWALERT__Notifications__TeamsGraph__ClientSecret` |
+| `BrewAlert:Notifications:TeamsGraph:ChatId` | `BREWALERT__Notifications__TeamsGraph__ChatId` |
 
 ### 2.7 Security posture
 - No secrets in source.
@@ -104,7 +135,7 @@ INavigationService.NavigateTo<BrewTimerVM>()   →   MainWindowVM.CurrentView up
 BrewTimerVM.StartBrew(profile)
   │
   ▼
-IBrewTimerService.Start(profile)   →   BrewStarted event
+IBrewTimerService.Start(profile)   →   BrewStarted event   →   MainWindowVM updates Title
   │
   ▼
 PeriodicTimer loop (1 s)

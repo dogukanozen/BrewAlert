@@ -7,5 +7,5 @@ Commit messages **MUST** follow [`../docs/commit-style.md`](../docs/commit-style
 Gemini-specific reminders:
 - Framework: .NET 10 + Avalonia MVVM, `CommunityToolkit.Mvvm` (`[ObservableProperty]`).
 - C# 13 features OK; nullable reference types enabled; file-scoped namespaces; primary constructors for DI.
-- Interfaces are prefixed `I` and live in `src/BrewAlert.Core/Interfaces/`.
+- Domain interfaces are prefixed `I` and live in `src/BrewAlert.Core/Interfaces/`. UI-layer service interfaces (`INavigationService`, `ILocalizationService`, `IPreferencesService`) live in `src/BrewAlert.UI/Services/`.
 - UI styles belong in `src/BrewAlert.UI/Themes/BrewAlertTheme.axaml`.
