@@ -60,6 +60,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     {
         NotificationProvider.Graph => IsGraphConfigured,
         NotificationProvider.Webhook => IsWebhookConfigured,
+        NotificationProvider.Console => true,
         _ => false,
     };
 

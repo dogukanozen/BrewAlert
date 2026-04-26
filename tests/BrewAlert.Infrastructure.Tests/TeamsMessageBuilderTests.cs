@@ -59,30 +59,26 @@ public class TeamsMessageBuilderTests
     }
 
     [Fact]
-    public void BuildBrewCompletedPayload_ShouldProduceValidOuterJson()
+    public void BuildBrewCompletedPayload_ShouldProduceCardAtRoot()
     {
+        // Power Automate flow uses triggerBody() as the Adaptive Card field,
+        // so the HTTP body must be the card object itself — not an attachments envelope.
         var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(
             MakeSession("Green Tea", BrewType.Tea, TimeSpan.FromMinutes(3)));
 
         using var doc = JsonDocument.Parse(payload);
-        Assert.Equal("message", doc.RootElement.GetProperty("type").GetString());
-        Assert.Equal(JsonValueKind.Array, doc.RootElement.GetProperty("attachments").ValueKind);
-        // The attachment content is a serialized string (nested JSON)
-        var contentStr = doc.RootElement.GetProperty("attachments")[0].GetProperty("content").GetString();
-        Assert.NotNull(contentStr);
-        Assert.Contains("AdaptiveCard", contentStr);
+        Assert.Equal("AdaptiveCard", doc.RootElement.GetProperty("type").GetString());
+        Assert.Equal(JsonValueKind.Array, doc.RootElement.GetProperty("body").ValueKind);
     }
 
     [Fact]
-    public void BuildTestPayload_ShouldProduceValidOuterJson()
+    public void BuildTestPayload_ShouldProduceCardAtRoot()
     {
         var payload = TeamsMessageBuilder.BuildTestPayload();
 
         using var doc = JsonDocument.Parse(payload);
-        Assert.Equal("message", doc.RootElement.GetProperty("type").GetString());
-        var contentStr = doc.RootElement.GetProperty("attachments")[0].GetProperty("content").GetString();
-        Assert.NotNull(contentStr);
-        Assert.Contains("AdaptiveCard", contentStr);
+        Assert.Equal("AdaptiveCard", doc.RootElement.GetProperty("type").GetString());
+        Assert.Equal(JsonValueKind.Array, doc.RootElement.GetProperty("body").ValueKind);
     }
 
     [Fact]

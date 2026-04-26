@@ -60,18 +60,10 @@ public static class TeamsMessageBuilder
             ],
         };
 
-        var payload = new WebhookPayload
-        {
-            Attachments =
-            [
-                new WebhookAttachment
-                {
-                    Content = JsonSerializer.Serialize(card, JsonOptions),
-                },
-            ],
-        };
-
-        return JsonSerializer.Serialize(payload, JsonOptions);
+        // Return the card as the root payload. The Power Automate flow uses
+        // triggerBody() as the Adaptive Card field, so the HTTP body must BE
+        // the card — not wrapped in an attachments envelope.
+        return JsonSerializer.Serialize(card, JsonOptions);
     }
 
     public static string BuildTestPayload()
@@ -89,32 +81,7 @@ public static class TeamsMessageBuilder
             ],
         };
 
-        var payload = new WebhookPayload
-        {
-            Attachments =
-            [
-                new WebhookAttachment
-                {
-                    Content = JsonSerializer.Serialize(card, JsonOptions),
-                },
-            ],
-        };
-
-        return JsonSerializer.Serialize(payload, JsonOptions);
-    }
-
-    // ── DTOs ──────────────────────────────────────────────────────────────────
-
-    private sealed class WebhookPayload
-    {
-        public string Type { get; init; } = "message";
-        public List<WebhookAttachment> Attachments { get; init; } = [];
-    }
-
-    private sealed class WebhookAttachment
-    {
-        public string ContentType { get; init; } = "application/vnd.microsoft.card.adaptive";
-        public string Content { get; init; } = string.Empty;
+        return JsonSerializer.Serialize(card, JsonOptions);
     }
 
     private sealed class AdaptiveCard
