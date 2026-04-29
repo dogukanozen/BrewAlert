@@ -9,17 +9,12 @@ on:
 
 jobs:
   build-and-test:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
@@ -29,65 +24,47 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      - name: Test (with coverage on Linux)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Test
         run: dotnet test --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory coverage/
 
-      - name: Test (Windows, no coverage)
-        if: matrix.os == 'windows-latest'
-        run: dotnet test --no-build --configuration Release --verbosity normal
-
       - name: Upload coverage report
-        if: matrix.os == 'ubuntu-latest'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: coverage-${{ github.run_id }}
           path: coverage/
+          retention-days: 1
+
+  publish:
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-arm64
+            artifact: brewalert-linux-arm64
+            out: publish/
+          - os: windows-latest
+            rid: win-x64
+            artifact: brewalert-win-x64
+            out: publish\
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish (${{ matrix.rid }})
+        run: dotnet publish src/BrewAlert.UI -c Release -r ${{ matrix.rid }} --self-contained -o ${{ matrix.out }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.out }}
           retention-days: 7
-
-  publish-arm64:
-    # Build-only smoke check on main (no artifact upload to preserve free-tier storage).
-    # Uploads only happen on a version tag (v*), so releases are explicit.
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Publish (linux-arm64)
-        run: dotnet publish src/BrewAlert.UI -c Release -r linux-arm64 --self-contained -o publish/
-
-      - name: Upload Artifact (tagged releases only)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v4
-        with:
-          name: brewalert-linux-arm64
-          path: publish/
-          retention-days: 14
-
-  publish-win-x64:
-    # Build-only smoke check on main; artifact upload only on version tags.
-    needs: build-and-test
-    runs-on: windows-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Publish (win-x64)
-        run: dotnet publish src/BrewAlert.UI -c Release -r win-x64 --self-contained -o publish\
-
-      - name: Upload Artifact (tagged releases only)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v4
-        with:
-          name: brewalert-win-x64
-          path: publish\
-          retention-days: 14
