@@ -54,11 +54,6 @@ jobs:
             artifact: brewalert-linux-arm64
             out: publish/
             executable: BrewAlert.UI
-          - os: ubuntu-latest
-            rid: linux-arm
-            artifact: brewalert-linux-arm
-            out: publish/
-            executable: BrewAlert.UI
     runs-on: ${{ matrix.os }}
 
     steps:
