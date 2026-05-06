@@ -38,33 +38,55 @@ jobs:
   publish:
     needs: build-and-test
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            rid: linux-arm64
-            artifact: brewalert-linux-arm64
-            out: publish/
           - os: windows-latest
             rid: win-x64
             artifact: brewalert-win-x64
             out: publish\
+            executable: BrewAlert.UI.exe
+          - os: ubuntu-latest
+            rid: linux-arm64
+            artifact: brewalert-linux-arm64
+            out: publish/
+            executable: BrewAlert.UI
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      - name: Publish (${{ matrix.rid }})
-        run: dotnet publish src/BrewAlert.UI -c Release -r ${{ matrix.rid }} --self-contained -o ${{ matrix.out }}
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Get version from tag
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart('v')
+          echo "APP_VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Publish (${{ matrix.rid }})
+        run: dotnet publish src/BrewAlert.UI -c Release -r ${{ matrix.rid }} --self-contained -o ${{ matrix.out }} /p:Version=${{ env.APP_VERSION }}
+
+      - name: Velopack Pack
+        shell: pwsh
+        run: |
+          vpk pack -u BrewAlert -v ${{ env.APP_VERSION }} -p ${{ matrix.out }} -e ${{ matrix.executable }}
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.out }}
-          retention-days: 7
+          files: Releases/*
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: false
+          prerelease: false

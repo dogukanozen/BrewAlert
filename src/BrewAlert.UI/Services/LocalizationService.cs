@@ -86,6 +86,15 @@ public sealed class LocalizationService : ILocalizationService, IDisposable
         ["CancelButton_Short"]      = "Cancel",
         ["WebhookHint"]             = "Set BrewAlert:Notifications:Teams:WebhookUrl in appsettings.Development.json.",
         ["GraphHint"]               = "Set BrewAlert:Notifications:TeamsGraph:* in appsettings.Development.json.",
+        ["UpdateTitle"]             = "Updates",
+        ["CheckUpdates"]            = "Check for Updates",
+        ["InstallUpdate"]           = "Download & Install",
+        ["UpdateAvailable"]         = "A new update is available!",
+        ["UpToDate"]                = "BrewAlert is up to date.",
+        ["CheckingUpdates"]         = "Checking for updates...",
+        ["UpdateError"]             = "Failed to check for updates.",
+        ["InstallingUpdate"]        = "Installing update...",
+        ["CurrentVersion"]          = "Current version: {0}",
     };
 
     private static readonly Dictionary<string, string> Turkish = new()
@@ -134,5 +143,14 @@ public sealed class LocalizationService : ILocalizationService, IDisposable
         ["CancelButton_Short"]      = "İptal",
         ["WebhookHint"]             = "BrewAlert:Notifications:Teams:WebhookUrl alanını appsettings.Development.json'da ayarlayın.",
         ["GraphHint"]               = "BrewAlert:Notifications:TeamsGraph:* alanlarını appsettings.Development.json'da ayarlayın.",
+        ["UpdateTitle"]             = "Güncellemeler",
+        ["CheckUpdates"]            = "Güncellemeleri Kontrol Et",
+        ["InstallUpdate"]           = "İndir ve Kur",
+        ["UpdateAvailable"]         = "Yeni bir güncelleme mevcut!",
+        ["UpToDate"]                = "BrewAlert güncel.",
+        ["CheckingUpdates"]         = "Güncellemeler kontrol ediliyor...",
+        ["UpdateError"]             = "Güncelleme kontrolü başarısız oldu.",
+        ["InstallingUpdate"]        = "Güncelleme kuruluyor...",
+        ["CurrentVersion"]          = "Mevcut sürüm: {0}",
     };
 }

@@ -231,6 +231,37 @@
                            IsVisible="{Binding TestResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </StackPanel>
 
+            <!-- ══════════════════ Updates ══════════════════ -->
+            <TextBlock Text="{Binding UpdateSettingsTitle}"
+                       Classes="brew-title"
+                       Margin="0,8,0,4" />
+
+            <Border Background="{StaticResource BrewSurfaceBrush}"
+                    CornerRadius="8" Padding="12">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding VersionText}"
+                               FontSize="12"
+                               Foreground="{StaticResource BrewTextSecondaryBrush}" />
+                    
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="{Binding CheckUpdatesButtonText}"
+                                Command="{Binding CheckForUpdatesCommand}"
+                                IsEnabled="{Binding !IsBusy}"
+                                Classes="brew-primary" />
+                        
+                        <Button Content="{Binding InstallUpdateButtonText}"
+                                Command="{Binding InstallUpdateCommand}"
+                                IsEnabled="{Binding IsUpdateAvailable}"
+                                IsVisible="{Binding IsUpdateAvailable}"
+                                Classes="brew-primary" />
+                    </StackPanel>
+                    
+                    <TextBlock Text="{Binding UpdateStatusText}"
+                               FontSize="14" FontWeight="SemiBold"
+                               IsVisible="{Binding UpdateStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </Border>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

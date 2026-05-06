@@ -3,6 +3,7 @@ using Avalonia.X11;
 using Avalonia.LinuxFramebuffer;
 using System;
 using System.Linq;
+using Velopack;
 
 namespace BrewAlert.UI;
 
@@ -11,6 +12,10 @@ internal sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Velopack: Uygulama kurulum/güncelleme kancalarını yönetir.
+        // Bu satırın Main'in en başında olması kritiktir.
+        VelopackApp.Build().Run();
+
         var builder = BuildAvaloniaApp();
 
         if (args.Contains("--drm"))

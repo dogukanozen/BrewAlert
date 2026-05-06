@@ -19,6 +19,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly BrewProfileService _profileService;
     private readonly IPreferencesService _preferencesService;
     private readonly ILocalizationService _loc;
+    private readonly IUpdateService _updateService;
     private readonly IOptionsMonitor<TeamsGraphOptions> _graphOptions;
     private readonly IOptionsMonitor<TeamsNotificationOptions> _webhookOptions;
 
@@ -42,6 +43,14 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _graphStatusText = string.Empty;
     [ObservableProperty] private string _webhookHintText = string.Empty;
     [ObservableProperty] private string _graphHintText = string.Empty;
+
+    // Update localized labels
+    [ObservableProperty] private string _updateSettingsTitle = string.Empty;
+    [ObservableProperty] private string _checkUpdatesButtonText = string.Empty;
+    [ObservableProperty] private string _installUpdateButtonText = string.Empty;
+    [ObservableProperty] private string _updateStatusText = string.Empty;
+    [ObservableProperty] private bool _isUpdateAvailable;
+    [ObservableProperty] private string _versionText = string.Empty;
 
     // Graph config display (masked)
     public string TenantId { get; private set; } = string.Empty;
@@ -78,7 +87,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         IOptionsMonitor<NotificationProviderOptions> providerOptions,
         BrewProfileService profileService,
         IPreferencesService preferencesService,
-        ILocalizationService loc)
+        ILocalizationService loc,
+        IUpdateService updateService)
     {
         _notificationService = notificationService;
         _graphOptions = graphOptions;
@@ -86,9 +96,11 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _profileService = profileService;
         _preferencesService = preferencesService;
         _loc = loc;
+        _updateService = updateService;
 
         _selectedProvider = providerOptions.CurrentValue.Provider;
         _currentLanguage = loc.CurrentLanguage;
+        VersionText = string.Format(_loc.Get("CurrentVersion"), _updateService.CurrentVersion);
 
         RefreshConfigDisplay();
         _loc.LanguageChanged += OnLanguageChanged;
@@ -130,8 +142,57 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         WebhookHintText = _loc.Get("WebhookHint");
         GraphHintText = _loc.Get("GraphHint");
 
+        UpdateSettingsTitle = _loc.Get("UpdateTitle");
+        CheckUpdatesButtonText = _loc.Get("CheckUpdates");
+        InstallUpdateButtonText = _loc.Get("InstallUpdate");
+        VersionText = string.Format(_loc.Get("CurrentVersion"), _updateService.CurrentVersion);
+        
+        if (!IsBusy)
+        {
+            UpdateStatusText = IsUpdateAvailable ? _loc.Get("UpdateAvailable") : _loc.Get("UpToDate");
+        }
+
         foreach (var p in Profiles)
             p.RefreshLocalization(_loc);
+    }
+
+    [RelayCommand]
+    private async Task CheckForUpdates()
+    {
+        IsBusy = true;
+        UpdateStatusText = _loc.Get("CheckingUpdates");
+        try
+        {
+            IsUpdateAvailable = await _updateService.CheckForUpdatesAsync();
+            UpdateStatusText = IsUpdateAvailable ? _loc.Get("UpdateAvailable") : _loc.Get("UpToDate");
+        }
+        catch
+        {
+            UpdateStatusText = _loc.Get("UpdateError");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallUpdate()
+    {
+        IsBusy = true;
+        UpdateStatusText = _loc.Get("InstallingUpdate");
+        try
+        {
+            await _updateService.DownloadAndInstallUpdatesAsync();
+        }
+        catch (Exception ex)
+        {
+            UpdateStatusText = string.Format(_loc.Get("ErrorPrefix"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private void OnLanguageChanged(string lang)

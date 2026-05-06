@@ -39,6 +39,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <PackageReference Include="Velopack" Version="0.0.1053" />
   </ItemGroup>
 
   <ItemGroup>

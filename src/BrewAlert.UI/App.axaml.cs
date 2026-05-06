@@ -118,6 +118,9 @@ public partial class App : Application
         // Navigation
         services.AddSingleton<INavigationService, NavigationService>();
 
+        // Update Service
+        services.AddSingleton<IUpdateService, UpdateService>();
+
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();
         services.AddTransient<BrewTimerViewModel>();
