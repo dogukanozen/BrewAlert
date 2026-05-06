@@ -19,6 +19,7 @@ public class SettingsViewModelTests
     private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
     private readonly IProfileRepository _repository = Substitute.For<IProfileRepository>();
     private readonly IPreferencesService _preferencesService = Substitute.For<IPreferencesService>();
+    private readonly IUpdateService _updateService = Substitute.For<IUpdateService>();
     private readonly ILocalizationService _loc = CreateEnglishLoc();
     private readonly BrewProfileService _profileService;
 
@@ -46,6 +47,7 @@ public class SettingsViewModelTests
     public SettingsViewModelTests()
     {
         _profileService = new BrewProfileService(_repository);
+        _updateService.CurrentVersion.Returns("1.0.0");
     }
 
     [Fact]
@@ -62,7 +64,7 @@ public class SettingsViewModelTests
         // Act
         var vm = new SettingsViewModel(
             _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc);
+            _profileService, _preferencesService, _loc, _updateService);
 
         // Assert
         Assert.StartsWith("12345678", vm.TenantId);
@@ -83,7 +85,7 @@ public class SettingsViewModelTests
         _notificationService.TestConnectionAsync().Returns(true);
         var vm = new SettingsViewModel(
             _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc);
+            _profileService, _preferencesService, _loc, _updateService);
 
         // Act
         await vm.TestConnectionCommand.ExecuteAsync(null);
@@ -101,7 +103,7 @@ public class SettingsViewModelTests
         });
         var vm = new SettingsViewModel(
             _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc);
+            _profileService, _preferencesService, _loc, _updateService);
 
         Assert.True(vm.IsGraphConfigured);
     }
@@ -116,7 +118,7 @@ public class SettingsViewModelTests
         var providerOptions = CreateMonitor(new NotificationProviderOptions { Provider = NotificationProvider.Webhook });
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, providerOptions,
-            _profileService, _preferencesService, _loc);
+            _profileService, _preferencesService, _loc, _updateService);
 
         Assert.True(vm.IsWebhookConfigured);
         Assert.True(vm.IsConfigured);
