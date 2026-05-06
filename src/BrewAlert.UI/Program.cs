@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.X11;
 using System;
 
 namespace BrewAlert.UI;
@@ -10,8 +11,20 @@ internal sealed class Program
         .StartWithClassicDesktopLifetime(args);
 
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
+    {
+        var builder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .WithInterFont()
-            .LogToTrace();
+            .With(new X11PlatformOptions
+            {
+                // EGL (OpenGL ES) → GLX → software fallback sırası
+                // Raspberry Pi VideoCore GPU'sunu kullanır
+                RenderingMode = [X11RenderingMode.Egl, X11RenderingMode.Glx, X11RenderingMode.Software]
+            })
+            .WithInterFont();
+
+#if DEBUG
+        builder = builder.LogToTrace();
+#endif
+        return builder;
+    }
 }
