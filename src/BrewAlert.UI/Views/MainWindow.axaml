@@ -1,39 +1,12 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:BrewAlert.UI.ViewModels"
+        xmlns:views="using:BrewAlert.UI.Views"
         x:Class="BrewAlert.UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="{Binding Title}"
         MinWidth="320" MinHeight="240"
-        WindowState="Maximized"
-        WindowStartupLocation="CenterScreen">
+        WindowState="FullScreen">
 
-    <DockPanel>
-        <!-- Navigation Bar — uses adaptive padding via classes -->
-        <Border DockPanel.Dock="Top"
-                Background="{StaticResource BrewSurfaceBrush}"
-                Padding="12,6">
-            <Grid ColumnDefinitions="*,Auto,Auto">
-                <TextBlock Grid.Column="0"
-                           Text="{Binding Title}"
-                           Classes="brew-title"
-                           VerticalAlignment="Center" />
-
-                <Button Grid.Column="1"
-                        Content="{Binding BrewsNavText}"
-                        Classes="brew-primary brew-nav-btn"
-                        Command="{Binding NavigateToProfilesCommand}"
-                        Margin="0,0,6,0" />
-
-                <Button Grid.Column="2"
-                        Content="⚙️"
-                        Classes="brew-primary brew-nav-btn"
-                        Command="{Binding NavigateToSettingsCommand}" />
-            </Grid>
-        </Border>
-
-        <!-- Content Area — responsive margin that won't eat space on small screens -->
-        <ContentControl Content="{Binding CurrentView}"
-                        Margin="8" />
-    </DockPanel>
+    <views:MainView />
 </Window>

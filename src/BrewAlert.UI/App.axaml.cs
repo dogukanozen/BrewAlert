@@ -16,8 +16,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System;
-using System.Linq;
 
 namespace BrewAlert.UI;
 
@@ -32,18 +30,23 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        DisableAvaloniaDataAnnotationValidation();
+        _services = ConfigureServices();
+
+        var mainVm = _services.GetRequiredService<MainWindowViewModel>();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            DisableAvaloniaDataAnnotationValidation();
-            _services = ConfigureServices();
-
             desktop.ShutdownRequested += (_, _) =>
             {
                 if (_services is IDisposable d) d.Dispose();
             };
 
-            var mainVm = _services.GetRequiredService<MainWindowViewModel>();
             desktop.MainWindow = new MainWindow { DataContext = mainVm };
+        }
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+        {
+            singleView.MainView = new MainView { DataContext = mainVm };
         }
 
         base.OnFrameworkInitializationCompleted();
