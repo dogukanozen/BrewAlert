@@ -44,9 +44,13 @@ public class TeamsWebhookNotifierTests
             TimeoutSeconds = 30
         });
 
+        var languageOptions = Substitute.For<IOptionsMonitor<LanguageOptions>>();
+        languageOptions.CurrentValue.Returns(new LanguageOptions { Language = "English" });
+
         var sut = new TeamsWebhookNotifier(
             factory,
             options,
+            languageOptions,
             NullLogger<TeamsWebhookNotifier>.Instance);
         return (sut, handler);
     }

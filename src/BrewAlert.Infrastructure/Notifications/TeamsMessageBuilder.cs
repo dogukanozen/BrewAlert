@@ -9,8 +9,8 @@ using BrewAlert.Core.Models;
 
 /// <summary>
 /// Builds JSON payloads for Teams Incoming Webhook messages.
-/// Uses typed DTOs + System.Text.Json serialization instead of raw string interpolation.
-/// Teams notifications are always in English.
+/// Card text is localized via <see cref="TeamsCardStrings"/>; callers pass the
+/// active UI language (typically <c>LanguageOptions.Language</c>).
 /// </summary>
 public static class TeamsMessageBuilder
 {
@@ -21,15 +21,21 @@ public static class TeamsMessageBuilder
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public static string BuildBrewCompletedPayload(BrewSession session)
+    public static string BuildBrewCompletedPayload(BrewSession session, string language)
     {
+        var minShort = TeamsCardStrings.Get(language, "MinShort");
+        var secShort = TeamsCardStrings.Get(language, "SecShort");
         var duration = session.Profile.BrewDuration.TotalMinutes >= 1
-            ? $"{session.Profile.BrewDuration.TotalMinutes:F0} min"
-            : $"{session.Profile.BrewDuration.TotalSeconds:F0} sec";
+            ? $"{session.Profile.BrewDuration.TotalMinutes:F0} {minShort}"
+            : $"{session.Profile.BrewDuration.TotalSeconds:F0} {secShort}";
 
         var completedAt = session.StartedAtUtc
             .Add(session.Profile.BrewDuration)
             .ToString("HH:mm", CultureInfo.InvariantCulture);
+
+        var typeLabel = TeamsCardStrings.Get(language, $"BrewType_{session.Profile.Type}");
+        var headerTemplate = TeamsCardStrings.Get(language, "HeaderReady");
+        var headerText = string.Format(CultureInfo.InvariantCulture, headerTemplate, session.Profile.Icon, typeLabel);
 
         var card = new AdaptiveCard
         {
@@ -37,7 +43,7 @@ public static class TeamsMessageBuilder
             [
                 new TextBlock
                 {
-                    Text = $"{session.Profile.Icon} BrewAlert — Your {session.Profile.Type} is Ready!",
+                    Text = headerText,
                     Weight = "Bolder",
                     Size = "Large",
                     Color = "Good",
@@ -46,14 +52,14 @@ public static class TeamsMessageBuilder
                 {
                     Facts =
                     [
-                        new Fact("Profile", session.Profile.Name),
-                        new Fact("Brew Time", duration),
-                        new Fact("Completed At", $"{completedAt} (UTC)"),
+                        new Fact(TeamsCardStrings.Get(language, "FactProfile"), session.Profile.Name),
+                        new Fact(TeamsCardStrings.Get(language, "FactBrewTime"), duration),
+                        new Fact(TeamsCardStrings.Get(language, "FactCompletedAt"), $"{completedAt} {TeamsCardStrings.Get(language, "UtcSuffix")}"),
                     ],
                 },
                 new TextBlock
                 {
-                    Text = "Don't let it get cold! ☕",
+                    Text = TeamsCardStrings.Get(language, "FooterDontLetItGetCold"),
                     Wrap = true,
                     IsSubtle = true,
                 },
@@ -66,7 +72,7 @@ public static class TeamsMessageBuilder
         return JsonSerializer.Serialize(card, JsonOptions);
     }
 
-    public static string BuildTestPayload()
+    public static string BuildTestPayload(string language)
     {
         var card = new AdaptiveCard
         {
@@ -74,7 +80,7 @@ public static class TeamsMessageBuilder
             [
                 new TextBlock
                 {
-                    Text = "✅ BrewAlert — Connection Test Successful!",
+                    Text = TeamsCardStrings.Get(language, "TestSuccess"),
                     Weight = "Bolder",
                     Color = "Good",
                 },

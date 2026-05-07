@@ -52,7 +52,10 @@ public class TeamsGraphNotifierTests
         var options = Substitute.For<IOptionsMonitor<TeamsGraphOptions>>();
         options.CurrentValue.Returns(opts ?? ValidOptions());
 
-        var sut = new TeamsGraphNotifier(factory, options, NullLogger<TeamsGraphNotifier>.Instance);
+        var languageOptions = Substitute.For<IOptionsMonitor<LanguageOptions>>();
+        languageOptions.CurrentValue.Returns(new LanguageOptions { Language = "English" });
+
+        var sut = new TeamsGraphNotifier(factory, options, languageOptions, NullLogger<TeamsGraphNotifier>.Instance);
         return (sut, handler);
     }
 
