@@ -264,6 +264,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             WebhookUrlInput = WebhookUrlInput?.Trim() ?? string.Empty;
             await _preferencesService.SaveWebhookUrlAsync(WebhookUrlInput);
             IsWebhookConfigured = !string.IsNullOrWhiteSpace(WebhookUrlInput);
+            OnPropertyChanged(nameof(IsWebhookConfigured));
             OnPropertyChanged(nameof(IsConfigured));
             WebhookStatusText = IsWebhookConfigured ? _loc.Get("WebhookConfigured") : _loc.Get("NotConfigured");
             TestResult = _loc.Get("WebhookUrlSaved");
