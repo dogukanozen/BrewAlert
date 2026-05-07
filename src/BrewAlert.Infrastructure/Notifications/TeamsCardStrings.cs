@@ -1,5 +1,6 @@
 namespace BrewAlert.Infrastructure.Notifications;
 
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -17,7 +18,9 @@ internal static class TeamsCardStrings
 
     public static string Get(string language, string key)
     {
-        var table = language == LanguageTurkish ? Turkish : English;
+        var table = string.Equals(language, LanguageTurkish, StringComparison.OrdinalIgnoreCase)
+            ? Turkish
+            : English;
         return table.TryGetValue(key, out var value) ? value : key;
     }
 

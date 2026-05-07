@@ -124,4 +124,15 @@ public class TeamsMessageBuilderTests
 
         Assert.Contains("Bağlantı Testi Başarılı", payload);
     }
+
+    [Theory]
+    [InlineData("turkish")]
+    [InlineData("TURKISH")]
+    [InlineData("Turkish")]
+    public void BuildTestPayload_LanguageMatch_IsCaseInsensitive(string language)
+    {
+        var payload = TeamsMessageBuilder.BuildTestPayload(language);
+
+        Assert.Contains("Bağlantı Testi Başarılı", payload);
+    }
 }
