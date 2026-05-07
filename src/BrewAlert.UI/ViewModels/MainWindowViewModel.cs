@@ -13,9 +13,18 @@ namespace BrewAlert.UI.ViewModels;
 /// </summary>
 public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
+    // Sentinel values for the "current title key" tracker.
+    // App name is intentionally not localized; brew-running shows a profile-specific
+    // title that doesn't refresh on language change (user wouldn't switch languages
+    // mid-brew, and the icon + name carry the meaning).
+    private const string TitleKeyAppName = "__AppName";
+    private const string TitleKeyBrewRunning = "__BrewRunning";
+
     private readonly INavigationService _navigation;
     private readonly IBrewTimerService _timerService;
     private readonly ILocalizationService _loc;
+
+    private string _currentTitleKey = TitleKeyAppName;
 
     [ObservableProperty]
     private ViewModelBase _currentView = null!;
@@ -49,6 +58,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void NavigateToProfiles()
     {
         _navigation.NavigateTo<ProfileListViewModel>();
+        _currentTitleKey = TitleKeyAppName;
         Title = "BrewAlert";
     }
 
@@ -56,11 +66,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void NavigateToSettings()
     {
         _navigation.NavigateTo<SettingsViewModel>();
-        Title = "Settings";
+        _currentTitleKey = "SettingsTitle";
+        Title = _loc.Get("SettingsTitle");
     }
 
     private void OnBrewStarted(object? sender, BrewStartedEvent e)
     {
+        _currentTitleKey = TitleKeyBrewRunning;
         Title = $"{e.Session.Profile.Icon} {e.Session.Profile.Name}";
     }
 
@@ -72,6 +84,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void OnLanguageChanged(string _)
     {
         BrewsNavText = _loc.Get("BrewsNavButton");
+        if (_currentTitleKey != TitleKeyAppName && _currentTitleKey != TitleKeyBrewRunning)
+        {
+            Title = _loc.Get(_currentTitleKey);
+        }
     }
 
     public void Dispose()

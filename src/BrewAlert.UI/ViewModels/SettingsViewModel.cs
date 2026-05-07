@@ -48,6 +48,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _webhookUrlLabel = string.Empty;
     [ObservableProperty] private string _saveWebhookUrlText = string.Empty;
     [ObservableProperty] private string _webhookUrlInput = string.Empty;
+    [ObservableProperty] private string _profileNameWatermark = string.Empty;
 
     // Update localized labels
     [ObservableProperty] private string _updateSettingsTitle = string.Empty;
@@ -145,6 +146,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         SendTestNotificationText = _loc.Get("SendTestNotification");
         LanguageLabel = _loc.Get("Language");
         AddProfileText = _loc.Get("AddProfile");
+        ProfileNameWatermark = _loc.Get("ProfileNameLabel");
         WebhookStatusText = IsWebhookConfigured ? _loc.Get("WebhookConfigured") : _loc.Get("NotConfigured");
         GraphStatusText = IsGraphConfigured ? _loc.Get("GraphConfigured") : _loc.Get("NotConfigured");
         WebhookHintText = _loc.Get("WebhookHint");
@@ -403,7 +405,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             {
                 Profile = new BrewProfile
                 {
-                    Name = "Test Brew",
+                    Name = _loc.Get("TestBrewName"),
                     Type = BrewType.Coffee,
                     BrewDuration = TimeSpan.FromMinutes(4),
                     Icon = "☕"
@@ -451,6 +453,7 @@ public partial class EditableProfileViewModel : ViewModelBase
 
     [ObservableProperty] private TimeSpan _duration;
     [ObservableProperty] private string _deleteButtonText = string.Empty;
+    [ObservableProperty] private string _durationText = string.Empty;
     [ObservableProperty] private bool _isDeleted;
 
     public EditableProfileViewModel(BrewProfile profile, BrewProfileService service, ILocalizationService loc)
@@ -460,13 +463,20 @@ public partial class EditableProfileViewModel : ViewModelBase
         _loc = loc;
         Duration = profile.BrewDuration;
         DeleteButtonText = loc.Get("DeleteProfile");
+        DurationText = FormatDuration(Duration);
     }
 
     public void RefreshLocalization(ILocalizationService loc)
     {
         _loc = loc;
         DeleteButtonText = loc.Get("DeleteProfile");
+        DurationText = FormatDuration(Duration);
     }
+
+    partial void OnDurationChanged(TimeSpan value) => DurationText = FormatDuration(value);
+
+    private string FormatDuration(TimeSpan value) =>
+        $"{value.TotalMinutes:F0} {_loc.Get("MinShort")}";
 
     [RelayCommand]
     private async Task IncreaseTime()

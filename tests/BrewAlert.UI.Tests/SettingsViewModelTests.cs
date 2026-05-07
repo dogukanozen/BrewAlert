@@ -154,6 +154,48 @@ public class SettingsViewModelTests
     }
 
     [Fact]
+    public void Constructor_SetsLocalizedProfileNameWatermark()
+    {
+        var vm = new SettingsViewModel(
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+
+        // Mock returns key as value, so the watermark is the key itself.
+        Assert.Equal("ProfileNameLabel", vm.ProfileNameWatermark);
+    }
+
+    [Fact]
+    public void EditableProfileViewModel_DurationText_UsesLocalizedUnit()
+    {
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get("MinShort").Returns("dk");
+        loc.Get("DeleteProfile").Returns("Sil");
+
+        var profile = new BrewProfile { Name = "Çay", BrewDuration = TimeSpan.FromMinutes(5) };
+        var vm = new EditableProfileViewModel(profile, _profileService, loc);
+
+        Assert.Equal("5 dk", vm.DurationText);
+    }
+
+    [Fact]
+    public void EditableProfileViewModel_DurationText_RefreshesOnLanguageChange()
+    {
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get("MinShort").Returns("min");
+        loc.Get("DeleteProfile").Returns("Delete");
+        var profile = new BrewProfile { Name = "Tea", BrewDuration = TimeSpan.FromMinutes(7) };
+        var vm = new EditableProfileViewModel(profile, _profileService, loc);
+        Assert.Equal("7 min", vm.DurationText);
+
+        var trLoc = Substitute.For<ILocalizationService>();
+        trLoc.Get("MinShort").Returns("dk");
+        trLoc.Get("DeleteProfile").Returns("Sil");
+        vm.RefreshLocalization(trLoc);
+
+        Assert.Equal("7 dk", vm.DurationText);
+    }
+
+    [Fact]
     public async Task SaveWebhookUrlCommand_OnError_SetsTestResult()
     {
         _preferencesService
