@@ -33,20 +33,38 @@ public class BrewProfileServiceTests
     }
 
     [Fact]
-    public async Task GetAllProfiles_WhenPopulated_ShouldNotSeed()
+    public async Task GetAllProfiles_WhenAllDefaultsPresent_ShouldNotSeed()
     {
-        var existing = new List<BrewProfile>
-        {
-            new() { Name = "Custom Brew", Type = BrewType.Custom, BrewDuration = TimeSpan.FromMinutes(5) }
-        };
-
         _repository.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(existing.AsReadOnly());
+            .Returns(Task.FromResult<IReadOnlyList<BrewProfile>>(BrewProfileService.DefaultProfiles));
 
         var result = await _sut.GetAllProfilesAsync();
 
-        Assert.Single(result);
+        Assert.Equal(BrewProfileService.DefaultProfiles.Count, result.Count);
         await _repository.DidNotReceive().SaveAsync(Arg.Any<BrewProfile>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetAllProfiles_WhenOnlyOneDefaultPresent_ShouldSeedMissingDefaults()
+    {
+        // Simulates an existing install that only has "Çay" from an older version
+        var onlyTea = new List<BrewProfile>
+        {
+            new() { Name = "Çay", Type = BrewType.Tea, BrewDuration = TimeSpan.FromMinutes(15) }
+        };
+        var afterSeed = BrewProfileService.DefaultProfiles.ToList();
+
+        _repository.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(
+                Task.FromResult<IReadOnlyList<BrewProfile>>(onlyTea),
+                Task.FromResult<IReadOnlyList<BrewProfile>>(afterSeed));
+
+        var result = await _sut.GetAllProfilesAsync();
+
+        Assert.Equal(BrewProfileService.DefaultProfiles.Count, result.Count);
+        // Only the missing defaults (all except Çay) should be saved
+        var expectedSaveCount = BrewProfileService.DefaultProfiles.Count - 1;
+        await _repository.Received(expectedSaveCount).SaveAsync(Arg.Any<BrewProfile>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

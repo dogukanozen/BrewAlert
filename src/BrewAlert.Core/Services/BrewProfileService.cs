@@ -16,17 +16,18 @@ public sealed class BrewProfileService(IProfileRepository repository)
     ];
 
     /// <summary>
-    /// Returns all profiles. Seeds defaults if the repository is empty.
+    /// Returns all profiles. Seeds any missing defaults on every call so new
+    /// defaults added in future releases appear on existing installations.
     /// </summary>
     public async Task<IReadOnlyList<BrewProfile>> GetAllProfilesAsync(CancellationToken ct = default)
     {
         var profiles = await repository.GetAllAsync(ct);
-        if (profiles.Count == 0)
+        var existingNames = profiles.Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
+        var missing = DefaultProfiles.Where(d => !existingNames.Contains(d.Name)).ToList();
+        if (missing.Count > 0)
         {
-            foreach (var p in DefaultProfiles)
-            {
+            foreach (var p in missing)
                 await repository.SaveAsync(p, ct);
-            }
             profiles = await repository.GetAllAsync(ct);
         }
         return profiles;
