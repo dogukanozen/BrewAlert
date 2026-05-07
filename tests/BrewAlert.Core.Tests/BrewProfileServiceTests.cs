@@ -64,17 +64,22 @@ public class BrewProfileServiceTests
     public async Task GetAllProfiles_WhenLegacyInstall_MigratesExistingProfileToStableId()
     {
         // Simulates upgrading from a version where defaults had random GUIDs.
-        var legacyTea = new BrewProfile { Id = Guid.NewGuid(), Name = "Çay", Type = BrewType.Tea, BrewDuration = TimeSpan.FromMinutes(15) };
+        var originalCreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var legacyTea = new BrewProfile { Id = Guid.NewGuid(), Name = "Çay", Type = BrewType.Tea, BrewDuration = TimeSpan.FromMinutes(15), CreatedAtUtc = originalCreatedAt };
         _repository.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<BrewProfile>>([legacyTea]));
 
         var result = await _sut.GetAllProfilesAsync();
 
-        // Old random-GUID profile deleted; stable-ID profile saved; Filtre Kahve added.
-        await _repository.Received(1).DeleteAsync(legacyTea.Id, Arg.Any<CancellationToken>());
-        await _repository.Received(2).SaveAsync(Arg.Any<BrewProfile>(), Arg.Any<CancellationToken>());
+        // SaveAsync must precede DeleteAsync to avoid a data-loss window on crash.
+        Received.InOrder(() =>
+        {
+            _repository.SaveAsync(Arg.Is<BrewProfile>(p => p.Id == TeaId), Arg.Any<CancellationToken>());
+            _repository.DeleteAsync(legacyTea.Id, Arg.Any<CancellationToken>());
+        });
         Assert.Equal(2, result.Count);
-        Assert.All(result, p => Assert.NotEqual(legacyTea.Id, p.Id));
+        var migratedTea = result.First(p => p.Id == TeaId);
+        Assert.Equal(originalCreatedAt, migratedTea.CreatedAtUtc);
     }
 
     [Fact]

@@ -34,12 +34,14 @@ public sealed class BrewProfileService(IProfileRepository repository)
         // Migration path for installations predating stable default IDs:
         // if a profile with the same name already exists under a random GUID, replace
         // it in-place with the canonical stable-ID version to avoid duplicate entries.
-        var existingByName = profiles.ToDictionary(p => p.Name, StringComparer.Ordinal);
+        // FirstOrDefault is used instead of ToDictionary to tolerate duplicate names
+        // that can exist due to manual JSON editing or legacy data.
         var result = profiles.ToList();
 
         foreach (var def in toSeed)
         {
-            if (existingByName.TryGetValue(def.Name, out var legacy))
+            var legacy = profiles.FirstOrDefault(p => string.Equals(p.Name, def.Name, StringComparison.Ordinal));
+            if (legacy is not null)
             {
                 var migrated = new BrewProfile
                 {
@@ -49,9 +51,10 @@ public sealed class BrewProfileService(IProfileRepository repository)
                     BrewDuration = legacy.BrewDuration,
                     Icon         = legacy.Icon,
                     Description  = legacy.Description,
+                    CreatedAtUtc = legacy.CreatedAtUtc,
                 };
-                await repository.DeleteAsync(legacy.Id, ct);
                 await repository.SaveAsync(migrated, ct);
+                await repository.DeleteAsync(legacy.Id, ct);
                 result[result.IndexOf(legacy)] = migrated;
             }
             else
