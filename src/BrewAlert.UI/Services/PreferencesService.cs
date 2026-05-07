@@ -56,7 +56,7 @@ public sealed class PreferencesService : IPreferencesService
         try
         {
             var prefs = await ReadAsync(ct);
-            prefs.WebhookUrl = url.Trim();
+            prefs.WebhookUrl = url?.Trim() ?? string.Empty;
             await WriteAsync(prefs, ct);
         }
         finally
