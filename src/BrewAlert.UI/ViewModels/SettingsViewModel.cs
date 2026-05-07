@@ -43,6 +43,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _graphStatusText = string.Empty;
     [ObservableProperty] private string _webhookHintText = string.Empty;
     [ObservableProperty] private string _graphHintText = string.Empty;
+    [ObservableProperty] private string _webhookUrlLabel = string.Empty;
+    [ObservableProperty] private string _saveWebhookUrlText = string.Empty;
+    [ObservableProperty] private string _webhookUrlInput = string.Empty;
 
     // Update localized labels
     [ObservableProperty] private string _updateSettingsTitle = string.Empty;
@@ -103,6 +106,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         VersionText = string.Format(_loc.Get("CurrentVersion"), _updateService.CurrentVersion);
 
         RefreshConfigDisplay();
+        _webhookUrlInput = _webhookOptions.CurrentValue.WebhookUrl;
         _loc.LanguageChanged += OnLanguageChanged;
         RefreshLocalizedStrings();
 
@@ -140,6 +144,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         WebhookStatusText = IsWebhookConfigured ? _loc.Get("WebhookConfigured") : _loc.Get("NotConfigured");
         GraphStatusText = IsGraphConfigured ? _loc.Get("GraphConfigured") : _loc.Get("NotConfigured");
         WebhookHintText = _loc.Get("WebhookHint");
+        WebhookUrlLabel = _loc.Get("WebhookUrlLabel");
+        SaveWebhookUrlText = _loc.Get("SaveWebhookUrl");
         GraphHintText = _loc.Get("GraphHint");
 
         UpdateSettingsTitle = _loc.Get("UpdateTitle");
@@ -238,6 +244,28 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         {
             await _preferencesService.SaveLanguageAsync(language);
             _loc.SetLanguage(language);
+        }
+        catch (Exception ex)
+        {
+            TestResult = string.Format(_loc.Get("SaveFailed"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveWebhookUrl()
+    {
+        IsBusy = true;
+        try
+        {
+            await _preferencesService.SaveWebhookUrlAsync(WebhookUrlInput);
+            RefreshConfigDisplay();
+            OnPropertyChanged(nameof(IsConfigured));
+            WebhookStatusText = IsWebhookConfigured ? _loc.Get("WebhookConfigured") : _loc.Get("NotConfigured");
+            TestResult = _loc.Get("WebhookUrlSaved");
         }
         catch (Exception ex)
         {

@@ -123,4 +123,47 @@ public class SettingsViewModelTests
         Assert.True(vm.IsWebhookConfigured);
         Assert.True(vm.IsConfigured);
     }
+
+    [Fact]
+    public void Constructor_InitializesWebhookUrlInputFromOptions()
+    {
+        var url = "https://prod.webhook.office.com/abc";
+        var webhookOptions = CreateMonitor(new TeamsNotificationOptions { WebhookUrl = url });
+
+        var vm = new SettingsViewModel(
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, _loc, _updateService);
+
+        Assert.Equal(url, vm.WebhookUrlInput);
+    }
+
+    [Fact]
+    public async Task SaveWebhookUrlCommand_CallsPreferencesServiceAndSetsResult()
+    {
+        var vm = new SettingsViewModel(
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, _loc, _updateService);
+
+        vm.WebhookUrlInput = "https://example.com/hook";
+        await vm.SaveWebhookUrlCommand.ExecuteAsync(null);
+
+        await _preferencesService.Received(1).SaveWebhookUrlAsync("https://example.com/hook", Arg.Any<CancellationToken>());
+        Assert.Contains("WebhookUrlSaved", vm.TestResult);
+    }
+
+    [Fact]
+    public async Task SaveWebhookUrlCommand_OnError_SetsTestResult()
+    {
+        _preferencesService
+            .SaveWebhookUrlAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new IOException("disk full")));
+
+        var vm = new SettingsViewModel(
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, _loc, _updateService);
+
+        await vm.SaveWebhookUrlCommand.ExecuteAsync(null);
+
+        Assert.Contains("SaveFailed", vm.TestResult);
+    }
 }

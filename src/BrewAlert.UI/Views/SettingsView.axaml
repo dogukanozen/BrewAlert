@@ -159,17 +159,24 @@
                 <StackPanel Spacing="10">
                     <TextBlock Text="{Binding WebhookStatusText}"
                                FontWeight="SemiBold" FontSize="14" />
-                    <Grid ColumnDefinitions="90,*">
-                        <TextBlock Grid.Column="0" Text="Webhook URL"
-                                   Foreground="{StaticResource BrewTextSecondaryBrush}"
-                                   FontSize="12" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="1" Text="{Binding WebhookUrl}"
-                                   FontFamily="Consolas,Menlo,monospace"
-                                   FontSize="12" TextTrimming="CharacterEllipsis" />
-                    </Grid>
                     <TextBlock Text="{Binding WebhookHintText}"
                                Foreground="{StaticResource BrewTextSecondaryBrush}"
                                FontSize="11" TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding WebhookUrlInput}"
+                                 Watermark="{Binding WebhookUrlLabel}"
+                                 FontFamily="Consolas,Menlo,monospace"
+                                 FontSize="12"
+                                 MinHeight="44"
+                                 Margin="0,0,8,0" />
+                        <Button Grid.Column="1"
+                                Content="{Binding SaveWebhookUrlText}"
+                                Command="{Binding SaveWebhookUrlCommand}"
+                                IsEnabled="{Binding !IsBusy}"
+                                Classes="brew-primary"
+                                MinHeight="44" />
+                    </Grid>
                 </StackPanel>
             </Border>
 

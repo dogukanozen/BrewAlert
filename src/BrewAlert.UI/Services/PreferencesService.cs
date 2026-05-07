@@ -13,6 +13,12 @@ public sealed class PreferencesService : IPreferencesService
 {
     private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
     private readonly SemaphoreSlim _fileSemaphore = new(1, 1);
+    private readonly string _filePath;
+
+    public PreferencesService(string? filePath = null)
+    {
+        _filePath = filePath ?? BrewAlertPaths.Preferences;
+    }
 
     public async Task SaveNotificationProviderAsync(string provider, CancellationToken ct = default)
     {
@@ -44,14 +50,29 @@ public sealed class PreferencesService : IPreferencesService
         }
     }
 
-    private static async Task<PreferencesData> ReadAsync(CancellationToken ct)
+    public async Task SaveWebhookUrlAsync(string url, CancellationToken ct = default)
     {
-        if (!File.Exists(BrewAlertPaths.Preferences))
+        await _fileSemaphore.WaitAsync(ct);
+        try
+        {
+            var prefs = await ReadAsync(ct);
+            prefs.WebhookUrl = url.Trim();
+            await WriteAsync(prefs, ct);
+        }
+        finally
+        {
+            _fileSemaphore.Release();
+        }
+    }
+
+    private async Task<PreferencesData> ReadAsync(CancellationToken ct)
+    {
+        if (!File.Exists(_filePath))
             return new PreferencesData();
 
         try
         {
-            var json = await File.ReadAllTextAsync(BrewAlertPaths.Preferences, ct);
+            var json = await File.ReadAllTextAsync(_filePath, ct);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             var data = new PreferencesData();
@@ -60,9 +81,14 @@ public sealed class PreferencesService : IPreferencesService
             {
                 if (ba.TryGetProperty("Language", out var lang))
                     data.Language = lang.GetString() ?? AppLanguage.English;
-                if (ba.TryGetProperty("Notifications", out var notif) &&
-                    notif.TryGetProperty("Provider", out var prov))
-                    data.NotificationProvider = prov.GetString() ?? "Console";
+                if (ba.TryGetProperty("Notifications", out var notif))
+                {
+                    if (notif.TryGetProperty("Provider", out var prov))
+                        data.NotificationProvider = prov.GetString() ?? "Console";
+                    if (notif.TryGetProperty("Teams", out var teams) &&
+                        teams.TryGetProperty("WebhookUrl", out var wh))
+                        data.WebhookUrl = wh.GetString() ?? string.Empty;
+                }
             }
 
             return data;
@@ -76,9 +102,9 @@ public sealed class PreferencesService : IPreferencesService
         // caller can surface a meaningful error rather than silently losing data.
     }
 
-    private static async Task WriteAsync(PreferencesData prefs, CancellationToken ct)
+    private async Task WriteAsync(PreferencesData prefs, CancellationToken ct)
     {
-        var dir = Path.GetDirectoryName(BrewAlertPaths.Preferences)!;
+        var dir = Path.GetDirectoryName(_filePath)!;
         Directory.CreateDirectory(dir);
 
         var json = JsonSerializer.Serialize(new
@@ -86,16 +112,21 @@ public sealed class PreferencesService : IPreferencesService
             BrewAlert = new
             {
                 Language = prefs.Language,
-                Notifications = new { Provider = prefs.NotificationProvider }
+                Notifications = new
+                {
+                    Provider = prefs.NotificationProvider,
+                    Teams = new { WebhookUrl = prefs.WebhookUrl }
+                }
             }
         }, WriteOptions);
 
-        await File.WriteAllTextAsync(BrewAlertPaths.Preferences, json, ct);
+        await File.WriteAllTextAsync(_filePath, json, ct);
     }
 
     private sealed class PreferencesData
     {
         public string Language { get; set; } = AppLanguage.English;
         public string NotificationProvider { get; set; } = "Console";
+        public string WebhookUrl { get; set; } = string.Empty;
     }
 }
