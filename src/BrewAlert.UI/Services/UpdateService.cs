@@ -47,9 +47,9 @@ public class UpdateService : IUpdateService
             // Güncellemeyi indir
             await mgr.DownloadUpdatesAsync(_updateInfo);
 
-            // Güncellemeyi uygula ve uygulamayı yeniden başlat
-            // Velopack restart işlemini otomatik yönetebilir
-            mgr.ApplyUpdatesAndRestart(_updateInfo);
+            // systemd servisi ana PID çıkınca yeniden başlatır; Velopack'in
+            // kendi restart mekanizması systemd ile çakışır, bu yüzden Exit kullanılır.
+            mgr.ApplyUpdatesAndExit(_updateInfo);
         }
         catch (Exception ex)
         {

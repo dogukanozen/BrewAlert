@@ -33,6 +33,7 @@ WorkingDirectory=$INSTALL_DIR
 ExecStart=$INSTALL_DIR/$APPIMAGE_NAME --drm
 Restart=always
 RestartSec=5
+KillMode=process
 StandardOutput=inherit
 StandardError=inherit
 
