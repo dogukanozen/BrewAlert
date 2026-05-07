@@ -83,10 +83,20 @@ jobs:
         run: |
           vpk pack -u BrewAlert -v ${{ env.APP_VERSION }} -p ${{ matrix.out }} -e ${{ matrix.executable }}
 
+      - name: Bundle install.sh into tar.gz (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cp scripts/install.sh ${{ matrix.out }}install.sh
+          chmod +x ${{ matrix.out }}install.sh
+          tar -czf brewalert-${{ env.APP_VERSION }}-${{ matrix.rid }}.tar.gz \
+            -C ${{ matrix.out }} .
+
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: Releases/*
+          files: |
+            Releases/*
+            brewalert-*.tar.gz
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
           prerelease: false
