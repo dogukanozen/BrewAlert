@@ -6,6 +6,7 @@ using BrewAlert.UI.Services;
 using IPreferencesService = BrewAlert.UI.Services.IPreferencesService;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.ObjectModel;
@@ -22,6 +23,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly IUpdateService _updateService;
     private readonly IOptionsMonitor<TeamsGraphOptions> _graphOptions;
     private readonly IOptionsMonitor<TeamsNotificationOptions> _webhookOptions;
+    private readonly IConfigurationRoot _configuration;
 
     [ObservableProperty] private string _testResult = string.Empty;
     [ObservableProperty] private bool _isBusy;
@@ -43,6 +45,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _graphStatusText = string.Empty;
     [ObservableProperty] private string _webhookHintText = string.Empty;
     [ObservableProperty] private string _graphHintText = string.Empty;
+    [ObservableProperty] private string _webhookUrlLabel = string.Empty;
+    [ObservableProperty] private string _saveWebhookUrlText = string.Empty;
+    [ObservableProperty] private string _webhookUrlInput = string.Empty;
 
     // Update localized labels
     [ObservableProperty] private string _updateSettingsTitle = string.Empty;
@@ -88,7 +93,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         BrewProfileService profileService,
         IPreferencesService preferencesService,
         ILocalizationService loc,
-        IUpdateService updateService)
+        IUpdateService updateService,
+        IConfigurationRoot configuration)
     {
         _notificationService = notificationService;
         _graphOptions = graphOptions;
@@ -97,12 +103,14 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _preferencesService = preferencesService;
         _loc = loc;
         _updateService = updateService;
+        _configuration = configuration;
 
         _selectedProvider = providerOptions.CurrentValue.Provider;
         _currentLanguage = loc.CurrentLanguage;
         VersionText = string.Format(_loc.Get("CurrentVersion"), _updateService.CurrentVersion);
 
         RefreshConfigDisplay();
+        _webhookUrlInput = _webhookOptions.CurrentValue.WebhookUrl;
         _loc.LanguageChanged += OnLanguageChanged;
         RefreshLocalizedStrings();
 
@@ -140,6 +148,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         WebhookStatusText = IsWebhookConfigured ? _loc.Get("WebhookConfigured") : _loc.Get("NotConfigured");
         GraphStatusText = IsGraphConfigured ? _loc.Get("GraphConfigured") : _loc.Get("NotConfigured");
         WebhookHintText = _loc.Get("WebhookHint");
+        WebhookUrlLabel = _loc.Get("WebhookUrlLabel");
+        SaveWebhookUrlText = _loc.Get("SaveWebhookUrl");
         GraphHintText = _loc.Get("GraphHint");
 
         UpdateSettingsTitle = _loc.Get("UpdateTitle");
@@ -238,6 +248,31 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         {
             await _preferencesService.SaveLanguageAsync(language);
             _loc.SetLanguage(language);
+        }
+        catch (Exception ex)
+        {
+            TestResult = string.Format(_loc.Get("SaveFailed"), ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveWebhookUrl()
+    {
+        IsBusy = true;
+        try
+        {
+            WebhookUrlInput = WebhookUrlInput?.Trim() ?? string.Empty;
+            await _preferencesService.SaveWebhookUrlAsync(WebhookUrlInput);
+            _configuration.Reload();
+            IsWebhookConfigured = !string.IsNullOrWhiteSpace(WebhookUrlInput);
+            OnPropertyChanged(nameof(IsWebhookConfigured));
+            OnPropertyChanged(nameof(IsConfigured));
+            WebhookStatusText = IsWebhookConfigured ? _loc.Get("WebhookConfigured") : _loc.Get("NotConfigured");
+            TestResult = _loc.Get("WebhookUrlSaved");
         }
         catch (Exception ex)
         {

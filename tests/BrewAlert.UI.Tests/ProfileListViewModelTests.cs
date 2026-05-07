@@ -33,11 +33,7 @@ public class ProfileListViewModelTests
     public async Task LoadProfiles_PopulatesCollection()
     {
         // Arrange
-        var profiles = new List<BrewProfile>
-        {
-            new() { Name = "Tea", BrewDuration = TimeSpan.FromMinutes(3) },
-            new() { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(3) }
-        };
+        var profiles = BrewProfileService.DefaultProfiles.ToList();
         _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(profiles);
 
         // Act
@@ -65,7 +61,7 @@ public class ProfileListViewModelTests
 
         // Assert
         Assert.Equal(2, vm.Profiles.Count);
-        Assert.Equal("Tea", vm.Profiles[0].Name);
+        Assert.Equal(BrewProfileService.DefaultProfiles[0].Name, vm.Profiles[0].Name);
     }
 
     [AvaloniaFact]
