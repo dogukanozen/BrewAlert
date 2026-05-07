@@ -100,3 +100,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
           prerelease: false
+          fail_on_unmatched_files: false
