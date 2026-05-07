@@ -154,6 +154,25 @@ public class SettingsViewModelTests
     }
 
     [Fact]
+    public async Task SetLanguageCommand_ReloadsConfigurationBeforeApplyingLanguage()
+    {
+        // Arrange — configuration must reload before _loc.SetLanguage so any
+        // IOptionsMonitor<LanguageOptions> consumer sees the new value at the
+        // moment LanguageChanged fires (e.g. Teams notifiers).
+        var vm = new SettingsViewModel(
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+
+        // Act
+        await vm.SetLanguageCommand.ExecuteAsync("Turkish");
+
+        // Assert
+        await _preferencesService.Received(1).SaveLanguageAsync("Turkish", Arg.Any<CancellationToken>());
+        _configurationRoot.Received(1).Reload();
+        _loc.Received(1).SetLanguage("Turkish");
+    }
+
+    [Fact]
     public void Constructor_SetsLocalizedProfileNameWatermark()
     {
         var vm = new SettingsViewModel(

@@ -249,6 +249,10 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         try
         {
             await _preferencesService.SaveLanguageAsync(language);
+            // Reload configuration so IOptionsMonitor<LanguageOptions> sees the new
+            // value immediately — the file-watch reload would otherwise lag and the
+            // next Teams card could still build in the previous language.
+            _configuration.Reload();
             _loc.SetLanguage(language);
         }
         catch (Exception ex)
