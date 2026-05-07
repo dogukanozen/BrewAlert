@@ -9,22 +9,29 @@ using BrewAlert.Core.Models;
 /// <summary>
 /// Builds JSON payloads for the Graph API POST /chats/{chatId}/messages endpoint.
 /// The adaptive card content is embedded as a serialized string inside the attachment.
+/// Card text is localized via <see cref="TeamsCardStrings"/>.
 /// </summary>
 public static class TeamsGraphMessageBuilder
 {
-    private static readonly JsonSerializerOptions Options = new() 
-    { 
+    private static readonly JsonSerializerOptions Options = new()
+    {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    public static string BuildBrewCompletedPayload(BrewSession session)
+    public static string BuildBrewCompletedPayload(BrewSession session, string language)
     {
+        var minShort = TeamsCardStrings.Get(language, "MinShort");
+        var secShort = TeamsCardStrings.Get(language, "SecShort");
         var duration = session.Profile.BrewDuration.TotalMinutes >= 1
-            ? $"{session.Profile.BrewDuration.TotalMinutes:F0} min"
-            : $"{session.Profile.BrewDuration.TotalSeconds:F0} sec";
-        
+            ? $"{session.Profile.BrewDuration.TotalMinutes:F0} {minShort}"
+            : $"{session.Profile.BrewDuration.TotalSeconds:F0} {secShort}";
+
         var completedAt = session.StartedAtUtc.Add(session.Profile.BrewDuration).ToString("HH:mm", CultureInfo.InvariantCulture);
+
+        var typeLabel = TeamsCardStrings.Get(language, $"BrewType_{session.Profile.Type}");
+        var headerTemplate = TeamsCardStrings.Get(language, "HeaderReady");
+        var headerText = string.Format(CultureInfo.InvariantCulture, headerTemplate, session.Profile.Icon, typeLabel);
 
         var cardContentObj = new Dictionary<string, object>
         {
@@ -33,10 +40,10 @@ public static class TeamsGraphMessageBuilder
             ["version"] = "1.4",
             ["body"] = new object[]
             {
-                new 
+                new
                 {
                     type = "TextBlock",
-                    text = $"{session.Profile.Icon} BrewAlert — Your {session.Profile.Type} is Ready!",
+                    text = headerText,
                     weight = "Bolder",
                     size = "Large",
                     color = "Good"
@@ -46,15 +53,15 @@ public static class TeamsGraphMessageBuilder
                     type = "FactSet",
                     facts = new object[]
                     {
-                        new { title = "Profile", value = session.Profile.Name },
-                        new { title = "Brew Time", value = duration },
-                        new { title = "Completed At", value = $"{completedAt} (UTC)" }
+                        new { title = TeamsCardStrings.Get(language, "FactProfile"), value = session.Profile.Name },
+                        new { title = TeamsCardStrings.Get(language, "FactBrewTime"), value = duration },
+                        new { title = TeamsCardStrings.Get(language, "FactCompletedAt"), value = $"{completedAt} {TeamsCardStrings.Get(language, "UtcSuffix")}" }
                     }
                 },
                 new
                 {
                     type = "TextBlock",
-                    text = "Don't let it get cold! ☕",
+                    text = TeamsCardStrings.Get(language, "FooterDontLetItGetCold"),
                     wrap = true,
                     isSubtle = true
                 }
@@ -84,7 +91,7 @@ public static class TeamsGraphMessageBuilder
         return JsonSerializer.Serialize(payload, Options);
     }
 
-    public static string BuildTestPayload()
+    public static string BuildTestPayload(string language)
     {
         var cardContentObj = new Dictionary<string, object>
         {
@@ -93,10 +100,10 @@ public static class TeamsGraphMessageBuilder
             ["version"] = "1.4",
             ["body"] = new object[]
             {
-                new 
+                new
                 {
                     type = "TextBlock",
-                    text = "✅ BrewAlert — Connection Test Successful!",
+                    text = TeamsCardStrings.Get(language, "TestSuccess"),
                     weight = "Bolder",
                     color = "Good"
                 }

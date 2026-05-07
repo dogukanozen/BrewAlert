@@ -14,6 +14,7 @@
 
             <Border Background="{StaticResource BrewSurfaceBrush}"
                     CornerRadius="8" Padding="12">
+                <!-- Language picker buttons intentionally show each option in its own language. -->
                 <WrapPanel Orientation="Horizontal">
                     <Button Content="🇬🇧  English"
                             Command="{Binding SetLanguageCommand}"
@@ -51,7 +52,7 @@
                                         HorizontalContentAlignment="Center"
                                         Margin="0,0,8,0" Classes="brew-primary"/>
                                 <TextBlock Grid.Column="3"
-                                           Text="{Binding Duration.TotalMinutes, StringFormat='{}{0} min'}"
+                                           Text="{Binding DurationText}"
                                            VerticalAlignment="Center" FontWeight="Bold" FontSize="18"
                                            Width="65" TextAlignment="Center" Margin="0,0,8,0" />
                                 <Button Grid.Column="4" Content="+"
@@ -80,7 +81,7 @@
                     <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
                         <TextBox Grid.Column="0"
                                  Text="{Binding NewProfileName}"
-                                 Watermark="Name"
+                                 Watermark="{Binding ProfileNameWatermark}"
                                  MinHeight="44"
                                  Margin="0,0,8,0" />
                         <Button Grid.Column="1" Content="-"

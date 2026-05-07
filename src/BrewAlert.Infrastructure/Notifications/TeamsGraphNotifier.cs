@@ -18,6 +18,7 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IOptionsMonitor<TeamsGraphOptions> _optionsMonitor;
+    private readonly IOptionsMonitor<LanguageOptions> _languageOptions;
     private readonly ILogger<TeamsGraphNotifier> _logger;
     private readonly IDisposable? _subscription;
     private readonly SemaphoreSlim _tokenSemaphore = new(1, 1);
@@ -28,10 +29,12 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
     public TeamsGraphNotifier(
         IHttpClientFactory httpClientFactory,
         IOptionsMonitor<TeamsGraphOptions> options,
+        IOptionsMonitor<LanguageOptions> languageOptions,
         ILogger<TeamsGraphNotifier> logger)
     {
         _httpClientFactory = httpClientFactory;
         _optionsMonitor = options;
+        _languageOptions = languageOptions;
         _logger = logger;
 
         // Invalidate token cache when credentials change
@@ -51,7 +54,7 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
         try
         {
             var token = await GetAccessTokenAsync(opts, ct);
-            var payload = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session);
+            var payload = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session, _languageOptions.CurrentValue.Language);
             var result = await PostToChatAsync(opts, token, payload, ct);
 
             if (result.IsSuccess)
@@ -75,7 +78,7 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
         try
         {
             var token = await GetAccessTokenAsync(opts, ct);
-            var payload = TeamsGraphMessageBuilder.BuildTestPayload();
+            var payload = TeamsGraphMessageBuilder.BuildTestPayload(_languageOptions.CurrentValue.Language);
             var result = await PostToChatAsync(opts, token, payload, ct);
             return result.IsSuccess;
         }

@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 public sealed class TeamsWebhookNotifier(
     IHttpClientFactory httpClientFactory,
     IOptionsMonitor<TeamsNotificationOptions> options,
+    IOptionsMonitor<LanguageOptions> languageOptions,
     ILogger<TeamsWebhookNotifier> logger) : INotificationService
 {
     public async Task<NotificationResult> SendBrewCompletedAsync(BrewSession session, CancellationToken ct = default)
@@ -27,7 +28,7 @@ public sealed class TeamsWebhookNotifier(
 
         try
         {
-            var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session);
+            var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session, languageOptions.CurrentValue.Language);
             var content = new StringContent(payload, Encoding.UTF8);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
@@ -59,7 +60,7 @@ public sealed class TeamsWebhookNotifier(
 
         try
         {
-            var payload = TeamsMessageBuilder.BuildTestPayload();
+            var payload = TeamsMessageBuilder.BuildTestPayload(languageOptions.CurrentValue.Language);
             var content = new StringContent(payload, Encoding.UTF8);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 

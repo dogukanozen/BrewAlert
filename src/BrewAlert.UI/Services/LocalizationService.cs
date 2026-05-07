@@ -98,6 +98,8 @@ public sealed class LocalizationService : ILocalizationService, IDisposable
         ["UpdateError"]             = "Failed to check for updates.",
         ["InstallingUpdate"]        = "Installing update...",
         ["CurrentVersion"]          = "Current version: {0}",
+        ["MinShort"]                = "min",
+        ["TestBrewName"]            = "Test Brew",
     };
 
     private static readonly Dictionary<string, string> Turkish = new()
@@ -158,5 +160,7 @@ public sealed class LocalizationService : ILocalizationService, IDisposable
         ["UpdateError"]             = "Güncelleme kontrolü başarısız oldu.",
         ["InstallingUpdate"]        = "Güncelleme kuruluyor...",
         ["CurrentVersion"]          = "Mevcut sürüm: {0}",
+        ["MinShort"]                = "dk",
+        ["TestBrewName"]            = "Test Demi",
     };
 }

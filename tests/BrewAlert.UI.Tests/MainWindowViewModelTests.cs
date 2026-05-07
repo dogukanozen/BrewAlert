@@ -44,7 +44,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void NavigateToSettings_CallsNavigation()
+    public void NavigateToSettings_SetsLocalizedTitle()
     {
         // Arrange
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc);
@@ -52,8 +52,41 @@ public class MainWindowViewModelTests
         // Act
         vm.NavigateToSettingsCommand.Execute(null);
 
-        // Assert
+        // Assert — mock returns the key as value, so the title is the key itself.
         _navigation.Received(1).NavigateTo<SettingsViewModel>();
+        Assert.Equal("SettingsTitle", vm.Title);
+    }
+
+    [Fact]
+    public void NavigateToSettings_RefreshesTitle_OnLanguageChange()
+    {
+        // Arrange — first call returns English label, second returns Turkish.
+        _loc.Get("SettingsTitle").Returns("Settings", "Ayarlar");
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc);
+        vm.NavigateToSettingsCommand.Execute(null);
         Assert.Equal("Settings", vm.Title);
+
+        // Act
+        _loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
+
+        // Assert
+        Assert.Equal("Ayarlar", vm.Title);
+    }
+
+    [Fact]
+    public void NavigateToProfiles_SetsAppNameTitle_NotLocalized()
+    {
+        // Arrange
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc);
+        vm.NavigateToSettingsCommand.Execute(null);
+
+        // Act
+        vm.NavigateToProfilesCommand.Execute(null);
+
+        // Assert — app name stays "BrewAlert" regardless of language.
+        Assert.Equal("BrewAlert", vm.Title);
+
+        _loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
+        Assert.Equal("BrewAlert", vm.Title);
     }
 }

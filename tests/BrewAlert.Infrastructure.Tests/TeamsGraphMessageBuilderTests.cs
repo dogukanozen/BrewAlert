@@ -8,6 +8,9 @@ namespace BrewAlert.Infrastructure.Tests;
 
 public class TeamsGraphMessageBuilderTests
 {
+    private const string English = "English";
+    private const string Turkish = "Turkish";
+
     [Fact]
     public void BuildBrewCompletedPayload_ReturnsValidJsonStructure()
     {
@@ -26,17 +29,17 @@ public class TeamsGraphMessageBuilderTests
         };
 
         // Act
-        var json = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session);
+        var json = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session, English);
 
         // Assert
         Assert.Contains("\"contentType\":\"html\"", json);
         Assert.Contains("brewalert-complete", json);
         Assert.Contains("Green Tea", json);
         // Look for parts of the escape sequence to avoid C# string literal escaping hell
-        Assert.Contains("uD83C", json); 
+        Assert.Contains("uD83C", json);
         Assert.Contains("Tea", json);
         Assert.Contains("3 min", json);
-        
+
         var expectedTime = session.StartedAtUtc.Add(profile.BrewDuration).ToString("HH:mm", CultureInfo.InvariantCulture);
         Assert.Contains(expectedTime, json);
     }
@@ -45,7 +48,7 @@ public class TeamsGraphMessageBuilderTests
     public void BuildTestPayload_ReturnsValidJsonStructure()
     {
         // Act
-        var json = TeamsGraphMessageBuilder.BuildTestPayload();
+        var json = TeamsGraphMessageBuilder.BuildTestPayload(English);
 
         // Assert
         Assert.Contains("Connection Test Successful!", json);
@@ -66,7 +69,7 @@ public class TeamsGraphMessageBuilderTests
         var session = new BrewSession { Profile = profile };
 
         // Act
-        var json = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session);
+        var json = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session, English);
 
         // Assert
         // Check for specific substrings that should be present after double escaping
@@ -74,5 +77,37 @@ public class TeamsGraphMessageBuilderTests
         Assert.Contains("Tea", json);
         // Look for the escaped quotes in the nested JSON
         Assert.Contains(@"\\\""", json);
+    }
+
+    [Fact]
+    public void BuildBrewCompletedPayload_Turkish_ContainsTurkishStrings()
+    {
+        var profile = new BrewProfile
+        {
+            Name = "Yeşil Çay",
+            Icon = "🍵",
+            Type = BrewType.Tea,
+            BrewDuration = TimeSpan.FromMinutes(3)
+        };
+        var session = new BrewSession
+        {
+            Profile = profile,
+            StartedAtUtc = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc)
+        };
+
+        var json = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session, Turkish);
+
+        Assert.Contains("hazır", json);
+        Assert.Contains("Demleme Süresi", json);
+        Assert.Contains("Tamamlanma", json);
+        Assert.Contains("3 dk", json);
+    }
+
+    [Fact]
+    public void BuildTestPayload_Turkish_ContainsTurkishSuccessMessage()
+    {
+        var json = TeamsGraphMessageBuilder.BuildTestPayload(Turkish);
+
+        Assert.Contains("Bağlantı Testi Başarılı", json);
     }
 }
