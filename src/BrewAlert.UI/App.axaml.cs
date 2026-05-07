@@ -73,6 +73,7 @@ public partial class App : Application
 
         // Configuration
         services.AddSingleton<IConfiguration>(configuration);
+        services.AddSingleton<IConfigurationRoot>(configuration);
         services.Configure<TeamsNotificationOptions>(
             configuration.GetSection(TeamsNotificationOptions.SectionPath));
         services.Configure<TeamsGraphOptions>(

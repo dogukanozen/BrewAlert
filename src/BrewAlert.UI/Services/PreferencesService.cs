@@ -2,16 +2,12 @@ namespace BrewAlert.UI.Services;
 
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using BrewAlert.UI.Constants;
 
-/// <summary>
-/// Reads and writes user preferences to %AppData%\BrewAlert\preferences.json.
-/// Uses a read-merge-write pattern protected by a SemaphoreSlim so concurrent
-/// async callers never interleave their read-modify-write cycles.
-/// </summary>
 public sealed class PreferencesService : IPreferencesService
 {
-    private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly SemaphoreSlim _fileSemaphore = new(1, 1);
     private readonly string _filePath;
 
@@ -25,9 +21,9 @@ public sealed class PreferencesService : IPreferencesService
         await _fileSemaphore.WaitAsync(ct);
         try
         {
-            var prefs = await ReadAsync(ct);
-            prefs.NotificationProvider = provider;
-            await WriteAsync(prefs, ct);
+            var root = await ReadRootAsync(ct);
+            root.BrewAlert.Notifications.Provider = provider;
+            await WriteRootAsync(root, ct);
         }
         finally
         {
@@ -40,9 +36,9 @@ public sealed class PreferencesService : IPreferencesService
         await _fileSemaphore.WaitAsync(ct);
         try
         {
-            var prefs = await ReadAsync(ct);
-            prefs.Language = language;
-            await WriteAsync(prefs, ct);
+            var root = await ReadRootAsync(ct);
+            root.BrewAlert.Language = language;
+            await WriteRootAsync(root, ct);
         }
         finally
         {
@@ -55,9 +51,9 @@ public sealed class PreferencesService : IPreferencesService
         await _fileSemaphore.WaitAsync(ct);
         try
         {
-            var prefs = await ReadAsync(ct);
-            prefs.WebhookUrl = url?.Trim() ?? string.Empty;
-            await WriteAsync(prefs, ct);
+            var root = await ReadRootAsync(ct);
+            root.BrewAlert.Notifications.Teams.WebhookUrl = url?.Trim() ?? string.Empty;
+            await WriteRootAsync(root, ct);
         }
         finally
         {
@@ -65,68 +61,57 @@ public sealed class PreferencesService : IPreferencesService
         }
     }
 
-    private async Task<PreferencesData> ReadAsync(CancellationToken ct)
+    private async Task<PreferencesRoot> ReadRootAsync(CancellationToken ct)
     {
         if (!File.Exists(_filePath))
-            return new PreferencesData();
+            return new PreferencesRoot();
 
         try
         {
             var json = await File.ReadAllTextAsync(_filePath, ct);
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-            var data = new PreferencesData();
-
-            if (root.TryGetProperty("BrewAlert", out var ba))
-            {
-                if (ba.TryGetProperty("Language", out var lang))
-                    data.Language = lang.GetString() ?? AppLanguage.English;
-                if (ba.TryGetProperty("Notifications", out var notif))
-                {
-                    if (notif.TryGetProperty("Provider", out var prov))
-                        data.NotificationProvider = prov.GetString() ?? "Console";
-                    if (notif.TryGetProperty("Teams", out var teams) &&
-                        teams.TryGetProperty("WebhookUrl", out var wh))
-                        data.WebhookUrl = wh.GetString() ?? string.Empty;
-                }
-            }
-
-            return data;
+            return JsonSerializer.Deserialize<PreferencesRoot>(json, JsonOptions) ?? new PreferencesRoot();
         }
         catch (JsonException)
         {
-            // Corrupted JSON — reset to defaults so the next write repairs the file.
-            return new PreferencesData();
+            return new PreferencesRoot();
         }
-        // FileNotFoundException, UnauthorizedAccessException, etc. propagate so the
-        // caller can surface a meaningful error rather than silently losing data.
     }
 
-    private async Task WriteAsync(PreferencesData prefs, CancellationToken ct)
+    private async Task WriteRootAsync(PreferencesRoot root, CancellationToken ct)
     {
         var dir = Path.GetDirectoryName(_filePath)!;
         Directory.CreateDirectory(dir);
-
-        var json = JsonSerializer.Serialize(new
-        {
-            BrewAlert = new
-            {
-                Language = prefs.Language,
-                Notifications = new
-                {
-                    Provider = prefs.NotificationProvider,
-                    Teams = new { WebhookUrl = prefs.WebhookUrl }
-                }
-            }
-        }, WriteOptions);
-
+        var json = JsonSerializer.Serialize(root, JsonOptions);
         await File.WriteAllTextAsync(_filePath, json, ct);
     }
 
-    private sealed class PreferencesData
+    private sealed class PreferencesRoot
     {
+        [JsonPropertyName("BrewAlert")]
+        public BrewAlertSection BrewAlert { get; set; } = new();
+    }
+
+    private sealed class BrewAlertSection
+    {
+        [JsonPropertyName("Language")]
         public string Language { get; set; } = AppLanguage.English;
-        public string NotificationProvider { get; set; } = "Console";
+
+        [JsonPropertyName("Notifications")]
+        public NotificationsSection Notifications { get; set; } = new();
+    }
+
+    private sealed class NotificationsSection
+    {
+        [JsonPropertyName("Provider")]
+        public string Provider { get; set; } = "Console";
+
+        [JsonPropertyName("Teams")]
+        public TeamsSection Teams { get; set; } = new();
+    }
+
+    private sealed class TeamsSection
+    {
+        [JsonPropertyName("WebhookUrl")]
         public string WebhookUrl { get; set; } = string.Empty;
     }
 }

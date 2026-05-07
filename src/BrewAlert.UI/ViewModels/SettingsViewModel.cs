@@ -6,6 +6,7 @@ using BrewAlert.UI.Services;
 using IPreferencesService = BrewAlert.UI.Services.IPreferencesService;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.ObjectModel;
@@ -22,6 +23,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private readonly IUpdateService _updateService;
     private readonly IOptionsMonitor<TeamsGraphOptions> _graphOptions;
     private readonly IOptionsMonitor<TeamsNotificationOptions> _webhookOptions;
+    private readonly IConfigurationRoot _configuration;
 
     [ObservableProperty] private string _testResult = string.Empty;
     [ObservableProperty] private bool _isBusy;
@@ -91,7 +93,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         BrewProfileService profileService,
         IPreferencesService preferencesService,
         ILocalizationService loc,
-        IUpdateService updateService)
+        IUpdateService updateService,
+        IConfigurationRoot configuration)
     {
         _notificationService = notificationService;
         _graphOptions = graphOptions;
@@ -100,6 +103,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _preferencesService = preferencesService;
         _loc = loc;
         _updateService = updateService;
+        _configuration = configuration;
 
         _selectedProvider = providerOptions.CurrentValue.Provider;
         _currentLanguage = loc.CurrentLanguage;
@@ -263,6 +267,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         {
             WebhookUrlInput = WebhookUrlInput?.Trim() ?? string.Empty;
             await _preferencesService.SaveWebhookUrlAsync(WebhookUrlInput);
+            _configuration.Reload();
             IsWebhookConfigured = !string.IsNullOrWhiteSpace(WebhookUrlInput);
             OnPropertyChanged(nameof(IsWebhookConfigured));
             OnPropertyChanged(nameof(IsConfigured));

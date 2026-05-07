@@ -5,6 +5,7 @@ using BrewAlert.Infrastructure.Configuration;
 using BrewAlert.UI.Services;
 using IPreferencesService = BrewAlert.UI.Services.IPreferencesService;
 using BrewAlert.UI.ViewModels;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Xunit;
@@ -21,6 +22,7 @@ public class SettingsViewModelTests
     private readonly IPreferencesService _preferencesService = Substitute.For<IPreferencesService>();
     private readonly IUpdateService _updateService = Substitute.For<IUpdateService>();
     private readonly ILocalizationService _loc = CreateEnglishLoc();
+    private readonly IConfigurationRoot _configurationRoot = Substitute.For<IConfigurationRoot>();
     private readonly BrewProfileService _profileService;
 
     private static IOptionsMonitor<T> CreateMonitor<T>(T value) where T : class, new()
@@ -64,7 +66,7 @@ public class SettingsViewModelTests
         // Act
         var vm = new SettingsViewModel(
             _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
 
         // Assert
         Assert.StartsWith("12345678", vm.TenantId);
@@ -85,7 +87,7 @@ public class SettingsViewModelTests
         _notificationService.TestConnectionAsync().Returns(true);
         var vm = new SettingsViewModel(
             _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
 
         // Act
         await vm.TestConnectionCommand.ExecuteAsync(null);
@@ -103,7 +105,7 @@ public class SettingsViewModelTests
         });
         var vm = new SettingsViewModel(
             _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
 
         Assert.True(vm.IsGraphConfigured);
     }
@@ -118,7 +120,7 @@ public class SettingsViewModelTests
         var providerOptions = CreateMonitor(new NotificationProviderOptions { Provider = NotificationProvider.Webhook });
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, providerOptions,
-            _profileService, _preferencesService, _loc, _updateService);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
 
         Assert.True(vm.IsWebhookConfigured);
         Assert.True(vm.IsConfigured);
@@ -132,7 +134,7 @@ public class SettingsViewModelTests
 
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
 
         Assert.Equal(url, vm.WebhookUrlInput);
     }
@@ -142,7 +144,7 @@ public class SettingsViewModelTests
     {
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
 
         vm.WebhookUrlInput = "https://example.com/hook";
         await vm.SaveWebhookUrlCommand.ExecuteAsync(null);
@@ -160,7 +162,7 @@ public class SettingsViewModelTests
 
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
 
         await vm.SaveWebhookUrlCommand.ExecuteAsync(null);
 
