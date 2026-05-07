@@ -114,9 +114,9 @@ tar -xzf brewalert-*.tar.gz -C ~/brewalert/
 bash ~/brewalert/install.sh
 ```
 
-`install.sh` installs the required system libraries (`libdrm2`, `libgbm1`, `libfontconfig1`, `libfreetype6`), copies the app to `~/brewalert/`, and sets up a systemd service that starts automatically on boot.
+`install.sh` installs the required system libraries (`libdrm2`, `libgbm1`, `libfontconfig1`, `libfreetype6`, `libinput10`, `libfuse2`), copies `BrewAlert.AppImage` to `~/brewalert/`, and sets up a systemd service that starts automatically on boot.
 
-The app runs in DRM/KMS mode (`--drm`) for direct framebuffer access — no desktop environment required.
+The app runs in DRM/KMS mode (`--drm`) for direct framebuffer access — no desktop environment required. Auto-updates are handled by Velopack: when a new release is published, the running app downloads and applies the update automatically, then restarts via systemd.
 
 To check the service after installation:
 

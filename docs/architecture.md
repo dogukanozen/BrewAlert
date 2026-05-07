@@ -161,4 +161,8 @@ mkdir -p ~/brewalert && tar -xzf brewalert-*.tar.gz -C ~/brewalert/
 bash ~/brewalert/install.sh
 ```
 
-The app runs with `--drm` (KMS/DRM direct rendering, no X11 required). The systemd service is created by `install.sh` at `/etc/systemd/system/brewalert.service`.
+The app runs with `--drm` (KMS/DRM direct rendering, no X11 required). The systemd service is created by `install.sh` at `/etc/systemd/system/brewalert.service` with `Restart=always`.
+
+System dependencies installed by `install.sh`: `libdrm2`, `libgbm1`, `libfontconfig1`, `libfreetype6`, `libinput10` (touch/keyboard input in DRM mode), `libfuse2` (AppImage runtime).
+
+Auto-updates: Velopack downloads the new `.nupkg` from GitHub Releases, replaces `~/brewalert/BrewAlert.AppImage` in place, and exits. Systemd restarts the service automatically with the updated binary.
