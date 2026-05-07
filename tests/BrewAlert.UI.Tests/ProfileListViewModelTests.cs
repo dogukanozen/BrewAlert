@@ -49,18 +49,15 @@ public class ProfileListViewModelTests
             vm.PropertyChanged += (s, e) =>
             {
                 if (e.PropertyName == nameof(vm.IsLoading) && !vm.IsLoading)
-                {
                     tcs.TrySetResult();
-                }
             };
         }
 
-        // Wait for completion with timeout (avoiding flaky WhenAny(Delay))
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         await tcs.Task.WaitAsync(cts.Token);
 
         // Assert
-        Assert.Equal(2, vm.Profiles.Count);
+        Assert.Equal(BrewProfileService.DefaultProfiles.Count, vm.Profiles.Count);
         Assert.Equal(BrewProfileService.DefaultProfiles[0].Name, vm.Profiles[0].Name);
     }
 
