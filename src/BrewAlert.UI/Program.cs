@@ -1,5 +1,4 @@
 using Avalonia;
-using Avalonia.X11;
 using Avalonia.LinuxFramebuffer;
 using System;
 using System.Linq;
@@ -42,12 +41,6 @@ internal sealed class Program
     {
         var builder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .With(new X11PlatformOptions
-            {
-                // EGL (OpenGL ES) → GLX → software fallback sırası
-                // Raspberry Pi VideoCore GPU'sunu kullanır
-                RenderingMode = [X11RenderingMode.Egl, X11RenderingMode.Glx, X11RenderingMode.Software]
-            })
             .WithInterFont();
 
 #if DEBUG

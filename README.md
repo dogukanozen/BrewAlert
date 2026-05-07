@@ -105,9 +105,24 @@ Posts to a specific Teams chat via an Azure AD App Registration (client credenti
 
 ## Deploy to Raspberry Pi
 
+Download the latest release and run the bundled installer on the Pi:
+
 ```bash
-dotnet publish src/BrewAlert.UI -c Release -r linux-arm64 --self-contained
-scp -r src/BrewAlert.UI/bin/Release/net10.0/linux-arm64/publish/ pi@raspberrypi:/opt/brewalert/
+wget https://github.com/dogukanozen/BrewAlert/releases/latest/download/brewalert-<version>-linux-arm64.tar.gz
+mkdir -p ~/brewalert
+tar -xzf brewalert-*.tar.gz -C ~/brewalert/
+bash ~/brewalert/install.sh
+```
+
+`install.sh` installs the required system libraries (`libdrm2`, `libgbm1`, `libfontconfig1`, `libfreetype6`), copies the app to `~/brewalert/`, and sets up a systemd service that starts automatically on boot.
+
+The app runs in DRM/KMS mode (`--drm`) for direct framebuffer access — no desktop environment required.
+
+To check the service after installation:
+
+```bash
+sudo systemctl status brewalert
+sudo journalctl -u brewalert -n 50
 ```
 
 ## Contributing

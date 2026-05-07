@@ -153,8 +153,12 @@ PeriodicTimer loop (1 s)
 
 Target: Raspberry Pi 4 / 5 with a 7" touchscreen (800 × 480).
 
+Releases are built by CI on `v*` tags and published to GitHub Releases as `brewalert-<version>-linux-arm64.tar.gz`. The archive includes `install.sh` which handles system dependencies, app installation to `~/brewalert/`, and systemd service setup.
+
 ```bash
-dotnet publish src/BrewAlert.UI -c Release -r linux-arm64 --self-contained
+wget https://github.com/dogukanozen/BrewAlert/releases/latest/download/brewalert-<version>-linux-arm64.tar.gz
+mkdir -p ~/brewalert && tar -xzf brewalert-*.tar.gz -C ~/brewalert/
+bash ~/brewalert/install.sh
 ```
 
-The Pi runs the published output as a systemd service for auto-start on boot (service unit lives on the Pi, not in this repo).
+The app runs with `--drm` (KMS/DRM direct rendering, no X11 required). The systemd service is created by `install.sh` at `/etc/systemd/system/brewalert.service`.

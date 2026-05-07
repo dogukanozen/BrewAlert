@@ -86,7 +86,7 @@ All of the following are verified against the current code. If you see a change 
 dotnet run --project src/BrewAlert.UI           # run (Windows / Linux desktop)
 dotnet test                                     # all tests
 dotnet publish src/BrewAlert.UI -c Release \
-  -r linux-arm64 --self-contained               # Raspberry Pi build
+  -r linux-arm64 --self-contained               # Raspberry Pi build (CI handles release packaging)
 ```
 
 ## 8. When the user gives you a change request
