@@ -55,7 +55,7 @@ All of the following are verified against the current code. If you see a change 
    - **Singleton**: `MainWindowViewModel`, `INavigationService`, `IBrewTimerService`, `BrewProfileService`, `IProfileRepository`, `INotificationService`, `IPreferencesService`, `ILocalizationService`.
    - **Transient**: `BrewTimerViewModel`, `ProfileListViewModel`, `SettingsViewModel` — fresh instance per navigation so state never goes stale.
 5. **Dependency direction** UI → Infrastructure → Core. Never add a reverse reference.
-6. **No secrets in repo.** Webhook URL via env var `BREWALERT__Notifications__Teams__WebhookUrl` or gitignored `appsettings.Development.json`. `git diff --cached` before committing. `preferences.json` is gitignored.
+6. **No secrets in repo.** Webhook URL via env var `BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl` (provider via `BREWALERT__BrewAlert__Notifications__Provider=Webhook`) or gitignored `appsettings.Development.json`. `git diff --cached` before committing. `preferences.json` is gitignored.
 7. **No new CI artifact uploads** without user approval — repo is on free-tier GitHub. `ci.yml` currently uploads only on `v*` tags.
 8. **No direct pushes to `main`.** Everything goes through a feature branch + PR.
 

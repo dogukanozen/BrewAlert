@@ -24,11 +24,18 @@ chmod +x "$INSTALL_DIR/$APPIMAGE_NAME"
 echo "[3/3] Setting up systemd service..."
 
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+ENV_FILE="/etc/brewalert/env"
 
-# Preserve existing Environment= lines so updates don't wipe user config (e.g. webhook URL)
-PRESERVED_ENV=""
-if [ -f "$SERVICE_FILE" ]; then
-  PRESERVED_ENV=$(grep -E '^Environment=' "$SERVICE_FILE" || true)
+# Create env file only on first install — never overwrite on update so user config survives
+if [ ! -f "$ENV_FILE" ]; then
+  sudo mkdir -p /etc/brewalert
+  sudo tee "$ENV_FILE" > /dev/null << 'ENVFILE'
+# BrewAlert environment configuration — survives app updates
+# Uncomment and fill in to enable Teams notifications:
+#BREWALERT__BrewAlert__Notifications__Provider=Webhook
+#BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl=https://your-flow-url...
+ENVFILE
+  sudo chmod 600 "$ENV_FILE"
 fi
 
 sudo tee "$SERVICE_FILE" > /dev/null << SERVICE
@@ -45,12 +52,8 @@ RestartSec=5
 KillMode=process
 StandardOutput=inherit
 StandardError=inherit
+EnvironmentFile=$ENV_FILE
 SERVICE
-
-# Re-append preserved Environment= lines
-if [ -n "$PRESERVED_ENV" ]; then
-  echo "$PRESERVED_ENV" | sudo tee -a "$SERVICE_FILE" > /dev/null
-fi
 
 sudo systemctl daemon-reload
 sudo systemctl enable $SERVICE_NAME.service
