@@ -119,6 +119,9 @@ public partial class App : Application
         // Navigation
         services.AddSingleton<INavigationService, NavigationService>();
 
+        // Notification coordinator — singleton so it outlives any individual timer view
+        services.AddSingleton<IBrewCompletionNotificationService, BrewCompletionNotificationService>();
+
         // Update Service
         services.AddSingleton<IUpdateService, UpdateService>();
 

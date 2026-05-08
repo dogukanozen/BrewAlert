@@ -62,27 +62,27 @@ public class ProfileListViewModelTests
     }
 
     [AvaloniaFact]
-    public void SelectProfile_NavigatesAndStartsBrew()
+    public void SelectProfile_WhenNoActiveSession_NavigatesAndStartsBrew()
     {
         // Arrange
         var profile = new BrewProfile { Name = "Tea", BrewDuration = TimeSpan.FromMinutes(3) };
         var timerService = Substitute.For<IBrewTimerService>();
+        timerService.GetActiveSession().Returns((BrewSession?)null);
         timerService.Start(Arg.Any<BrewProfile>()).Returns(new BrewSession { Profile = profile });
 
         var timerLoc = Substitute.For<ILocalizationService>();
         timerLoc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
         timerLoc.CurrentLanguage.Returns("English");
 
-        // Use real instance because StartBrew is not virtual
         var timerVm = new BrewTimerViewModel(
             timerService,
-            Substitute.For<INotificationService>(),
+            Substitute.For<IBrewCompletionNotificationService>(),
             _navigation,
             timerLoc);
 
         var vm = new ProfileListViewModel(_profileService, _navigation, _loc);
 
-        // After NavigateTo<BrewTimerViewModel>(), CurrentView should return timerVm
+        // After NavigateTo<BrewTimerViewModel>(), CurrentView returns timerVm
         _navigation.CurrentView.Returns(timerVm);
 
         // Act
@@ -92,4 +92,39 @@ public class ProfileListViewModelTests
         _navigation.Received(1).NavigateTo<BrewTimerViewModel>();
         timerService.Received(1).Start(profile);
     }
+
+    [AvaloniaFact]
+    public void SelectProfile_WhenActiveSessionExists_DoesNotCallStart()
+    {
+        // Arrange
+        var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4), Icon = "☕" };
+        var timerService = Substitute.For<IBrewTimerService>();
+        var existingSession = new BrewSession
+        {
+            Profile = profile,
+            State = BrewSessionState.Running,
+            Remaining = TimeSpan.FromMinutes(2)
+        };
+        timerService.GetActiveSession().Returns(existingSession);
+
+        var timerLoc = Substitute.For<ILocalizationService>();
+        timerLoc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+
+        var timerVm = new BrewTimerViewModel(
+            timerService,
+            Substitute.For<IBrewCompletionNotificationService>(),
+            _navigation,
+            timerLoc);
+
+        _navigation.CurrentView.Returns(timerVm);
+        var vm = new ProfileListViewModel(_profileService, _navigation, _loc);
+
+        // Act
+        vm.SelectProfileCommand.Execute(profile);
+
+        // Assert — navigated to timer but Start() was never called
+        _navigation.Received(1).NavigateTo<BrewTimerViewModel>();
+        timerService.DidNotReceive().Start(Arg.Any<BrewProfile>());
+    }
+
 }

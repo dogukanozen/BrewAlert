@@ -1,6 +1,7 @@
 using Avalonia.Threading;
 using BrewAlert.Core.Events;
 using BrewAlert.Core.Interfaces;
+using BrewAlert.Core.Models;
 using BrewAlert.UI.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -9,15 +10,11 @@ namespace BrewAlert.UI.ViewModels;
 
 /// <summary>
 /// Root ViewModel — subscribes to <see cref="INavigationService"/> for view changes
-/// and to <see cref="IBrewTimerService.BrewStarted"/> for window title updates.
+/// and to <see cref="IBrewTimerService"/> events for window title updates.
 /// No direct DI container access.
 /// </summary>
 public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
-    // Sentinel values for the "current title key" tracker.
-    // App name is intentionally not localized; brew-running shows a profile-specific
-    // title that doesn't refresh on language change (user wouldn't switch languages
-    // mid-brew, and the icon + name carry the meaning).
     private const string TitleKeyAppName = "__AppName";
     private const string TitleKeyBrewRunning = "__BrewRunning";
 
@@ -67,6 +64,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         _navigation.CurrentViewChanged += HandleNavigationViewChanged;
         _timerService.BrewStarted += OnBrewStarted;
+        _timerService.BrewCompleted += OnBrewCompleted;
+        _timerService.BrewCancelled += OnBrewCancelled;
         _loc.LanguageChanged += OnLanguageChanged;
 
         BrewsNavText = _loc.Get("BrewsNavButton");
@@ -126,9 +125,21 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void NavigateToProfiles()
     {
-        _navigation.NavigateTo<ProfileListViewModel>();
-        _currentTitleKey = TitleKeyAppName;
-        Title = "BrewAlert";
+        var activeSession = _timerService.GetActiveSession();
+        if (activeSession is { State: BrewSessionState.Running or BrewSessionState.Paused })
+        {
+            _navigation.NavigateTo<BrewTimerViewModel>();
+            if (_navigation.CurrentView is BrewTimerViewModel timerVm)
+                timerVm.AttachToSession(activeSession);
+            _currentTitleKey = TitleKeyBrewRunning;
+            Title = $"{activeSession.Profile.Icon} {activeSession.Profile.Name}";
+        }
+        else
+        {
+            _navigation.NavigateTo<ProfileListViewModel>();
+            _currentTitleKey = TitleKeyAppName;
+            Title = "BrewAlert";
+        }
     }
 
     [RelayCommand]
@@ -143,6 +154,24 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         _currentTitleKey = TitleKeyBrewRunning;
         Title = $"{e.Session.Profile.Icon} {e.Session.Profile.Name}";
+    }
+
+    private void OnBrewCompleted(object? sender, BrewCompletedEvent e)
+    {
+        if (_currentTitleKey == TitleKeyBrewRunning)
+        {
+            _currentTitleKey = TitleKeyAppName;
+            Title = "BrewAlert";
+        }
+    }
+
+    private void OnBrewCancelled(object? sender, BrewCancelledEvent e)
+    {
+        if (_currentTitleKey == TitleKeyBrewRunning)
+        {
+            _currentTitleKey = TitleKeyAppName;
+            Title = "BrewAlert";
+        }
     }
 
     private void HandleNavigationViewChanged(ViewModelBase viewModel)
@@ -169,6 +198,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _updateCts.Dispose();
         _navigation.CurrentViewChanged -= HandleNavigationViewChanged;
         _timerService.BrewStarted -= OnBrewStarted;
+        _timerService.BrewCompleted -= OnBrewCompleted;
+        _timerService.BrewCancelled -= OnBrewCancelled;
         _loc.LanguageChanged -= OnLanguageChanged;
     }
 }
