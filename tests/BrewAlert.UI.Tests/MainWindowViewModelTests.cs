@@ -1,6 +1,7 @@
 using BrewAlert.Core.Interfaces;
 using BrewAlert.UI.Services;
 using BrewAlert.UI.ViewModels;
+using CommunityToolkit.Mvvm.Input;
 using NSubstitute;
 using Xunit;
 
@@ -90,5 +91,54 @@ public class MainWindowViewModelTests
 
         _loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
         Assert.Equal("BrewAlert", vm.Title);
+    }
+
+    [Fact]
+    public void DismissUpdate_HidesToast()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        vm.IsUpdateToastVisible = true;
+
+        vm.DismissUpdateCommand.Execute(null);
+
+        Assert.False(vm.IsUpdateToastVisible);
+    }
+
+    [Fact]
+    public async Task InstallUpdate_CallsServiceAndHidesToast()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        vm.IsUpdateToastVisible = true;
+
+        await ((IAsyncRelayCommand)vm.InstallUpdateCommand).ExecuteAsync(null);
+
+        await _updateService.Received(1).DownloadAndInstallUpdatesAsync();
+        Assert.False(vm.IsUpdateToastVisible);
+    }
+
+    [Fact]
+    public void LanguageChanged_WhenToastVisible_RefreshesToastTexts()
+    {
+        // _loc.Get returns the key — verifies ShowUpdateToast is called again on language switch
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        vm.IsUpdateToastVisible = true;
+
+        _loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
+
+        Assert.Equal("UpdateAvailable", vm.UpdateToastMessage);
+        Assert.Equal("InstallUpdate", vm.UpdateToastInstallText);
+        Assert.Equal("UpdateDismiss", vm.UpdateToastDismissText);
+    }
+
+    [Fact]
+    public void LanguageChanged_WhenToastNotVisible_DoesNotRefreshToastTexts()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        vm.IsUpdateToastVisible = false;
+        vm.UpdateToastMessage = "stale";
+
+        _loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
+
+        Assert.Equal("stale", vm.UpdateToastMessage);
     }
 }
