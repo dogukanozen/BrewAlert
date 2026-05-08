@@ -11,10 +11,15 @@
                     Background="{StaticResource BrewSurfaceBrush}"
                     Padding="12,6">
                 <Grid ColumnDefinitions="*,Auto,Auto">
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding Title}"
-                               Classes="brew-title"
-                               VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="0"
+                                VerticalAlignment="Center"
+                                Spacing="2">
+                        <TextBlock Text="{Binding Title}"
+                                   Classes="brew-title" />
+                        <TextBlock Text="{Binding CurrentDateTime}"
+                                   Classes="brew-subtitle"
+                                   Opacity="0.75" />
+                    </StackPanel>
 
                     <Button Grid.Column="1"
                             Content="{Binding BrewsNavText}"

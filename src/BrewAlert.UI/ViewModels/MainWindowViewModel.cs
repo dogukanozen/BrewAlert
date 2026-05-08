@@ -26,6 +26,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _loc;
     private readonly IUpdateService _updateService;
     private readonly CancellationTokenSource _updateCts = new();
+    private readonly DispatcherTimer _clockTimer;
 
     private string _currentTitleKey = TitleKeyAppName;
 
@@ -50,6 +51,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _updateToastDismissText = string.Empty;
 
+    [ObservableProperty]
+    private string _currentDateTime = string.Empty;
+
     public MainWindowViewModel(
         INavigationService navigation,
         IBrewTimerService timerService,
@@ -66,6 +70,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _loc.LanguageChanged += OnLanguageChanged;
 
         BrewsNavText = _loc.Get("BrewsNavButton");
+
+        UpdateClock();
+        _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _clockTimer.Tick += (_, _) => UpdateClock();
+        _clockTimer.Start();
 
         // Start on the profile list screen
         _navigation.NavigateTo<ProfileListViewModel>();
@@ -150,8 +159,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             ShowUpdateToast();
     }
 
+    private void UpdateClock() =>
+        CurrentDateTime = DateTime.Now.ToString("dd MMM yyyy  HH:mm:ss");
+
     public void Dispose()
     {
+        _clockTimer.Stop();
         _updateCts.Cancel();
         _updateCts.Dispose();
         _navigation.CurrentViewChanged -= HandleNavigationViewChanged;
