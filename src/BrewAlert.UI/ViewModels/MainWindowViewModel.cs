@@ -18,6 +18,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private const string TitleKeyAppName = "__AppName";
     private const string TitleKeyBrewRunning = "__BrewRunning";
 
+    private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(1);
+
     private readonly INavigationService _navigation;
     private readonly IBrewTimerService _timerService;
     private readonly ILocalizationService _loc;
@@ -67,6 +69,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _timerService.BrewCompleted += OnBrewCompleted;
         _timerService.BrewCancelled += OnBrewCancelled;
         _loc.LanguageChanged += OnLanguageChanged;
+        _updateService.UpdateAvailable += OnUpdateAvailable;
 
         BrewsNavText = _loc.Get("BrewsNavButton");
 
@@ -102,16 +105,23 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         try
         {
-            using var timer = new PeriodicTimer(TimeSpan.FromHours(2));
+            using var timer = new PeriodicTimer(UpdateCheckInterval);
             do
             {
-                var hasUpdate = await _updateService.CheckForUpdatesAsync();
-                if (hasUpdate && !IsUpdateToastVisible)
-                    await Dispatcher.UIThread.InvokeAsync(ShowUpdateToast, DispatcherPriority.Normal, ct);
+                await _updateService.CheckForUpdatesAsync();
             }
             while (await timer.WaitForNextTickAsync(ct));
         }
         catch (OperationCanceledException) { }
+    }
+
+    private void OnUpdateAvailable()
+    {
+        if (IsUpdateToastVisible) return;
+        if (Dispatcher.UIThread.CheckAccess())
+            ShowUpdateToast();
+        else
+            Dispatcher.UIThread.Post(ShowUpdateToast, DispatcherPriority.Normal);
     }
 
     private void ShowUpdateToast()
@@ -201,5 +211,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _timerService.BrewCompleted -= OnBrewCompleted;
         _timerService.BrewCancelled -= OnBrewCancelled;
         _loc.LanguageChanged -= OnLanguageChanged;
+        _updateService.UpdateAvailable -= OnUpdateAvailable;
     }
 }

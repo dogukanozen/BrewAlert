@@ -215,6 +215,34 @@ public class SettingsViewModelTests
     }
 
     [Fact]
+    public async Task CheckForUpdates_WhenUpdateFound_SetsUpdateAvailableStatus()
+    {
+        _updateService.CheckForUpdatesAsync().Returns(true);
+        var vm = new SettingsViewModel(
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+
+        await vm.CheckForUpdatesCommand.ExecuteAsync(null);
+
+        Assert.Equal("UpdateAvailable", vm.UpdateStatusText);
+        Assert.False(vm.IsBusy);
+    }
+
+    [Fact]
+    public async Task CheckForUpdates_WhenNoUpdate_SetsUpToDateStatus()
+    {
+        _updateService.CheckForUpdatesAsync().Returns(false);
+        var vm = new SettingsViewModel(
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+
+        await vm.CheckForUpdatesCommand.ExecuteAsync(null);
+
+        Assert.Equal("UpToDate", vm.UpdateStatusText);
+        Assert.False(vm.IsBusy);
+    }
+
+    [Fact]
     public async Task SaveWebhookUrlCommand_OnError_SetsTestResult()
     {
         _preferencesService
