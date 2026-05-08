@@ -18,6 +18,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private const string TitleKeyAppName = "__AppName";
     private const string TitleKeyBrewRunning = "__BrewRunning";
 
+    private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(1);
+
     private readonly INavigationService _navigation;
     private readonly IBrewTimerService _timerService;
     private readonly ILocalizationService _loc;
@@ -102,7 +104,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         try
         {
-            using var timer = new PeriodicTimer(TimeSpan.FromHours(2));
+            using var timer = new PeriodicTimer(UpdateCheckInterval);
             do
             {
                 var hasUpdate = await _updateService.CheckForUpdatesAsync();
