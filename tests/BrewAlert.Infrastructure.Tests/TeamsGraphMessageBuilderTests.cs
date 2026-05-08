@@ -68,7 +68,12 @@ public class TeamsGraphMessageBuilderTests
             Type = BrewType.Tea,
             BrewDuration = TimeSpan.FromMinutes(3)
         };
-        var session = new BrewSession { Profile = profile };
+        var session = new BrewSession
+        {
+            Profile = profile,
+            StartedAtUtc = DateTime.UtcNow,
+            EndsAtUtc = DateTime.UtcNow.Add(profile.BrewDuration),
+        };
 
         // Act
         var json = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session, English);
