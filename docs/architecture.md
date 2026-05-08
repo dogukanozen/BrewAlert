@@ -90,7 +90,7 @@ Set the active provider in `%AppData%\BrewAlert\preferences.json`:
   }
 }
 ```
-Or via environment variable: `BREWALERT__Notifications__Provider=Webhook`
+Or via environment variable: `BREWALERT__BrewAlert__Notifications__Provider=Webhook`
 
 ### 2.6 Configuration precedence
 
@@ -104,16 +104,16 @@ appsettings.{DOTNET_ENVIRONMENT}.json  (optional, gitignored in practice)
 Environment variables prefixed BREWALERT__
 ```
 
-Environment variable mapping examples (prefix `BREWALERT__` replaces the `BrewAlert:` root segment):
+`AddEnvironmentVariables("BREWALERT__")` strips the `BREWALERT__` prefix and converts `__` to `:`. The `BrewAlert:` config root segment must therefore still be present in the variable name after the prefix:
 
 | Config key | Environment variable |
 |---|---|
-| `BrewAlert:Notifications:Provider` | `BREWALERT__Notifications__Provider` |
-| `BrewAlert:Notifications:Teams:WebhookUrl` | `BREWALERT__Notifications__Teams__WebhookUrl` |
-| `BrewAlert:Notifications:TeamsGraph:TenantId` | `BREWALERT__Notifications__TeamsGraph__TenantId` |
-| `BrewAlert:Notifications:TeamsGraph:ClientId` | `BREWALERT__Notifications__TeamsGraph__ClientId` |
-| `BrewAlert:Notifications:TeamsGraph:ClientSecret` | `BREWALERT__Notifications__TeamsGraph__ClientSecret` |
-| `BrewAlert:Notifications:TeamsGraph:ChatId` | `BREWALERT__Notifications__TeamsGraph__ChatId` |
+| `BrewAlert:Notifications:Provider` | `BREWALERT__BrewAlert__Notifications__Provider` |
+| `BrewAlert:Notifications:Teams:WebhookUrl` | `BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl` |
+| `BrewAlert:Notifications:TeamsGraph:TenantId` | `BREWALERT__BrewAlert__Notifications__TeamsGraph__TenantId` |
+| `BrewAlert:Notifications:TeamsGraph:ClientId` | `BREWALERT__BrewAlert__Notifications__TeamsGraph__ClientId` |
+| `BrewAlert:Notifications:TeamsGraph:ClientSecret` | `BREWALERT__BrewAlert__Notifications__TeamsGraph__ClientSecret` |
+| `BrewAlert:Notifications:TeamsGraph:ChatId` | `BREWALERT__BrewAlert__Notifications__TeamsGraph__ChatId` |
 
 ### 2.7 Security posture
 - No secrets in source.

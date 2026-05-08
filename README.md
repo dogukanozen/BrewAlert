@@ -53,10 +53,10 @@ BrewAlert has three notification backends selected via a single `Provider` setti
 | `"Graph"` | Microsoft Graph API — posts to a specific Teams chat |
 | `"Console"` | Stdout only — default for local dev |
 
-Environment variables use the prefix `BREWALERT__` (replaces the `BrewAlert:` config root):
+Environment variables use the prefix `BREWALERT__`. `AddEnvironmentVariables("BREWALERT__")` strips the prefix and converts `__` to `:`, so the `BrewAlert:` config root must remain in the name:
 
 ```bash
-BREWALERT__Notifications__Provider=Webhook
+BREWALERT__BrewAlert__Notifications__Provider=Webhook
 ```
 
 ### Option A: Power Automate Webhook (Recommended)
@@ -66,11 +66,11 @@ Sends an Adaptive Card to any Teams channel or chat via a Power Automate flow. N
 1. In [flow.microsoft.com](https://flow.microsoft.com), create an **Instant cloud flow** with trigger **"When a HTTP request is received"**.
 2. Add a **"Post a card in a chat or channel"** action; set the **Adaptive Card** field to `triggerBody()`.
 3. Copy the generated HTTP POST URL from the trigger step.
-4. Set the URL via env var or `appsettings.Development.json`:
+4. Set the URL via the Settings screen, env var, or `appsettings.Development.json`:
 
    ```bash
-   export BREWALERT__Notifications__Teams__WebhookUrl="https://your-flow-url..."
-   export BREWALERT__Notifications__Provider="Webhook"
+   export BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl="https://your-flow-url..."
+   export BREWALERT__BrewAlert__Notifications__Provider="Webhook"
    ```
 
    Or in `appsettings.Development.json` (gitignored):
@@ -96,11 +96,11 @@ Posts to a specific Teams chat via an Azure AD App Registration (client credenti
 2. Set the credentials via env vars or `appsettings.Development.json`:
 
    ```bash
-   export BREWALERT__Notifications__Provider="Graph"
-   export BREWALERT__Notifications__TeamsGraph__TenantId="your-tenant-id"
-   export BREWALERT__Notifications__TeamsGraph__ClientId="your-client-id"
-   export BREWALERT__Notifications__TeamsGraph__ClientSecret="your-client-secret"
-   export BREWALERT__Notifications__TeamsGraph__ChatId="19:xxx@thread.v2"
+   export BREWALERT__BrewAlert__Notifications__Provider="Graph"
+   export BREWALERT__BrewAlert__Notifications__TeamsGraph__TenantId="your-tenant-id"
+   export BREWALERT__BrewAlert__Notifications__TeamsGraph__ClientId="your-client-id"
+   export BREWALERT__BrewAlert__Notifications__TeamsGraph__ClientSecret="your-client-secret"
+   export BREWALERT__BrewAlert__Notifications__TeamsGraph__ChatId="19:xxx@thread.v2"
    ```
 
 ## Deploy to Raspberry Pi
@@ -117,6 +117,25 @@ bash ~/brewalert/install.sh
 `install.sh` installs the required system libraries (`libdrm2`, `libgbm1`, `libfontconfig1`, `libfreetype6`, `libinput10`, `libfuse2`), copies `BrewAlert.AppImage` to `~/brewalert/`, and sets up a systemd service that starts automatically on boot.
 
 The app runs in DRM/KMS mode (`--drm`) for direct framebuffer access — no desktop environment required. Auto-updates are handled by Velopack: when a new release is published, the running app downloads and applies the update automatically, then restarts via systemd.
+
+### Teams notifications on Raspberry Pi
+
+`install.sh` creates `/etc/brewalert/env` on first install and never overwrites it on subsequent updates — your credentials survive upgrades. Edit the file to enable Teams:
+
+```bash
+sudo nano /etc/brewalert/env
+```
+
+```
+BREWALERT__BrewAlert__Notifications__Provider=Webhook
+BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl=https://your-flow-url...
+```
+
+```bash
+sudo systemctl restart brewalert
+```
+
+> **Note:** The URL may contain `%` characters (Power Automate query strings). Using `EnvironmentFile=` avoids systemd treating them as specifiers — do not put the URL directly in the `[Service]` section with `Environment=`.
 
 To check the service after installation:
 
