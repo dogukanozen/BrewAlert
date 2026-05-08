@@ -39,6 +39,8 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <!-- Version pin: Avalonia transitive dep 0.21.2 has GHSA-xrw6-gwf8-vvr9 (high). Remove when Avalonia upgrades past this. -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
     <PackageReference Include="Velopack" Version="0.0.1053" />
   </ItemGroup>
 
