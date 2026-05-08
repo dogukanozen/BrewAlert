@@ -105,7 +105,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public async Task InstallUpdate_CallsServiceAndHidesToast()
+    public async Task InstallUpdate_OnSuccess_CallsServiceAndHidesToast()
     {
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
         vm.IsUpdateToastVisible = true;
@@ -114,6 +114,19 @@ public class MainWindowViewModelTests
 
         await _updateService.Received(1).DownloadAndInstallUpdatesAsync();
         Assert.False(vm.IsUpdateToastVisible);
+    }
+
+    [Fact]
+    public async Task InstallUpdate_OnFailure_ShowsErrorMessageInToast()
+    {
+        _updateService.DownloadAndInstallUpdatesAsync().Returns(Task.FromException(new Exception("network error")));
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        vm.IsUpdateToastVisible = true;
+
+        await ((IAsyncRelayCommand)vm.InstallUpdateCommand).ExecuteAsync(null);
+
+        Assert.True(vm.IsUpdateToastVisible);
+        Assert.Equal("UpdateError", vm.UpdateToastMessage);
     }
 
     [Fact]

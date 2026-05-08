@@ -76,14 +76,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private async Task InstallUpdateAsync()
     {
-        IsUpdateToastVisible = false;
         try
         {
             await _updateService.DownloadAndInstallUpdatesAsync();
+            IsUpdateToastVisible = false;
         }
         catch (Exception)
         {
-            // error already logged in UpdateService; swallow here to prevent UI crash
+            UpdateToastMessage = _loc.Get("UpdateError");
         }
     }
 
@@ -99,7 +99,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             {
                 var hasUpdate = await _updateService.CheckForUpdatesAsync();
                 if (hasUpdate && !IsUpdateToastVisible)
-                    await Dispatcher.UIThread.InvokeAsync(ShowUpdateToast);
+                    await Dispatcher.UIThread.InvokeAsync(ShowUpdateToast, DispatcherPriority.Normal, ct);
             }
             while (await timer.WaitForNextTickAsync(ct));
         }
