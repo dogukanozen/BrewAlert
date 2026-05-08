@@ -52,7 +52,7 @@ RestartSec=5
 KillMode=process
 StandardOutput=inherit
 StandardError=inherit
-EnvironmentFile=$ENV_FILE
+EnvironmentFile="$ENV_FILE"
 SERVICE
 
 sudo systemctl daemon-reload
