@@ -27,7 +27,7 @@ public static class TeamsGraphMessageBuilder
             ? $"{session.Profile.BrewDuration.TotalMinutes:F0} {minShort}"
             : $"{session.Profile.BrewDuration.TotalSeconds:F0} {secShort}";
 
-        var completedAt = session.StartedAtUtc.Add(session.Profile.BrewDuration).ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture);
+        var completedAt = session.EndsAtUtc.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture);
 
         var typeLabel = TeamsCardStrings.Get(language, $"BrewType_{session.Profile.Type}");
         var headerTemplate = TeamsCardStrings.Get(language, "HeaderReady");

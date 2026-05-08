@@ -148,7 +148,7 @@ public class TeamsMessageBuilderTests
             EndsAtUtc = utcNow.Add(duration),
         };
 
-        var expectedTime = utcNow.Add(duration).ToLocalTime().ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+        var expectedTime = session.EndsAtUtc.ToLocalTime().ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
         var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session, English);
 
         Assert.Contains(expectedTime, payload);

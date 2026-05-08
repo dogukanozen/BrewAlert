@@ -29,8 +29,7 @@ public static class TeamsMessageBuilder
             ? $"{session.Profile.BrewDuration.TotalMinutes:F0} {minShort}"
             : $"{session.Profile.BrewDuration.TotalSeconds:F0} {secShort}";
 
-        var completedAt = session.StartedAtUtc
-            .Add(session.Profile.BrewDuration)
+        var completedAt = session.EndsAtUtc
             .ToLocalTime()
             .ToString("HH:mm", CultureInfo.InvariantCulture);
 
