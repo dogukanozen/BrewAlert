@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Threading;
 using BrewAlert.Core.Events;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
@@ -109,6 +111,41 @@ public class BrewCompletionNotificationServiceTests
         await Task.Delay(100);
 
         await _notificationService.Received(1).SendBrewCompletedAsync(session, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task BrewCompleted_MoreThanMaxSessions_SendsAllAndBoundsInternalSet()
+    {
+        // 257 distinct sessions — one more than the 256-entry cap
+        const int count = 257;
+        _notificationService
+            .SendBrewCompletedAsync(Arg.Any<BrewSession>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(NotificationResult.Success()));
+
+        var sessions = Enumerable.Range(0, count)
+            .Select(_ => MakeSession())
+            .ToList();
+
+        var received = 0;
+        var tcs = new TaskCompletionSource();
+        using var coordinator = CreateCoordinator();
+        coordinator.NotificationCompleted += (_, _) =>
+        {
+            if (Interlocked.Increment(ref received) == count) tcs.TrySetResult();
+        };
+
+        foreach (var s in sessions)
+            _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(s));
+
+        await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Equal(count, received);
+
+        // Internal dedupe set must be bounded to 256 entries
+        var setField = typeof(BrewCompletionNotificationService)
+            .GetField("_notifiedSessionIds", BindingFlags.NonPublic | BindingFlags.Instance);
+        var set = (HashSet<Guid>)setField!.GetValue(coordinator)!;
+        Assert.True(set.Count <= 256, $"Expected ≤256 remembered ids, got {set.Count}");
     }
 
     [Fact]
