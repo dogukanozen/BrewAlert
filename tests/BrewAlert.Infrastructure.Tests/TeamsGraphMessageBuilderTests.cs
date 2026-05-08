@@ -22,10 +22,12 @@ public class TeamsGraphMessageBuilderTests
             Type = BrewType.Tea,
             BrewDuration = TimeSpan.FromMinutes(3)
         };
+        var startedAt = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
         var session = new BrewSession
         {
             Profile = profile,
-            StartedAtUtc = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc)
+            StartedAtUtc = startedAt,
+            EndsAtUtc = startedAt.Add(profile.BrewDuration),
         };
 
         // Act
@@ -40,7 +42,7 @@ public class TeamsGraphMessageBuilderTests
         Assert.Contains("Tea", json);
         Assert.Contains("3 min", json);
 
-        var expectedTime = session.StartedAtUtc.Add(profile.BrewDuration).ToString("HH:mm", CultureInfo.InvariantCulture);
+        var expectedTime = session.EndsAtUtc.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture);
         Assert.Contains(expectedTime, json);
     }
 
@@ -66,7 +68,12 @@ public class TeamsGraphMessageBuilderTests
             Type = BrewType.Tea,
             BrewDuration = TimeSpan.FromMinutes(3)
         };
-        var session = new BrewSession { Profile = profile };
+        var session = new BrewSession
+        {
+            Profile = profile,
+            StartedAtUtc = DateTime.UtcNow,
+            EndsAtUtc = DateTime.UtcNow.Add(profile.BrewDuration),
+        };
 
         // Act
         var json = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session, English);
@@ -89,10 +96,12 @@ public class TeamsGraphMessageBuilderTests
             Type = BrewType.Tea,
             BrewDuration = TimeSpan.FromMinutes(3)
         };
+        var startedAt2 = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
         var session = new BrewSession
         {
             Profile = profile,
-            StartedAtUtc = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc)
+            StartedAtUtc = startedAt2,
+            EndsAtUtc = startedAt2.Add(profile.BrewDuration),
         };
 
         var json = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session, Turkish);
