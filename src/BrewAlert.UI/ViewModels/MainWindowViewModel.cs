@@ -160,7 +160,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     }
 
     private void UpdateClock() =>
-        CurrentDateTime = DateTime.Now.ToString("dd MMM yyyy  HH:mm:ss");
+        CurrentDateTime = DateTime.Now.ToString("dd MMM yyyy HH:mm:ss");
 
     public void Dispose()
     {
