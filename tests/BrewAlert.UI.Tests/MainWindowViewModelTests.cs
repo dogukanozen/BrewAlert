@@ -1,4 +1,6 @@
+using BrewAlert.Core.Events;
 using BrewAlert.Core.Interfaces;
+using BrewAlert.Core.Models;
 using BrewAlert.UI.Services;
 using BrewAlert.UI.ViewModels;
 using CommunityToolkit.Mvvm.Input;
@@ -77,6 +79,43 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public void NavigateToProfiles_WhenNoActiveSession_NavigatesToProfileList()
+    {
+        // GetActiveSession() returns null by default (NSubstitute reference type default)
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        vm.NavigateToSettingsCommand.Execute(null);
+
+        // Act
+        vm.NavigateToProfilesCommand.Execute(null);
+
+        // Assert
+        _navigation.Received(2).NavigateTo<ProfileListViewModel>(); // once in ctor, once now
+        Assert.Equal("BrewAlert", vm.Title);
+    }
+
+    [Fact]
+    public void NavigateToProfiles_WhenActiveSession_NavigatesToBrewTimerAndSetsTitle()
+    {
+        // Arrange
+        var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
+        var session = new BrewSession
+        {
+            Profile = profile,
+            State = BrewSessionState.Running,
+            Remaining = TimeSpan.FromMinutes(3)
+        };
+        _timerService.GetActiveSession().Returns(session);
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+
+        // Act
+        vm.NavigateToProfilesCommand.Execute(null);
+
+        // Assert
+        _navigation.Received(1).NavigateTo<BrewTimerViewModel>();
+        Assert.Equal("☕ Coffee", vm.Title);
+    }
+
+    [Fact]
     public void NavigateToProfiles_SetsAppNameTitle_NotLocalized()
     {
         // Arrange
@@ -90,6 +129,39 @@ public class MainWindowViewModelTests
         Assert.Equal("BrewAlert", vm.Title);
 
         _loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
+        Assert.Equal("BrewAlert", vm.Title);
+    }
+
+    [Fact]
+    public void BrewCompleted_WhenTitleIsBrewRunning_ResetsToAppName()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        // Simulate brew starting (sets title to brew name)
+        var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
+        var startedSession = new BrewSession { Profile = profile };
+        _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(this, new BrewStartedEvent(startedSession));
+        Assert.Equal("☕ Coffee", vm.Title);
+
+        // Act — brew completes
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(startedSession));
+
+        // Assert
+        Assert.Equal("BrewAlert", vm.Title);
+    }
+
+    [Fact]
+    public void BrewCancelled_WhenTitleIsBrewRunning_ResetsToAppName()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
+        var session = new BrewSession { Profile = profile };
+        _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(this, new BrewStartedEvent(session));
+        Assert.Equal("☕ Coffee", vm.Title);
+
+        // Act — brew cancelled
+        _timerService.BrewCancelled += Raise.Event<EventHandler<BrewCancelledEvent>>(this, new BrewCancelledEvent(session, TimeSpan.FromMinutes(2)));
+
+        // Assert
         Assert.Equal("BrewAlert", vm.Title);
     }
 
@@ -132,7 +204,6 @@ public class MainWindowViewModelTests
     [Fact]
     public void LanguageChanged_WhenToastVisible_RefreshesToastTexts()
     {
-        // _loc.Get returns the key — verifies ShowUpdateToast is called again on language switch
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
         vm.IsUpdateToastVisible = true;
 

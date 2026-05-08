@@ -4,7 +4,8 @@ using BrewAlert.UI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
-/// DI-backed navigation service. Resolves ViewModels from the container
+/// DI-backed navigation service. Resolves ViewModels from the container,
+/// disposes the previous IDisposable view when navigating away,
 /// and notifies subscribers (MainWindowViewModel) of view changes.
 /// </summary>
 public sealed class NavigationService(IServiceProvider serviceProvider) : INavigationService
@@ -21,6 +22,9 @@ public sealed class NavigationService(IServiceProvider serviceProvider) : INavig
 
     public void NavigateTo(ViewModelBase viewModel)
     {
+        if (CurrentView is IDisposable disposable && !ReferenceEquals(CurrentView, viewModel))
+            disposable.Dispose();
+
         CurrentView = viewModel;
         CurrentViewChanged?.Invoke(viewModel);
     }
