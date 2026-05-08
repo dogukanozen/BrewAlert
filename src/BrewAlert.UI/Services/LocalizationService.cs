@@ -100,6 +100,7 @@ public sealed class LocalizationService : ILocalizationService, IDisposable
         ["CurrentVersion"]          = "Current version: {0}",
         ["MinShort"]                = "min",
         ["TestBrewName"]            = "Test Brew",
+        ["UpdateDismiss"]           = "Dismiss",
     };
 
     private static readonly Dictionary<string, string> Turkish = new()
@@ -162,5 +163,6 @@ public sealed class LocalizationService : ILocalizationService, IDisposable
         ["CurrentVersion"]          = "Mevcut sürüm: {0}",
         ["MinShort"]                = "dk",
         ["TestBrewName"]            = "Test Demi",
+        ["UpdateDismiss"]           = "Kapat",
     };
 }

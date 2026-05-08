@@ -4,32 +4,63 @@
              x:Class="BrewAlert.UI.Views.MainView"
              x:DataType="vm:MainWindowViewModel">
 
-    <DockPanel>
-        <!-- Navigation Bar — uses adaptive padding via classes -->
-        <Border DockPanel.Dock="Top"
-                Background="{StaticResource BrewSurfaceBrush}"
-                Padding="12,6">
-            <Grid ColumnDefinitions="*,Auto,Auto">
-                <TextBlock Grid.Column="0"
-                           Text="{Binding Title}"
-                           Classes="brew-title"
-                           VerticalAlignment="Center" />
+    <Grid>
+        <DockPanel>
+            <!-- Navigation Bar — uses adaptive padding via classes -->
+            <Border DockPanel.Dock="Top"
+                    Background="{StaticResource BrewSurfaceBrush}"
+                    Padding="12,6">
+                <Grid ColumnDefinitions="*,Auto,Auto">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding Title}"
+                               Classes="brew-title"
+                               VerticalAlignment="Center" />
 
-                <Button Grid.Column="1"
-                        Content="{Binding BrewsNavText}"
-                        Classes="brew-primary brew-nav-btn"
-                        Command="{Binding NavigateToProfilesCommand}"
-                        Margin="0,0,6,0" />
+                    <Button Grid.Column="1"
+                            Content="{Binding BrewsNavText}"
+                            Classes="brew-primary brew-nav-btn"
+                            Command="{Binding NavigateToProfilesCommand}"
+                            Margin="0,0,6,0" />
 
-                <Button Grid.Column="2"
-                        Content="⚙️"
-                        Classes="brew-primary brew-nav-btn"
-                        Command="{Binding NavigateToSettingsCommand}" />
-            </Grid>
+                    <Button Grid.Column="2"
+                            Content="⚙️"
+                            Classes="brew-primary brew-nav-btn"
+                            Command="{Binding NavigateToSettingsCommand}" />
+                </Grid>
+            </Border>
+
+            <!-- Content Area — responsive margin that won't eat space on small screens -->
+            <ContentControl Content="{Binding CurrentView}"
+                            Margin="8" />
+        </DockPanel>
+
+        <!-- Update Toast — appears at bottom-right when a new version is available -->
+        <Border IsVisible="{Binding IsUpdateToastVisible}"
+                Background="{StaticResource BrewCardBrush}"
+                CornerRadius="12"
+                Padding="16,12"
+                Margin="16"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                BoxShadow="0 4 16 2 #66000000"
+                ZIndex="100">
+            <StackPanel Spacing="10">
+                <TextBlock Text="{Binding UpdateToastMessage}"
+                           Foreground="{StaticResource BrewTextPrimaryBrush}"
+                           FontSize="15"
+                           FontWeight="SemiBold" />
+                <StackPanel Orientation="Horizontal"
+                            Spacing="8"
+                            HorizontalAlignment="Right">
+                    <Button Content="{Binding UpdateToastDismissText}"
+                            Classes="brew-primary brew-nav-btn"
+                            Background="{StaticResource BrewSurfaceBrush}"
+                            Command="{Binding DismissUpdateCommand}" />
+                    <Button Content="{Binding UpdateToastInstallText}"
+                            Classes="brew-primary brew-nav-btn"
+                            Command="{Binding InstallUpdateCommand}" />
+                </StackPanel>
+            </StackPanel>
         </Border>
-
-        <!-- Content Area — responsive margin that won't eat space on small screens -->
-        <ContentControl Content="{Binding CurrentView}"
-                        Margin="8" />
-    </DockPanel>
+    </Grid>
 </UserControl>
