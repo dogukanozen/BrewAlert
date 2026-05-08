@@ -135,4 +135,23 @@ public class TeamsMessageBuilderTests
 
         Assert.Contains("Bağlantı Testi Başarılı", payload);
     }
+
+    [Fact]
+    public void BuildBrewCompletedPayload_CompletedAt_UsesLocalTime()
+    {
+        var utcNow = DateTime.UtcNow;
+        var duration = TimeSpan.FromMinutes(5);
+        var session = new BrewSession
+        {
+            Profile = new BrewProfile { Name = "Test", Type = BrewType.Tea, BrewDuration = duration, Icon = "🍵" },
+            StartedAtUtc = utcNow,
+            EndsAtUtc = utcNow.Add(duration),
+        };
+
+        var expectedTime = utcNow.Add(duration).ToLocalTime().ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session, English);
+
+        Assert.Contains(expectedTime, payload);
+        Assert.DoesNotContain("(UTC)", payload);
+    }
 }

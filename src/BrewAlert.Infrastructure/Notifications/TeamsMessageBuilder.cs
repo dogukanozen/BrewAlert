@@ -31,6 +31,7 @@ public static class TeamsMessageBuilder
 
         var completedAt = session.StartedAtUtc
             .Add(session.Profile.BrewDuration)
+            .ToLocalTime()
             .ToString("HH:mm", CultureInfo.InvariantCulture);
 
         var typeLabel = TeamsCardStrings.Get(language, $"BrewType_{session.Profile.Type}");
@@ -54,7 +55,7 @@ public static class TeamsMessageBuilder
                     [
                         new Fact(TeamsCardStrings.Get(language, "FactProfile"), session.Profile.Name),
                         new Fact(TeamsCardStrings.Get(language, "FactBrewTime"), duration),
-                        new Fact(TeamsCardStrings.Get(language, "FactCompletedAt"), $"{completedAt} {TeamsCardStrings.Get(language, "UtcSuffix")}"),
+                        new Fact(TeamsCardStrings.Get(language, "FactCompletedAt"), completedAt),
                     ],
                 },
                 new TextBlock

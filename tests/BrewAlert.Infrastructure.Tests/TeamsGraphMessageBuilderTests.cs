@@ -40,7 +40,7 @@ public class TeamsGraphMessageBuilderTests
         Assert.Contains("Tea", json);
         Assert.Contains("3 min", json);
 
-        var expectedTime = session.StartedAtUtc.Add(profile.BrewDuration).ToString("HH:mm", CultureInfo.InvariantCulture);
+        var expectedTime = session.StartedAtUtc.Add(profile.BrewDuration).ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture);
         Assert.Contains(expectedTime, json);
     }
 
