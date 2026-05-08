@@ -23,13 +23,18 @@ public static class TeamsMessageBuilder
 
     public static string BuildBrewCompletedPayload(BrewSession session, string language)
     {
+        ArgumentNullException.ThrowIfNull(session);
+
         var minShort = TeamsCardStrings.Get(language, "MinShort");
         var secShort = TeamsCardStrings.Get(language, "SecShort");
         var duration = session.Profile.BrewDuration.TotalMinutes >= 1
             ? $"{session.Profile.BrewDuration.TotalMinutes:F0} {minShort}"
             : $"{session.Profile.BrewDuration.TotalSeconds:F0} {secShort}";
 
-        var completedAt = session.EndsAtUtc
+        var endsAt = session.EndsAtUtc == DateTime.MinValue
+            ? session.StartedAtUtc.Add(session.Profile.BrewDuration)
+            : session.EndsAtUtc;
+        var completedAt = endsAt
             .ToLocalTime()
             .ToString("HH:mm", CultureInfo.InvariantCulture);
 

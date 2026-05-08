@@ -137,6 +137,31 @@ public class TeamsMessageBuilderTests
     }
 
     [Fact]
+    public void BuildBrewCompletedPayload_NullSession_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            TeamsMessageBuilder.BuildBrewCompletedPayload(null!, English));
+    }
+
+    [Fact]
+    public void BuildBrewCompletedPayload_EndsAtMinValue_FallsBackToStartPlusDuration()
+    {
+        var startedAt = new DateTime(2026, 5, 8, 10, 0, 0, DateTimeKind.Utc);
+        var duration = TimeSpan.FromMinutes(3);
+        var session = new BrewSession
+        {
+            Profile = new BrewProfile { Name = "Test", Type = BrewType.Tea, BrewDuration = duration, Icon = "🍵" },
+            StartedAtUtc = startedAt,
+            EndsAtUtc = DateTime.MinValue,
+        };
+
+        var expected = startedAt.Add(duration).ToLocalTime().ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+        var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session, English);
+
+        Assert.Contains(expected, payload);
+    }
+
+    [Fact]
     public void BuildBrewCompletedPayload_CompletedAt_UsesLocalTime()
     {
         var utcNow = DateTime.UtcNow;

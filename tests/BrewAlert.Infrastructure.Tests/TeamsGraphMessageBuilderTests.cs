@@ -119,4 +119,30 @@ public class TeamsGraphMessageBuilderTests
 
         Assert.Contains("Bağlantı Testi Başarılı", json);
     }
+
+    [Fact]
+    public void BuildBrewCompletedPayload_NullSession_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            TeamsGraphMessageBuilder.BuildBrewCompletedPayload(null!, English));
+    }
+
+    [Fact]
+    public void BuildBrewCompletedPayload_EndsAtMinValue_FallsBackToStartPlusDuration()
+    {
+        var startedAt = new DateTime(2026, 5, 8, 10, 0, 0, DateTimeKind.Utc);
+        var duration = TimeSpan.FromMinutes(3);
+        var profile = new BrewProfile { Name = "Test", Icon = "🍵", Type = BrewType.Tea, BrewDuration = duration };
+        var session = new BrewSession
+        {
+            Profile = profile,
+            StartedAtUtc = startedAt,
+            EndsAtUtc = DateTime.MinValue,
+        };
+
+        var expected = startedAt.Add(duration).ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture);
+        var json = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session, English);
+
+        Assert.Contains(expected, json);
+    }
 }
