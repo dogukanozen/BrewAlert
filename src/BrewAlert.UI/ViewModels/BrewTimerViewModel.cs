@@ -170,7 +170,11 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
             Progress = 1.0;
             Remaining = TimeSpan.Zero;
             StatusText = _loc.Get("Ready");
-            NotificationStatus = _loc.Get("SendingNotification");
+            // Only set "Sending" if NotificationCompleted hasn't already delivered a result.
+            // When the notification service completes synchronously the coordinator can fire
+            // NotificationCompleted before this Post runs, so we must not overwrite it.
+            if (string.IsNullOrEmpty(NotificationStatus))
+                NotificationStatus = _loc.Get("SendingNotification");
         });
     }
 

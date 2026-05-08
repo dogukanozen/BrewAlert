@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using BrewAlert.Core.Events;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
@@ -191,6 +192,53 @@ public class BrewTimerViewModelTests
         // Assert
         Assert.False(vm.IsRunning);
         _navigation.Received(1).NavigateTo<ProfileListViewModel>();
+    }
+
+    [AvaloniaFact]
+    public async Task OnBrewCompleted_WhenNotificationAlreadySucceeded_PreservesSuccessStatus()
+    {
+        // Arrange — simulate the race where NotificationCompleted fires before BrewCompleted's Post runs
+        var vm = CreateVm();
+        var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4) };
+        var session = new BrewSession { Profile = profile, Remaining = profile.BrewDuration };
+        _timerService.GetActiveSession().Returns((BrewSession?)null);
+        _timerService.Start(profile).Returns(session);
+        vm.StartBrew(profile);
+
+        // NotificationCompleted fires first (synchronous notifier path)
+        _notificationCoordinator.NotificationCompleted +=
+            Raise.Event<EventHandler<BrewNotificationResult>>(this, new BrewNotificationResult(session.Id, true));
+
+        // BrewCompleted fires after — its Post must not overwrite the already-final status
+        _timerService.BrewCompleted +=
+            Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
+
+        // Flush all queued UI-thread posts (InvokeAsync is enqueued after them)
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        Assert.Equal("✅ Notification sent!", vm.NotificationStatus);
+    }
+
+    [AvaloniaFact]
+    public async Task OnBrewCompleted_WhenNotificationAlreadyFailed_PreservesFailureStatus()
+    {
+        var vm = CreateVm();
+        var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4) };
+        var session = new BrewSession { Profile = profile, Remaining = profile.BrewDuration };
+        _timerService.GetActiveSession().Returns((BrewSession?)null);
+        _timerService.Start(profile).Returns(session);
+        vm.StartBrew(profile);
+
+        _notificationCoordinator.NotificationCompleted +=
+            Raise.Event<EventHandler<BrewNotificationResult>>(
+                this, new BrewNotificationResult(session.Id, false, "Teams unreachable"));
+
+        _timerService.BrewCompleted +=
+            Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
+
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        Assert.Equal("❌ Could not send: Teams unreachable", vm.NotificationStatus);
     }
 
     // Helper to read the private _activeSessionId via reflection for testing attachment.
