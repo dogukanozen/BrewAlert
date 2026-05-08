@@ -251,18 +251,10 @@
                                FontSize="12"
                                Foreground="{StaticResource BrewTextSecondaryBrush}" />
                     
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Content="{Binding CheckUpdatesButtonText}"
-                                Command="{Binding CheckForUpdatesCommand}"
-                                IsEnabled="{Binding !IsBusy}"
-                                Classes="brew-primary" />
-                        
-                        <Button Content="{Binding InstallUpdateButtonText}"
-                                Command="{Binding InstallUpdateCommand}"
-                                IsEnabled="{Binding IsUpdateAvailable}"
-                                IsVisible="{Binding IsUpdateAvailable}"
-                                Classes="brew-primary" />
-                    </StackPanel>
+                    <Button Content="{Binding CheckUpdatesButtonText}"
+                            Command="{Binding CheckForUpdatesCommand}"
+                            IsEnabled="{Binding !IsBusy}"
+                            Classes="brew-primary" />
                     
                     <TextBlock Text="{Binding UpdateStatusText}"
                                FontSize="14" FontWeight="SemiBold"

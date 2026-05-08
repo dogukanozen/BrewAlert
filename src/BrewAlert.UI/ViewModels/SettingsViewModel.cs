@@ -53,9 +53,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     // Update localized labels
     [ObservableProperty] private string _updateSettingsTitle = string.Empty;
     [ObservableProperty] private string _checkUpdatesButtonText = string.Empty;
-    [ObservableProperty] private string _installUpdateButtonText = string.Empty;
     [ObservableProperty] private string _updateStatusText = string.Empty;
-    [ObservableProperty] private bool _isUpdateAvailable;
     [ObservableProperty] private string _versionText = string.Empty;
 
     // Graph config display (masked)
@@ -156,12 +154,11 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
         UpdateSettingsTitle = _loc.Get("UpdateTitle");
         CheckUpdatesButtonText = _loc.Get("CheckUpdates");
-        InstallUpdateButtonText = _loc.Get("InstallUpdate");
         VersionText = string.Format(_loc.Get("CurrentVersion"), _updateService.CurrentVersion);
-        
+
         if (!IsBusy)
         {
-            UpdateStatusText = IsUpdateAvailable ? _loc.Get("UpdateAvailable") : _loc.Get("UpToDate");
+            UpdateStatusText = _updateService.IsUpdateAvailable ? _loc.Get("UpdateAvailable") : _loc.Get("UpToDate");
         }
 
         foreach (var p in Profiles)
@@ -175,31 +172,12 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         UpdateStatusText = _loc.Get("CheckingUpdates");
         try
         {
-            IsUpdateAvailable = await _updateService.CheckForUpdatesAsync();
-            UpdateStatusText = IsUpdateAvailable ? _loc.Get("UpdateAvailable") : _loc.Get("UpToDate");
+            var hasUpdate = await _updateService.CheckForUpdatesAsync();
+            UpdateStatusText = hasUpdate ? _loc.Get("UpdateAvailable") : _loc.Get("UpToDate");
         }
         catch
         {
             UpdateStatusText = _loc.Get("UpdateError");
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task InstallUpdate()
-    {
-        IsBusy = true;
-        UpdateStatusText = _loc.Get("InstallingUpdate");
-        try
-        {
-            await _updateService.DownloadAndInstallUpdatesAsync();
-        }
-        catch (Exception ex)
-        {
-            UpdateStatusText = string.Format(_loc.Get("ErrorPrefix"), ex.Message);
         }
         finally
         {

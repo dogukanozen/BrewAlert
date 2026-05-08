@@ -69,6 +69,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _timerService.BrewCompleted += OnBrewCompleted;
         _timerService.BrewCancelled += OnBrewCancelled;
         _loc.LanguageChanged += OnLanguageChanged;
+        _updateService.UpdateAvailable += OnUpdateAvailable;
 
         BrewsNavText = _loc.Get("BrewsNavButton");
 
@@ -107,13 +108,20 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             using var timer = new PeriodicTimer(UpdateCheckInterval);
             do
             {
-                var hasUpdate = await _updateService.CheckForUpdatesAsync();
-                if (hasUpdate && !IsUpdateToastVisible)
-                    await Dispatcher.UIThread.InvokeAsync(ShowUpdateToast, DispatcherPriority.Normal, ct);
+                await _updateService.CheckForUpdatesAsync();
             }
             while (await timer.WaitForNextTickAsync(ct));
         }
         catch (OperationCanceledException) { }
+    }
+
+    private void OnUpdateAvailable()
+    {
+        if (IsUpdateToastVisible) return;
+        if (Dispatcher.UIThread.CheckAccess())
+            ShowUpdateToast();
+        else
+            Dispatcher.UIThread.Post(ShowUpdateToast, DispatcherPriority.Normal);
     }
 
     private void ShowUpdateToast()
@@ -203,5 +211,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _timerService.BrewCompleted -= OnBrewCompleted;
         _timerService.BrewCancelled -= OnBrewCancelled;
         _loc.LanguageChanged -= OnLanguageChanged;
+        _updateService.UpdateAvailable -= OnUpdateAvailable;
     }
 }

@@ -13,6 +13,7 @@ public class UpdateService : IUpdateService
     private UpdateInfo? _updateInfo;
     private const string RepoUrl = "https://github.com/dogukanozen/brewalert";
 
+    public event Action? UpdateAvailable;
     public bool IsUpdateAvailable => _updateInfo != null;
     public string CurrentVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
 
@@ -27,6 +28,8 @@ public class UpdateService : IUpdateService
         {
             var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
             _updateInfo = await mgr.CheckForUpdatesAsync();
+            if (_updateInfo != null)
+                UpdateAvailable?.Invoke();
             return _updateInfo != null;
         }
         catch (Exception ex)

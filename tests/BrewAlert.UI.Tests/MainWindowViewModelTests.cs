@@ -1,3 +1,4 @@
+using Avalonia.Headless.XUnit;
 using BrewAlert.Core.Events;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
@@ -212,6 +213,32 @@ public class MainWindowViewModelTests
         Assert.Equal("UpdateAvailable", vm.UpdateToastMessage);
         Assert.Equal("InstallUpdate", vm.UpdateToastInstallText);
         Assert.Equal("UpdateDismiss", vm.UpdateToastDismissText);
+    }
+
+    [AvaloniaFact]
+    public void UpdateAvailableEvent_WhenRaised_ShowsToastWithLocalizedTexts()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        Assert.False(vm.IsUpdateToastVisible);
+
+        _updateService.UpdateAvailable += Raise.Event<Action>();
+
+        Assert.True(vm.IsUpdateToastVisible);
+        Assert.Equal("UpdateAvailable", vm.UpdateToastMessage);
+        Assert.Equal("InstallUpdate", vm.UpdateToastInstallText);
+        Assert.Equal("UpdateDismiss", vm.UpdateToastDismissText);
+    }
+
+    [AvaloniaFact]
+    public void UpdateAvailableEvent_WhenToastAlreadyVisible_DoesNotResetTexts()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        vm.IsUpdateToastVisible = true;
+        vm.UpdateToastMessage = "already shown";
+
+        _updateService.UpdateAvailable += Raise.Event<Action>();
+
+        Assert.Equal("already shown", vm.UpdateToastMessage);
     }
 
     [Fact]
