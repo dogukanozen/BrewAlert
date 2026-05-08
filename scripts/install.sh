@@ -22,7 +22,16 @@ fi
 chmod +x "$INSTALL_DIR/$APPIMAGE_NAME"
 
 echo "[3/3] Setting up systemd service..."
-sudo tee /etc/systemd/system/$SERVICE_NAME.service > /dev/null << SERVICE
+
+SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+
+# Preserve existing Environment= lines so updates don't wipe user config (e.g. webhook URL)
+PRESERVED_ENV=""
+if [ -f "$SERVICE_FILE" ]; then
+  PRESERVED_ENV=$(grep -E '^Environment=' "$SERVICE_FILE" || true)
+fi
+
+sudo tee "$SERVICE_FILE" > /dev/null << SERVICE
 [Unit]
 Description=BrewAlert Brew Timer App
 After=network.target
@@ -36,10 +45,12 @@ RestartSec=5
 KillMode=process
 StandardOutput=inherit
 StandardError=inherit
-
-[Install]
-WantedBy=multi-user.target
 SERVICE
+
+# Re-append preserved Environment= lines
+if [ -n "$PRESERVED_ENV" ]; then
+  echo "$PRESERVED_ENV" | sudo tee -a "$SERVICE_FILE" > /dev/null
+fi
 
 sudo systemctl daemon-reload
 sudo systemctl enable $SERVICE_NAME.service
