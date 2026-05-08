@@ -11,19 +11,21 @@ public class MainWindowViewModelTests
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly IBrewTimerService _timerService = Substitute.For<IBrewTimerService>();
     private readonly ILocalizationService _loc;
+    private readonly IUpdateService _updateService = Substitute.For<IUpdateService>();
 
     public MainWindowViewModelTests()
     {
         _loc = Substitute.For<ILocalizationService>();
         _loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
         _loc.CurrentLanguage.Returns("English");
+        _updateService.CheckForUpdatesAsync().Returns(false);
     }
 
     [Fact]
     public void Constructor_NavigatesToProfileList()
     {
         // Act
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc);
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
 
         // Assert
         _navigation.Received(1).NavigateTo<ProfileListViewModel>();
@@ -33,7 +35,7 @@ public class MainWindowViewModelTests
     public void HandleNavigationViewChanged_UpdatesCurrentView()
     {
         // Arrange
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc);
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
         var mockVm = Substitute.For<ViewModelBase>();
 
         // Act
@@ -47,7 +49,7 @@ public class MainWindowViewModelTests
     public void NavigateToSettings_SetsLocalizedTitle()
     {
         // Arrange
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc);
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
 
         // Act
         vm.NavigateToSettingsCommand.Execute(null);
@@ -62,7 +64,7 @@ public class MainWindowViewModelTests
     {
         // Arrange — first call returns English label, second returns Turkish.
         _loc.Get("SettingsTitle").Returns("Settings", "Ayarlar");
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc);
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
         vm.NavigateToSettingsCommand.Execute(null);
         Assert.Equal("Settings", vm.Title);
 
@@ -77,7 +79,7 @@ public class MainWindowViewModelTests
     public void NavigateToProfiles_SetsAppNameTitle_NotLocalized()
     {
         // Arrange
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc);
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
         vm.NavigateToSettingsCommand.Execute(null);
 
         // Act

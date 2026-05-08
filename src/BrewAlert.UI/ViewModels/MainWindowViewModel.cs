@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using BrewAlert.Core.Events;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.UI.Services;
@@ -23,6 +24,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly INavigationService _navigation;
     private readonly IBrewTimerService _timerService;
     private readonly ILocalizationService _loc;
+    private readonly IUpdateService _updateService;
+    private readonly CancellationTokenSource _updateCts = new();
 
     private string _currentTitleKey = TitleKeyAppName;
 
@@ -35,14 +38,28 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _brewsNavText = string.Empty;
 
+    [ObservableProperty]
+    private bool _isUpdateToastVisible;
+
+    [ObservableProperty]
+    private string _updateToastMessage = string.Empty;
+
+    [ObservableProperty]
+    private string _updateToastInstallText = string.Empty;
+
+    [ObservableProperty]
+    private string _updateToastDismissText = string.Empty;
+
     public MainWindowViewModel(
         INavigationService navigation,
         IBrewTimerService timerService,
-        ILocalizationService loc)
+        ILocalizationService loc,
+        IUpdateService updateService)
     {
         _navigation = navigation;
         _timerService = timerService;
         _loc = loc;
+        _updateService = updateService;
 
         _navigation.CurrentViewChanged += HandleNavigationViewChanged;
         _timerService.BrewStarted += OnBrewStarted;
@@ -52,6 +69,41 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         // Start on the profile list screen
         _navigation.NavigateTo<ProfileListViewModel>();
+
+        _ = RunPeriodicUpdateCheckAsync(_updateCts.Token);
+    }
+
+    [RelayCommand]
+    private async Task InstallUpdateAsync()
+    {
+        IsUpdateToastVisible = false;
+        await _updateService.DownloadAndInstallUpdatesAsync();
+    }
+
+    [RelayCommand]
+    private void DismissUpdate() => IsUpdateToastVisible = false;
+
+    private async Task RunPeriodicUpdateCheckAsync(CancellationToken ct)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromHours(2));
+            while (await timer.WaitForNextTickAsync(ct))
+            {
+                var hasUpdate = await _updateService.CheckForUpdatesAsync();
+                if (hasUpdate && !IsUpdateToastVisible)
+                    await Dispatcher.UIThread.InvokeAsync(ShowUpdateToast);
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private void ShowUpdateToast()
+    {
+        UpdateToastMessage = _loc.Get("UpdateAvailable");
+        UpdateToastInstallText = _loc.Get("InstallUpdate");
+        UpdateToastDismissText = _loc.Get("UpdateDismiss");
+        IsUpdateToastVisible = true;
     }
 
     [RelayCommand]
@@ -85,13 +137,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         BrewsNavText = _loc.Get("BrewsNavButton");
         if (_currentTitleKey != TitleKeyAppName && _currentTitleKey != TitleKeyBrewRunning)
-        {
             Title = _loc.Get(_currentTitleKey);
-        }
+        if (IsUpdateToastVisible)
+            ShowUpdateToast();
     }
 
     public void Dispose()
     {
+        _updateCts.Cancel();
+        _updateCts.Dispose();
         _navigation.CurrentViewChanged -= HandleNavigationViewChanged;
         _timerService.BrewStarted -= OnBrewStarted;
         _loc.LanguageChanged -= OnLanguageChanged;
