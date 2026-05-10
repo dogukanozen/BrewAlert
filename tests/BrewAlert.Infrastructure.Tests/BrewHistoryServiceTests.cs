@@ -14,10 +14,10 @@ public class BrewHistoryServiceTests
     {
         var timer = new FakeTimer();
         var repo = new InMemoryHistoryRepository();
-        var service = new BrewHistoryService(timer, repo, NullLogger<BrewHistoryService>.Instance);
+        using var service = new BrewHistoryService(timer, repo, NullLogger<BrewHistoryService>.Instance);
 
-        BrewHistoryEntry? raised = null;
-        service.HistoryUpdated += (_, e) => raised = e;
+        var raised = new TaskCompletionSource<BrewHistoryEntry>(TaskCreationOptions.RunContinuationsAsynchronously);
+        service.HistoryUpdated += (_, e) => raised.TrySetResult(e);
 
         var profile = new BrewProfile { Name = "Yeşil Çay", Type = BrewType.Tea, BrewDuration = TimeSpan.FromMinutes(3), Icon = "🍵" };
         var session = new BrewSession
@@ -31,17 +31,13 @@ public class BrewHistoryServiceTests
 
         timer.Raise(new BrewCompletedEvent(session));
 
-        // Persistence is fire-and-forget; wait briefly for the in-memory repo to record it.
-        for (int i = 0; i < 50 && repo.Entries.Count == 0; i++) await Task.Delay(10);
+        var entry = await raised.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.Single(repo.Entries);
         Assert.Equal("Yeşil Çay", repo.Entries[0].ProfileName);
         Assert.Equal(BrewType.Tea, repo.Entries[0].Type);
         Assert.Equal("🍵", repo.Entries[0].Icon);
-        Assert.NotNull(raised);
-        Assert.Equal(repo.Entries[0].Id, raised!.Id);
-
-        service.Dispose();
+        Assert.Equal(repo.Entries[0].Id, entry.Id);
     }
 
     [Fact]
@@ -62,10 +58,12 @@ public class BrewHistoryServiceTests
 
     private sealed class FakeTimer : IBrewTimerService
     {
+#pragma warning disable CS0067 // unused — interface contract
         public event EventHandler<TimeSpan>? TimerTick;
-        public event EventHandler<BrewCompletedEvent>? BrewCompleted;
         public event EventHandler<BrewStartedEvent>? BrewStarted;
         public event EventHandler<BrewCancelledEvent>? BrewCancelled;
+#pragma warning restore CS0067
+        public event EventHandler<BrewCompletedEvent>? BrewCompleted;
 
         public BrewSession Start(BrewProfile profile) => throw new NotSupportedException();
         public void Cancel(Guid sessionId) { }
@@ -74,9 +72,6 @@ public class BrewHistoryServiceTests
         public BrewSession? GetActiveSession() => null;
 
         public void Raise(BrewCompletedEvent e) => BrewCompleted?.Invoke(this, e);
-
-        // Suppress unused-event warnings.
-        public void Touch() { TimerTick?.Invoke(this, default); BrewStarted?.Invoke(this, null!); BrewCancelled?.Invoke(this, null!); }
     }
 
     private sealed class InMemoryHistoryRepository : IBrewHistoryRepository
