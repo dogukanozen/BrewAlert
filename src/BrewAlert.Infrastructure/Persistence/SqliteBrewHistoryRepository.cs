@@ -121,15 +121,23 @@ public sealed class SqliteBrewHistoryRepository : IBrewHistoryRepository
     private async Task<SqliteConnection> OpenAsync(CancellationToken ct)
     {
         var conn = new SqliteConnection(_connectionString);
-        await conn.OpenAsync(ct);
-        if (!_schemaReady)
+        try
         {
-            await using var schemaCmd = conn.CreateCommand();
-            schemaCmd.CommandText = CreateTableSql;
-            await schemaCmd.ExecuteNonQueryAsync(ct);
-            _schemaReady = true;
+            await conn.OpenAsync(ct);
+            if (!_schemaReady)
+            {
+                await using var schemaCmd = conn.CreateCommand();
+                schemaCmd.CommandText = CreateTableSql;
+                await schemaCmd.ExecuteNonQueryAsync(ct);
+                _schemaReady = true;
+            }
+            return conn;
         }
-        return conn;
+        catch
+        {
+            await conn.DisposeAsync();
+            throw;
+        }
     }
 
     private static async Task<IReadOnlyList<BrewHistoryEntry>> ReadEntriesAsync(SqliteCommand cmd, CancellationToken ct)
