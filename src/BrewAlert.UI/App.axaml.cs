@@ -35,6 +35,9 @@ public partial class App : Application
 
         var mainVm = _services.GetRequiredService<MainWindowViewModel>();
 
+        // Eagerly resolve so the singleton subscribes to BrewCompleted at startup.
+        _ = _services.GetRequiredService<IBrewHistoryService>();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownRequested += (_, _) =>
@@ -90,6 +93,10 @@ public partial class App : Application
         // Infrastructure
         services.AddSingleton<IProfileRepository>(sp =>
             new JsonProfileRepository(sp.GetRequiredService<ILogger<JsonProfileRepository>>()));
+        services.AddSingleton<IBrewHistoryRepository>(sp =>
+            new SqliteBrewHistoryRepository(BrewAlertPaths.History,
+                sp.GetRequiredService<ILogger<SqliteBrewHistoryRepository>>()));
+        services.AddSingleton<IBrewHistoryService, BrewHistoryService>();
 
         // Notification services — active back-end selected via BrewAlert:Notifications:Provider
         services.AddHttpClient();

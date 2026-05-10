@@ -101,6 +101,11 @@ public sealed class LocalizationService : ILocalizationService, IDisposable
         ["MinShort"]                = "min",
         ["TestBrewName"]            = "Test Brew",
         ["UpdateDismiss"]           = "Dismiss",
+        ["RecentBrews"]             = "Recent Brews",
+        ["JustNow"]                 = "just now",
+        ["MinutesAgo"]              = "{0}m ago",
+        ["HoursAgo"]                = "{0}h ago",
+        ["DaysAgo"]                 = "{0}d ago",
     };
 
     private static readonly Dictionary<string, string> Turkish = new()
@@ -164,5 +169,10 @@ public sealed class LocalizationService : ILocalizationService, IDisposable
         ["MinShort"]                = "dk",
         ["TestBrewName"]            = "Test Demi",
         ["UpdateDismiss"]           = "Kapat",
+        ["RecentBrews"]             = "Son Demlemeler",
+        ["JustNow"]                 = "az önce",
+        ["MinutesAgo"]              = "{0} dk önce",
+        ["HoursAgo"]                = "{0} sa önce",
+        ["DaysAgo"]                 = "{0} g önce",
     };
 }
