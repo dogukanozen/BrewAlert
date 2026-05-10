@@ -4,6 +4,7 @@ using BrewAlert.Core.Services;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.UI.Services;
 using BrewAlert.UI.ViewModels;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using System;
@@ -20,6 +21,7 @@ public class ProfileListViewModelTests
     private readonly IProfileRepository _repository = Substitute.For<IProfileRepository>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly ILocalizationService _loc;
+    private readonly IBrewHistoryService _history = Substitute.For<IBrewHistoryService>();
 
     public ProfileListViewModelTests()
     {
@@ -27,6 +29,8 @@ public class ProfileListViewModelTests
         _loc = Substitute.For<ILocalizationService>();
         _loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
         _loc.CurrentLanguage.Returns("English");
+        _history.GetRecentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<BrewHistoryEntry>>(Array.Empty<BrewHistoryEntry>()));
     }
 
     [AvaloniaFact]
@@ -38,7 +42,7 @@ public class ProfileListViewModelTests
 
         // Act
         var tcs = new TaskCompletionSource();
-        var vm = new ProfileListViewModel(_profileService, _navigation, _loc);
+        var vm = new ProfileListViewModel(_profileService, _navigation, _loc, _history, NullLogger<ProfileListViewModel>.Instance);
 
         if (!vm.IsLoading)
         {
@@ -80,7 +84,7 @@ public class ProfileListViewModelTests
             _navigation,
             timerLoc);
 
-        var vm = new ProfileListViewModel(_profileService, _navigation, _loc);
+        var vm = new ProfileListViewModel(_profileService, _navigation, _loc, _history, NullLogger<ProfileListViewModel>.Instance);
 
         // After NavigateTo<BrewTimerViewModel>(), CurrentView returns timerVm
         _navigation.CurrentView.Returns(timerVm);
@@ -117,7 +121,7 @@ public class ProfileListViewModelTests
             timerLoc);
 
         _navigation.CurrentView.Returns(timerVm);
-        var vm = new ProfileListViewModel(_profileService, _navigation, _loc);
+        var vm = new ProfileListViewModel(_profileService, _navigation, _loc, _history, NullLogger<ProfileListViewModel>.Instance);
 
         // Act
         vm.SelectProfileCommand.Execute(profile);

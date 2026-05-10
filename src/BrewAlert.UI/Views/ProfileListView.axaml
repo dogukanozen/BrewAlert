@@ -4,7 +4,7 @@
              x:Class="BrewAlert.UI.Views.ProfileListView"
              x:DataType="vm:ProfileListViewModel">
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
         <!-- Header -->
         <TextBlock Grid.Row="0"
                    Text="{Binding PageTitle}"
@@ -19,8 +19,50 @@
                    Margin="0,4,0,8"
                    IsVisible="{Binding IsLoading}" />
 
+        <!-- Recent Brews strip — hidden when empty -->
+        <StackPanel Grid.Row="2"
+                    Margin="0,4,0,12"
+                    IsVisible="{Binding HasRecentBrews}">
+            <TextBlock Text="{Binding RecentBrewsLabel}"
+                       Classes="brew-subtitle"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       Margin="6,0,0,6" />
+            <ItemsControl ItemsSource="{Binding RecentBrews}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{StaticResource BrewSurfaceBrush}"
+                                CornerRadius="999"
+                                Padding="10,6"
+                                Margin="4">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Icon}" FontSize="16" />
+                                <TextBlock Text="{Binding Name}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource BrewTextPrimaryBrush}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxWidth="140" />
+                                <TextBlock Text="·" Foreground="{StaticResource BrewTextSecondaryBrush}" />
+                                <TextBlock Text="{Binding RelativeTime}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource BrewTextSecondaryBrush}"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
         <!-- Profile Cards — WrapPanel auto-flows cards to fill available width -->
-        <ScrollViewer Grid.Row="2">
+        <ScrollViewer Grid.Row="3">
             <ItemsControl ItemsSource="{Binding Profiles}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>

@@ -12,4 +12,7 @@ public static class BrewAlertPaths
 
     /// <summary>User preferences file (provider, language). Written by Settings screen.</summary>
     public static string Preferences { get; } = System.IO.Path.Combine(AppDataDir, "preferences.json");
+
+    /// <summary>SQLite database file storing completed brew history.</summary>
+    public static string History { get; } = System.IO.Path.Combine(AppDataDir, "history.db");
 }
