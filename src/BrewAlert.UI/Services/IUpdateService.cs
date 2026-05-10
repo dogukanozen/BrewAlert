@@ -6,7 +6,7 @@ public interface IUpdateService
 {
     event Action? UpdateAvailable;
     Task<bool> CheckForUpdatesAsync();
-    Task DownloadAndInstallUpdatesAsync();
+    Task DownloadAndInstallUpdatesAsync();  // update must already be downloaded via CheckForUpdatesAsync
     bool IsUpdateAvailable { get; }
     string CurrentVersion { get; }
 }

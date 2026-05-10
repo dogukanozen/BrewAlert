@@ -29,34 +29,34 @@ public class UpdateService : IUpdateService
             var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
             _updateInfo = await mgr.CheckForUpdatesAsync();
             if (_updateInfo != null)
+            {
+                await mgr.DownloadUpdatesAsync(_updateInfo);
                 UpdateAvailable?.Invoke();
+            }
             return _updateInfo != null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking for updates from {RepoUrl}", RepoUrl);
+            _logger.LogError(ex, "Error checking or downloading updates from {RepoUrl}", RepoUrl);
             return false;
         }
     }
 
-    public async Task DownloadAndInstallUpdatesAsync()
+    public Task DownloadAndInstallUpdatesAsync()
     {
-        if (_updateInfo == null) return;
+        if (_updateInfo == null) return Task.CompletedTask;
 
         try
         {
             var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
-            
-            // Güncellemeyi indir
-            await mgr.DownloadUpdatesAsync(_updateInfo);
-
-            // systemd servisi ana PID çıkınca yeniden başlatır; Velopack'in
-            // kendi restart mekanizması systemd ile çakışır, bu yüzden Exit kullanılır.
+            // Update is already downloaded; apply and exit.
+            // systemd restarts the process, so we use Exit instead of Velopack's own restart.
             mgr.ApplyUpdatesAndExit(_updateInfo);
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error downloading or applying updates");
+            _logger.LogError(ex, "Error applying updates");
             throw;
         }
     }
