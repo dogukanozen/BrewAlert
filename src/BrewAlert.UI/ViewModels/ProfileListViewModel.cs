@@ -5,6 +5,7 @@ using BrewAlert.Core.Services;
 using BrewAlert.UI.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -23,6 +24,7 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
     private readonly INavigationService _navigation;
     private readonly ILocalizationService _loc;
     private readonly IBrewHistoryService _history;
+    private readonly ILogger<ProfileListViewModel> _logger;
 
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string _pageTitle = string.Empty;
@@ -37,12 +39,14 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
         BrewProfileService profileService,
         INavigationService navigation,
         ILocalizationService loc,
-        IBrewHistoryService history)
+        IBrewHistoryService history,
+        ILogger<ProfileListViewModel> logger)
     {
         _profileService = profileService;
         _navigation = navigation;
         _loc = loc;
         _history = history;
+        _logger = logger;
 
         _loc.LanguageChanged += OnLanguageChanged;
         _history.HistoryUpdated += OnHistoryUpdated;
@@ -88,17 +92,26 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
 
     private async Task LoadRecentBrewsAsync()
     {
-        var entries = await _history.GetRecentAsync(RecentBrewLimit);
-        var now = DateTime.UtcNow;
-        RecentBrews.Clear();
-        foreach (var entry in entries)
+        try
         {
-            RecentBrews.Add(new RecentBrewItem(
-                Icon: entry.Icon,
-                Name: entry.ProfileName,
-                RelativeTime: FormatRelative(now - entry.CompletedAtUtc)));
+            var entries = await _history.GetRecentAsync(RecentBrewLimit);
+            var now = DateTime.UtcNow;
+            RecentBrews.Clear();
+            foreach (var entry in entries)
+            {
+                RecentBrews.Add(new RecentBrewItem(
+                    Icon: entry.Icon,
+                    Name: entry.ProfileName,
+                    RelativeTime: FormatRelative(now - entry.CompletedAtUtc)));
+            }
+            HasRecentBrews = RecentBrews.Count > 0;
         }
-        HasRecentBrews = RecentBrews.Count > 0;
+        catch (Exception ex)
+        {
+            // Persistence failures (locked DB, corruption) shouldn't crash the home screen.
+            _logger.LogError(ex, "Failed to load recent brew history.");
+            HasRecentBrews = false;
+        }
     }
 
     private string FormatRelative(TimeSpan delta)
