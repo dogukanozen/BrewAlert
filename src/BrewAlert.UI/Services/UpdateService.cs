@@ -27,10 +27,11 @@ public class UpdateService : IUpdateService
         try
         {
             var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
-            _updateInfo = await mgr.CheckForUpdatesAsync();
-            if (_updateInfo != null)
+            var info = await mgr.CheckForUpdatesAsync();
+            if (info != null)
             {
-                await mgr.DownloadUpdatesAsync(_updateInfo);
+                await mgr.DownloadUpdatesAsync(info);
+                _updateInfo = info;
                 UpdateAvailable?.Invoke();
             }
             return _updateInfo != null;
