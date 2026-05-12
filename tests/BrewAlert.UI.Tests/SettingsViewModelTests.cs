@@ -243,6 +243,24 @@ public class SettingsViewModelTests
     }
 
     [Fact]
+    public void Dispose_UnsubscribesFromLanguageChanged()
+    {
+        // Invariant (AGENT.md §4.3): subscribers unsubscribe on Dispose.
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+        loc.CurrentLanguage.Returns("English");
+        var vm = new SettingsViewModel(
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, loc, _updateService, _configurationRoot);
+
+        vm.Dispose();
+        loc.ClearReceivedCalls();
+        loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
+
+        loc.DidNotReceive().Get(Arg.Any<string>());
+    }
+
+    [Fact]
     public async Task SaveWebhookUrlCommand_OnError_SetsTestResult()
     {
         _preferencesService

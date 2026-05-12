@@ -1,4 +1,5 @@
 using BrewAlert.UI.Converters;
+using System;
 using System.Globalization;
 using Xunit;
 
@@ -33,5 +34,21 @@ public class TimeSpanToStringConverterTests
 
         // Assert
         Assert.Equal("00:00", result);
+    }
+
+    [Fact]
+    public void Convert_ReturnsDefault_WhenValueIsNull()
+    {
+        var result = _converter.Convert(null, typeof(string), null, CultureInfo.InvariantCulture);
+
+        Assert.Equal("00:00", result);
+    }
+
+    [Fact]
+    public void ConvertBack_AlwaysThrowsNotSupported()
+    {
+        // One-way converter: countdown UI never writes back to a TimeSpan source.
+        Assert.Throws<NotSupportedException>(() =>
+            _converter.ConvertBack("05:23", typeof(TimeSpan), null, CultureInfo.InvariantCulture));
     }
 }

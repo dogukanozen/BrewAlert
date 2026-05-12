@@ -291,4 +291,57 @@ public class BrewTimerViewModelTests
             .GetField("_activeSessionId", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         return (Guid)field!.GetValue(vm)!;
     }
+
+    // Invariant (AGENT.md §4.3): event subscribers implement IDisposable and
+    // unsubscribe on Dispose. These tests guard against a regression where
+    // an event handler keeps firing on a stale VM after navigation.
+
+    [AvaloniaFact]
+    public async Task Dispose_UnsubscribesFromTimerTick()
+    {
+        var vm = CreateVm();
+        var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4) };
+        var session = new BrewSession { Profile = profile, Remaining = profile.BrewDuration };
+        _timerService.GetActiveSession().Returns((BrewSession?)null);
+        _timerService.Start(profile).Returns(session);
+        vm.StartBrew(profile);
+        var remainingBeforeDispose = vm.Remaining;
+
+        vm.Dispose();
+        _timerService.TimerTick += Raise.Event<EventHandler<TimeSpan>>(this, TimeSpan.FromSeconds(7));
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        Assert.Equal(remainingBeforeDispose, vm.Remaining);
+    }
+
+    [AvaloniaFact]
+    public async Task Dispose_UnsubscribesFromBrewCompleted()
+    {
+        var vm = CreateVm();
+        var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4) };
+        var session = new BrewSession { Profile = profile, Remaining = profile.BrewDuration };
+        _timerService.GetActiveSession().Returns((BrewSession?)null);
+        _timerService.Start(profile).Returns(session);
+        vm.StartBrew(profile);
+
+        vm.Dispose();
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        Assert.False(vm.IsCompleted);
+    }
+
+    [AvaloniaFact]
+    public void Dispose_UnsubscribesFromLanguageChanged()
+    {
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+        var vm = new BrewTimerViewModel(_timerService, _notificationCoordinator, _navigation, loc);
+
+        vm.Dispose();
+        loc.ClearReceivedCalls();
+        loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
+
+        loc.DidNotReceive().Get(Arg.Any<string>());
+    }
 }

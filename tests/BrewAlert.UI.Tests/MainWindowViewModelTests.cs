@@ -241,6 +241,64 @@ public class MainWindowViewModelTests
         Assert.Equal("already shown", vm.UpdateToastMessage);
     }
 
+    // Invariants (AGENT.md §4.3): event handlers unsubscribe on Dispose.
+
+    [Fact]
+    public void Dispose_UnsubscribesFromTimerEvents()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
+        var session = new BrewSession { Profile = profile };
+        var titleBeforeDispose = vm.Title;
+
+        vm.Dispose();
+        _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(this, new BrewStartedEvent(session));
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
+        _timerService.BrewCancelled += Raise.Event<EventHandler<BrewCancelledEvent>>(this, new BrewCancelledEvent(session, TimeSpan.Zero));
+
+        Assert.Equal(titleBeforeDispose, vm.Title);
+    }
+
+    [Fact]
+    public void Dispose_UnsubscribesFromLanguageChanged()
+    {
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+        loc.CurrentLanguage.Returns("English");
+        var vm = new MainWindowViewModel(_navigation, _timerService, loc, _updateService);
+
+        vm.Dispose();
+        loc.ClearReceivedCalls();
+        loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
+
+        loc.DidNotReceive().Get(Arg.Any<string>());
+    }
+
+    [Fact]
+    public void Dispose_UnsubscribesFromUpdateAvailable()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        vm.IsUpdateToastVisible = false;
+
+        vm.Dispose();
+        _updateService.UpdateAvailable += Raise.Event<Action>();
+
+        Assert.False(vm.IsUpdateToastVisible);
+    }
+
+    [Fact]
+    public void Dispose_UnsubscribesFromNavigationCurrentViewChanged()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var stale = vm.CurrentView;
+
+        vm.Dispose();
+        var newVm = Substitute.For<ViewModelBase>();
+        _navigation.CurrentViewChanged += Raise.Event<Action<ViewModelBase>>(newVm);
+
+        Assert.Equal(stale, vm.CurrentView);
+    }
+
     [Fact]
     public void LanguageChanged_WhenToastNotVisible_DoesNotRefreshToastTexts()
     {
