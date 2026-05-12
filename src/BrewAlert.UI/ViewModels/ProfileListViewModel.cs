@@ -19,12 +19,18 @@ namespace BrewAlert.UI.ViewModels;
 public partial class ProfileListViewModel : ViewModelBase, IDisposable
 {
     private const int RecentBrewLimit = 5;
+    private static readonly TimeSpan RecentBrewRefreshInterval = TimeSpan.FromSeconds(30);
 
     private readonly BrewProfileService _profileService;
     private readonly INavigationService _navigation;
     private readonly ILocalizationService _loc;
     private readonly IBrewHistoryService _history;
     private readonly ILogger<ProfileListViewModel> _logger;
+    private readonly DispatcherTimer _recentRefreshTimer;
+    private readonly CancellationTokenSource _disposeCts = new();
+    private bool _isLoadingRecentBrews;
+    private bool _reloadRecentBrewsRequested;
+    private bool _disposed;
 
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string _pageTitle = string.Empty;
@@ -51,6 +57,11 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
         _loc.LanguageChanged += OnLanguageChanged;
         _history.HistoryUpdated += OnHistoryUpdated;
         RefreshLocalizedStrings();
+
+        _recentRefreshTimer = new DispatcherTimer { Interval = RecentBrewRefreshInterval };
+        _recentRefreshTimer.Tick += OnRecentRefreshTimerTick;
+        _recentRefreshTimer.Start();
+
         _ = LoadProfilesAsync();
         _ = LoadRecentBrewsAsync();
     }
@@ -71,7 +82,17 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
 
     private void OnHistoryUpdated(object? sender, BrewHistoryEntry entry)
     {
-        Dispatcher.UIThread.Post(() => { _ = LoadRecentBrewsAsync(); });
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed)
+                _ = LoadRecentBrewsAsync();
+        });
+    }
+
+    private void OnRecentRefreshTimerTick(object? sender, EventArgs e)
+    {
+        if (!_disposed)
+            _ = LoadRecentBrewsAsync();
     }
 
     private async Task LoadProfilesAsync()
@@ -92,25 +113,49 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
 
     private async Task LoadRecentBrewsAsync()
     {
+        if (_disposed) return;
+
+        if (_isLoadingRecentBrews)
+        {
+            _reloadRecentBrewsRequested = true;
+            return;
+        }
+
+        _isLoadingRecentBrews = true;
         try
         {
-            var entries = await _history.GetRecentAsync(RecentBrewLimit);
-            var now = DateTime.UtcNow;
-            RecentBrews.Clear();
-            foreach (var entry in entries)
+            do
             {
-                RecentBrews.Add(new RecentBrewItem(
-                    Icon: entry.Icon,
-                    Name: entry.ProfileName,
-                    RelativeTime: FormatRelative(now - entry.CompletedAtUtc)));
+                _reloadRecentBrewsRequested = false;
+                var entries = await _history.GetRecentAsync(RecentBrewLimit, _disposeCts.Token);
+                if (_disposed) return;
+
+                var now = DateTime.UtcNow;
+                RecentBrews.Clear();
+                foreach (var entry in entries)
+                {
+                    RecentBrews.Add(new RecentBrewItem(
+                        Icon: entry.Icon,
+                        Name: entry.ProfileName,
+                        RelativeTime: FormatRelative(now - entry.CompletedAtUtc),
+                        DurationText: FormatDuration(entry.DurationSeconds)));
+                }
+                HasRecentBrews = RecentBrews.Count > 0;
             }
-            HasRecentBrews = RecentBrews.Count > 0;
+            while (_reloadRecentBrewsRequested && !_disposed);
+        }
+        catch (OperationCanceledException)
+        {
         }
         catch (Exception ex)
         {
             // Persistence failures (locked DB, corruption) shouldn't crash the home screen.
             _logger.LogError(ex, "Failed to load recent brew history.");
             HasRecentBrews = false;
+        }
+        finally
+        {
+            _isLoadingRecentBrews = false;
         }
     }
 
@@ -122,6 +167,12 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
         if (delta < TimeSpan.FromDays(1))
             return string.Format(CultureInfo.CurrentCulture, _loc.Get("HoursAgo"), (int)delta.TotalHours);
         return string.Format(CultureInfo.CurrentCulture, _loc.Get("DaysAgo"), (int)delta.TotalDays);
+    }
+
+    private string FormatDuration(int durationSeconds)
+    {
+        var minutes = Math.Max(1, (int)Math.Round(TimeSpan.FromSeconds(durationSeconds).TotalMinutes));
+        return string.Format(CultureInfo.CurrentCulture, "{0} {1}", minutes, _loc.Get("MinShort"));
     }
 
     [RelayCommand]
@@ -140,6 +191,13 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
+        _disposeCts.Cancel();
+        _disposeCts.Dispose();
+        _recentRefreshTimer.Stop();
+        _recentRefreshTimer.Tick -= OnRecentRefreshTimerTick;
         _loc.LanguageChanged -= OnLanguageChanged;
         _history.HistoryUpdated -= OnHistoryUpdated;
     }

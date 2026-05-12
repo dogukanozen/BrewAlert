@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using BrewAlert.Core.Models;
 using BrewAlert.Core.Services;
 using BrewAlert.Core.Interfaces;
@@ -131,4 +132,82 @@ public class ProfileListViewModelTests
         timerService.DidNotReceive().Start(Arg.Any<BrewProfile>());
     }
 
+    [AvaloniaFact]
+    public async Task HistoryUpdated_RefreshesRecentBrewsWithoutNavigation()
+    {
+        // Arrange
+        var entries = new List<BrewHistoryEntry>();
+        _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<BrewProfile>());
+        _loc.Get("MinShort").Returns("min");
+        _history.GetRecentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromResult<IReadOnlyList<BrewHistoryEntry>>(entries.ToList()));
+
+        using var vm = new ProfileListViewModel(
+            _profileService,
+            _navigation,
+            _loc,
+            _history,
+            NullLogger<ProfileListViewModel>.Instance);
+
+        entries.Add(new BrewHistoryEntry(
+            Guid.NewGuid(),
+            DateTime.UtcNow,
+            "Coffee",
+            BrewType.Coffee,
+            "☕",
+            240));
+
+        // Act
+        _history.HistoryUpdated += Raise.Event<EventHandler<BrewHistoryEntry>>(this, entries[0]);
+
+        // Assert
+        await WaitUntilAsync(() => vm.RecentBrews.Count == 1);
+        Assert.True(vm.HasRecentBrews);
+        Assert.Equal("Coffee", vm.RecentBrews[0].Name);
+        Assert.Equal("4 min", vm.RecentBrews[0].DurationText);
+    }
+
+    [AvaloniaFact]
+    public async Task Dispose_PreventsPendingRecentBrewLoadFromUpdatingCollection()
+    {
+        // Arrange
+        var loadCompletion = new TaskCompletionSource<IReadOnlyList<BrewHistoryEntry>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<BrewProfile>());
+        _history.GetRecentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(_ => loadCompletion.Task);
+
+        var vm = new ProfileListViewModel(
+            _profileService,
+            _navigation,
+            _loc,
+            _history,
+            NullLogger<ProfileListViewModel>.Instance);
+
+        vm.Dispose();
+        loadCompletion.SetResult([
+            new BrewHistoryEntry(
+                Guid.NewGuid(),
+                DateTime.UtcNow,
+                "Coffee",
+                BrewType.Coffee,
+                "☕",
+                240)
+        ]);
+
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        Assert.Empty(vm.RecentBrews);
+        Assert.False(vm.HasRecentBrews);
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (!condition())
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => { });
+            await Task.Delay(10, cts.Token);
+        }
+    }
 }

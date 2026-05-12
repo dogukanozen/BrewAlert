@@ -198,7 +198,7 @@ public class BrewTimerViewModelTests
     public async Task OnBrewCompleted_WhenNotificationAlreadySucceeded_PreservesSuccessStatus()
     {
         // Arrange — simulate the race where NotificationCompleted fires before BrewCompleted's Post runs
-        var vm = CreateVm();
+        using var vm = CreateVm();
         var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4) };
         var session = new BrewSession { Profile = profile, Remaining = profile.BrewDuration };
         _timerService.GetActiveSession().Returns((BrewSession?)null);
@@ -222,7 +222,7 @@ public class BrewTimerViewModelTests
     [AvaloniaFact]
     public async Task OnBrewCompleted_WhenNotificationAlreadyFailed_PreservesFailureStatus()
     {
-        var vm = CreateVm();
+        using var vm = CreateVm();
         var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4) };
         var session = new BrewSession { Profile = profile, Remaining = profile.BrewDuration };
         _timerService.GetActiveSession().Returns((BrewSession?)null);
@@ -239,6 +239,49 @@ public class BrewTimerViewModelTests
         await Dispatcher.UIThread.InvokeAsync(() => { });
 
         Assert.Equal("❌ Could not send: Teams unreachable", vm.NotificationStatus);
+    }
+
+    [AvaloniaFact]
+    public async Task OnBrewCompleted_AutoReturnsToProfilesAfterDelay()
+    {
+        using var vm = CreateVm();
+        vm.AutoReturnDelay = TimeSpan.FromMilliseconds(1);
+        var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4) };
+        var session = new BrewSession { Profile = profile, Remaining = profile.BrewDuration };
+        _timerService.GetActiveSession().Returns((BrewSession?)null);
+        _timerService.Start(profile).Returns(session);
+        vm.StartBrew(profile);
+
+        _timerService.BrewCompleted +=
+            Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
+
+        await Task.Delay(50);
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        _navigation.Received(1).NavigateTo<ProfileListViewModel>();
+    }
+
+    [AvaloniaFact]
+    public async Task BackToProfiles_CancelsPendingAutoReturn()
+    {
+        using var vm = CreateVm();
+        vm.AutoReturnDelay = TimeSpan.FromMilliseconds(50);
+        var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4) };
+        var session = new BrewSession { Profile = profile, Remaining = profile.BrewDuration };
+        _timerService.GetActiveSession().Returns((BrewSession?)null);
+        _timerService.Start(profile).Returns(session);
+        vm.StartBrew(profile);
+
+        _timerService.BrewCompleted +=
+            Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        vm.BackToProfilesCommand.Execute(null);
+
+        await Task.Delay(100);
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        _navigation.Received(1).NavigateTo<ProfileListViewModel>();
     }
 
     // Helper to read the private _activeSessionId via reflection for testing attachment.
