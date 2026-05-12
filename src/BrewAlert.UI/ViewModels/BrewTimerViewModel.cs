@@ -14,6 +14,8 @@ namespace BrewAlert.UI.ViewModels;
 /// </summary>
 public partial class BrewTimerViewModel : ViewModelBase, IDisposable
 {
+    private static readonly TimeSpan DefaultAutoReturnDelay = TimeSpan.FromSeconds(30);
+
     private readonly IBrewTimerService _timerService;
     private readonly IBrewCompletionNotificationService _notificationCoordinator;
     private readonly INavigationService _navigation;
@@ -37,7 +39,10 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _backButtonText = string.Empty;
 
     private Guid _activeSessionId;
+    private CancellationTokenSource? _autoReturnCts;
     private bool _disposed;
+
+    public TimeSpan AutoReturnDelay { get; set; } = DefaultAutoReturnDelay;
 
     public BrewTimerViewModel(
         IBrewTimerService timerService,
@@ -74,6 +79,7 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
     /// </summary>
     public void AttachToSession(BrewSession session)
     {
+        CancelAutoReturn();
         _activeSessionId = session.Id;
         ProfileName = session.Profile.Name;
         ProfileIcon = session.Profile.Icon;
@@ -92,6 +98,9 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
             _ => _loc.Get("Brewing")
         };
         NotificationStatus = string.Empty;
+
+        if (IsCompleted)
+            ScheduleAutoReturn();
     }
 
     /// <summary>
@@ -175,6 +184,7 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
             // NotificationCompleted before this Post runs, so we must not overwrite it.
             if (string.IsNullOrEmpty(NotificationStatus))
                 NotificationStatus = _loc.Get("SendingNotification");
+            ScheduleAutoReturn();
         });
     }
 
@@ -191,10 +201,45 @@ public partial class BrewTimerViewModel : ViewModelBase, IDisposable
         });
     }
 
+    private void ScheduleAutoReturn()
+    {
+        CancelAutoReturn();
+        _autoReturnCts = new CancellationTokenSource();
+        _ = AutoReturnAfterDelayAsync(_autoReturnCts.Token);
+    }
+
+    private async Task AutoReturnAfterDelayAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(AutoReturnDelay, ct);
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (_disposed || ct.IsCancellationRequested) return;
+                Dispose();
+                _navigation.NavigateTo<ProfileListViewModel>();
+            });
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void CancelAutoReturn()
+    {
+        var cts = _autoReturnCts;
+        if (cts is null) return;
+
+        _autoReturnCts = null;
+        cts.Cancel();
+        cts.Dispose();
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+        CancelAutoReturn();
         _timerService.TimerTick -= OnTimerTick;
         _timerService.BrewCompleted -= OnBrewCompleted;
         _notificationCoordinator.NotificationCompleted -= OnNotificationCompleted;
