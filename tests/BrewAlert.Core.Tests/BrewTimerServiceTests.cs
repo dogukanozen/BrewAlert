@@ -105,46 +105,78 @@ public class BrewTimerServiceTests : IDisposable
         Assert.Null(_sut.GetActiveSession());
     }
 
-    // Invariant (AGENT.md §4.2): events fire OUTSIDE the lock. The handlers below
-    // call back into the service to take the same lock — if events ever moved
-    // back inside the lock, these would deadlock.
+    // Invariant (AGENT.md §4.2): events fire OUTSIDE the lock. Each handler below
+    // probes the same lock from a *different* thread. C# locks are re-entrant on
+    // the same thread, so a handler running on the firing thread would still get
+    // through even if the event were fired inside the lock — a same-thread probe
+    // would mask the regression. A separate-thread probe must acquire the lock
+    // independently; if the event were fired inside the lock the firing thread
+    // would still be holding it while waiting on the probe, hence deadlock and
+    // the bounded Wait() returns false.
+    private const int LockProbeTimeoutMs = 1000;
 
     [Fact]
-    public void BrewStarted_HandlerCallingBackIntoService_DoesNotDeadlock()
+    public void BrewStarted_IsFiredOutsideLock()
     {
-        BrewSession? observedFromHandler = null;
-        _sut.BrewStarted += (_, _) => observedFromHandler = _sut.GetActiveSession();
+        Exception? failure = null;
+        BrewSession? observed = null;
+        _sut.BrewStarted += (_, _) =>
+        {
+            var probe = Task.Run(() => _sut.GetActiveSession());
+            if (!probe.Wait(LockProbeTimeoutMs))
+                failure = new TimeoutException("BrewStarted fired inside the lock — cross-thread probe deadlocked.");
+            else
+                observed = probe.Result;
+        };
 
         var session = _sut.Start(CreateProfile());
 
-        Assert.NotNull(observedFromHandler);
-        Assert.Equal(session.Id, observedFromHandler!.Id);
+        Assert.Null(failure);
+        Assert.NotNull(observed);
+        Assert.Equal(session.Id, observed!.Id);
     }
 
     [Fact]
-    public void BrewCancelled_HandlerCallingBackIntoService_DoesNotDeadlock()
+    public void BrewCancelled_IsFiredOutsideLock()
     {
         var session = _sut.Start(CreateProfile());
-        BrewSession? observedFromHandler = session;
-        _sut.BrewCancelled += (_, _) => observedFromHandler = _sut.GetActiveSession();
+        Exception? failure = null;
+        BrewSession? observed = session;
+        _sut.BrewCancelled += (_, _) =>
+        {
+            var probe = Task.Run(() => _sut.GetActiveSession());
+            if (!probe.Wait(LockProbeTimeoutMs))
+                failure = new TimeoutException("BrewCancelled fired inside the lock — cross-thread probe deadlocked.");
+            else
+                observed = probe.Result;
+        };
 
         _sut.Cancel(session.Id);
 
-        Assert.Null(observedFromHandler);
+        Assert.Null(failure);
+        Assert.Null(observed);
     }
 
     [Fact]
-    public async Task BrewCompleted_HandlerCallingBackIntoService_DoesNotDeadlock()
+    public async Task BrewCompleted_IsFiredOutsideLock()
     {
-        var tcs = new TaskCompletionSource<BrewSession?>();
-        _sut.BrewCompleted += (_, _) => tcs.TrySetResult(_sut.GetActiveSession());
+        var probeResult = new TaskCompletionSource<BrewSession?>();
+        var probeTimedOut = new TaskCompletionSource<bool>();
+        _sut.BrewCompleted += (_, _) =>
+        {
+            var probe = Task.Run(() => _sut.GetActiveSession());
+            if (!probe.Wait(LockProbeTimeoutMs))
+                probeTimedOut.TrySetResult(true);
+            else
+                probeResult.TrySetResult(probe.Result);
+        };
 
         _sut.Start(CreateProfile(seconds: 1));
 
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var observed = await tcs.Task.WaitAsync(cts.Token);
-
-        Assert.Null(observed);
+        var finished = await Task.WhenAny(probeResult.Task, probeTimedOut.Task)
+            .WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Same(probeResult.Task, finished);
+        Assert.Null(await probeResult.Task);
     }
 
     public void Dispose() => _sut.Dispose();
