@@ -105,5 +105,47 @@ public class BrewTimerServiceTests : IDisposable
         Assert.Null(_sut.GetActiveSession());
     }
 
+    // Invariant (AGENT.md §4.2): events fire OUTSIDE the lock. The handlers below
+    // call back into the service to take the same lock — if events ever moved
+    // back inside the lock, these would deadlock.
+
+    [Fact]
+    public void BrewStarted_HandlerCallingBackIntoService_DoesNotDeadlock()
+    {
+        BrewSession? observedFromHandler = null;
+        _sut.BrewStarted += (_, _) => observedFromHandler = _sut.GetActiveSession();
+
+        var session = _sut.Start(CreateProfile());
+
+        Assert.NotNull(observedFromHandler);
+        Assert.Equal(session.Id, observedFromHandler!.Id);
+    }
+
+    [Fact]
+    public void BrewCancelled_HandlerCallingBackIntoService_DoesNotDeadlock()
+    {
+        var session = _sut.Start(CreateProfile());
+        BrewSession? observedFromHandler = session;
+        _sut.BrewCancelled += (_, _) => observedFromHandler = _sut.GetActiveSession();
+
+        _sut.Cancel(session.Id);
+
+        Assert.Null(observedFromHandler);
+    }
+
+    [Fact]
+    public async Task BrewCompleted_HandlerCallingBackIntoService_DoesNotDeadlock()
+    {
+        var tcs = new TaskCompletionSource<BrewSession?>();
+        _sut.BrewCompleted += (_, _) => tcs.TrySetResult(_sut.GetActiveSession());
+
+        _sut.Start(CreateProfile(seconds: 1));
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var observed = await tcs.Task.WaitAsync(cts.Token);
+
+        Assert.Null(observed);
+    }
+
     public void Dispose() => _sut.Dispose();
 }
