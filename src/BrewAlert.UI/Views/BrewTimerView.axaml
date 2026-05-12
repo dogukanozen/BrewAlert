@@ -9,70 +9,27 @@
         <conv:TimeSpanToStringConverter x:Key="TimeSpanConverter" />
     </UserControl.Resources>
 
-    <!-- Use a Viewbox wrapper so entire timer UI scales with window size -->
-    <Grid RowDefinitions="*,Auto">
-        <!-- Timer Display -->
-        <ScrollViewer Grid.Row="0"
-                      HorizontalScrollBarVisibility="Disabled"
-                      VerticalScrollBarVisibility="Auto">
-            <StackPanel VerticalAlignment="Center"
-                        HorizontalAlignment="Center"
-                        Spacing="12"
-                        Margin="16">
+    <UserControl.Styles>
+        <Style Selector="Button.brew-compact">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="CornerRadius" Value="10" />
+        </Style>
+    </UserControl.Styles>
 
-                <!-- Profile Icon — scales via Viewbox for any resolution -->
-                <Viewbox MaxHeight="100" Stretch="Uniform" HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding ProfileIcon}"
-                               FontSize="80" />
-                </Viewbox>
+    <DockPanel Margin="12,6" LastChildFill="True">
 
-                <!-- Countdown — auto-scaling with Viewbox, no fixed height -->
-                <Viewbox MaxHeight="140"
-                         Stretch="Uniform"
-                         HorizontalAlignment="Center"
-                         Margin="0,8">
-                    <TextBlock Text="{Binding Remaining, Converter={StaticResource TimeSpanConverter}}"
-                               Classes="brew-timer" />
-                </Viewbox>
-
-                <!-- Progress Bar — stretches to fill available width -->
-                <ProgressBar Value="{Binding Progress}"
-                             Maximum="1"
-                             Height="10"
-                             HorizontalAlignment="Stretch"
-                             CornerRadius="5"
-                             Margin="24,0"
-                             Foreground="{StaticResource BrewAccentBrush}"
-                             Background="{StaticResource BrewSurfaceBrush}" />
-
-                <!-- Status -->
-                <TextBlock Text="{Binding StatusText}"
-                           Classes="brew-subtitle"
-                           HorizontalAlignment="Center"
-                           TextWrapping="Wrap"
-                           TextAlignment="Center" />
-
-                <!-- Notification Status -->
-                <TextBlock Text="{Binding NotificationStatus}"
-                           Classes="brew-subtitle"
-                           HorizontalAlignment="Center"
-                           TextWrapping="Wrap"
-                           TextAlignment="Center"
-                           IsVisible="{Binding NotificationStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-            </StackPanel>
-        </ScrollViewer>
-
-        <!-- Action Buttons — wrap on narrow screens -->
-        <WrapPanel Grid.Row="1"
+        <!-- Buttons pinned to the bottom -->
+        <WrapPanel DockPanel.Dock="Bottom"
                    HorizontalAlignment="Center"
-                   Margin="8,0,8,16">
+                   Margin="0,6,0,0">
 
-            <!-- Pause button (visible when running and NOT paused) -->
             <Button Content="{Binding PauseButtonText}"
-                    Classes="brew-primary"
+                    Classes="brew-primary brew-compact"
                     Command="{Binding PauseCommand}"
-                    Margin="6"
-                    MinWidth="140">
+                    Margin="4"
+                    MinWidth="110">
                 <Button.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
                         <Binding Path="IsRunning" />
@@ -81,12 +38,11 @@
                 </Button.IsVisible>
             </Button>
 
-            <!-- Resume button (visible when running and paused) -->
             <Button Content="{Binding ResumeButtonText}"
-                    Classes="brew-primary"
+                    Classes="brew-primary brew-compact"
                     Command="{Binding ResumeCommand}"
-                    Margin="6"
-                    MinWidth="140">
+                    Margin="4"
+                    MinWidth="110">
                 <Button.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
                         <Binding Path="IsRunning" />
@@ -95,21 +51,58 @@
                 </Button.IsVisible>
             </Button>
 
-            <!-- Cancel (visible while running) -->
             <Button Content="{Binding CancelButtonText}"
-                    Classes="brew-danger"
+                    Classes="brew-danger brew-compact"
                     Command="{Binding CancelCommand}"
-                    Margin="6"
-                    MinWidth="140"
+                    Margin="4"
+                    MinWidth="110"
                     IsVisible="{Binding IsRunning}" />
 
-            <!-- Back (visible when completed) -->
             <Button Content="{Binding BackButtonText}"
-                    Classes="brew-primary"
+                    Classes="brew-primary brew-compact"
                     Command="{Binding BackToProfilesCommand}"
-                    Margin="6"
-                    MinWidth="140"
+                    Margin="4"
+                    MinWidth="110"
                     IsVisible="{Binding IsCompleted}" />
         </WrapPanel>
-    </Grid>
+
+        <!-- Centered content; fixed sizes so nothing scales wildly -->
+        <StackPanel VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="8">
+
+            <TextBlock Text="{Binding ProfileIcon}"
+                       FontSize="44"
+                       HorizontalAlignment="Center" />
+
+            <TextBlock Text="{Binding Remaining, Converter={StaticResource TimeSpanConverter}}"
+                       Classes="brew-timer"
+                       FontSize="72" />
+
+            <ProgressBar Value="{Binding Progress}"
+                         Maximum="1"
+                         Height="8"
+                         Width="320"
+                         HorizontalAlignment="Center"
+                         CornerRadius="4"
+                         Margin="0,4"
+                         Foreground="{StaticResource BrewAccentBrush}"
+                         Background="{StaticResource BrewSurfaceBrush}" />
+
+            <TextBlock Text="{Binding StatusText}"
+                       Classes="brew-subtitle"
+                       FontSize="14"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center" />
+
+            <TextBlock Text="{Binding NotificationStatus}"
+                       Classes="brew-subtitle"
+                       FontSize="13"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       IsVisible="{Binding NotificationStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </DockPanel>
 </UserControl>

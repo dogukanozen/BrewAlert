@@ -4,130 +4,140 @@
              x:Class="BrewAlert.UI.Views.ProfileListView"
              x:DataType="vm:ProfileListViewModel">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*">
-        <!-- Header -->
-        <TextBlock Grid.Row="0"
-                   Text="{Binding PageTitle}"
-                   Classes="brew-title"
-                   Margin="0,0,0,4" />
+    <!-- Two-column home: profiles (primary action) on the left, recent activity on the right. -->
+    <Grid ColumnDefinitions="*,Auto,280" ColumnSpacing="0">
 
-        <!-- Loading indicator -->
-        <TextBlock Grid.Row="1"
-                   Text="{Binding LoadingText}"
-                   Classes="brew-subtitle"
-                   HorizontalAlignment="Center"
-                   Margin="0,4,0,8"
-                   IsVisible="{Binding IsLoading}" />
+        <!-- LEFT: Profiles -->
+        <Grid Grid.Column="0" RowDefinitions="Auto,Auto,*">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="4,0,4,2">
+                <TextBlock Grid.Column="0"
+                           Text="{Binding PageTitle}"
+                           Classes="brew-title" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding LoadingText}"
+                           Classes="brew-subtitle"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding IsLoading}" />
+            </Grid>
 
-        <!-- Recent brews — hidden when empty -->
-        <StackPanel Grid.Row="2"
-                    Margin="0,6,0,14"
-                    IsVisible="{Binding HasRecentBrews}">
-            <TextBlock Text="{Binding RecentBrewsLabel}"
-                       Classes="brew-subtitle"
-                       FontSize="13"
-                       FontWeight="SemiBold"
-                       Margin="6,0,0,8" />
-            <ItemsControl ItemsSource="{Binding RecentBrews}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal"
-                                   HorizontalAlignment="Center" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="{StaticResource BrewSurfaceBrush}"
-                                CornerRadius="8"
-                                Padding="10,8"
-                                Margin="4"
-                                Width="216"
-                                MinHeight="68">
-                            <Grid ColumnDefinitions="Auto,*,Auto"
-                                  RowDefinitions="Auto,Auto"
-                                  ColumnSpacing="10">
-                                <Border Grid.RowSpan="2"
-                                        Width="36"
-                                        Height="36"
-                                        CornerRadius="8"
-                                        Background="{StaticResource BrewCardBrush}"
-                                        VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Icon}"
-                                               FontSize="20"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center" />
+            <ScrollViewer Grid.Row="2" Margin="0,12,0,0" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding Profiles}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding $parent[ItemsControl].((vm:ProfileListViewModel)DataContext).SelectProfileCommand}"
+                                    CommandParameter="{Binding}"
+                                    Margin="6"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    CornerRadius="16">
+                                <Border Classes="brew-card"
+                                        Width="180" Height="160">
+                                    <StackPanel VerticalAlignment="Center"
+                                                HorizontalAlignment="Center"
+                                                Spacing="6">
+                                        <TextBlock Text="{Binding Icon}"
+                                                   FontSize="40"
+                                                   HorizontalAlignment="Center" />
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="17"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource BrewTextPrimaryBrush}"
+                                                   HorizontalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   MaxWidth="160" />
+                                        <TextBlock Text="{Binding Description}"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource BrewTextSecondaryBrush}"
+                                                   HorizontalAlignment="Center"
+                                                   TextWrapping="Wrap"
+                                                   TextAlignment="Center"
+                                                   MaxWidth="160" />
+                                    </StackPanel>
                                 </Border>
-                                <TextBlock Text="{Binding Name}"
-                                           Grid.Column="1"
-                                           FontSize="14"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource BrewTextPrimaryBrush}"
-                                           VerticalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis"
-                                           MaxWidth="112" />
-                                <TextBlock Text="{Binding RelativeTime}"
-                                           Grid.Column="2"
-                                           FontSize="12"
-                                           Foreground="{StaticResource BrewTextSecondaryBrush}"
-                                           VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding DurationText}"
-                                           Grid.Row="1"
-                                           Grid.Column="1"
-                                           Grid.ColumnSpan="2"
-                                           FontSize="12"
-                                           Foreground="{StaticResource BrewTextSecondaryBrush}"
-                                           TextTrimming="CharacterEllipsis" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
 
-        <!-- Profile Cards — WrapPanel auto-flows cards to fill available width -->
-        <ScrollViewer Grid.Row="3">
-            <ItemsControl ItemsSource="{Binding Profiles}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Command="{Binding $parent[ItemsControl].((vm:ProfileListViewModel)DataContext).SelectProfileCommand}"
-                                CommandParameter="{Binding}"
-                                Margin="6"
-                                Padding="0"
-                                Background="Transparent"
-                                CornerRadius="16">
-                            <Border Classes="brew-card"
-                                    Width="180" Height="160">
-                                <StackPanel VerticalAlignment="Center"
-                                            HorizontalAlignment="Center"
-                                            Spacing="6">
-                                    <TextBlock Text="{Binding Icon}"
-                                               FontSize="40"
-                                               HorizontalAlignment="Center" />
-                                    <TextBlock Text="{Binding Name}"
-                                               FontSize="17"
-                                               FontWeight="SemiBold"
-                                               Foreground="{StaticResource BrewTextPrimaryBrush}"
-                                               HorizontalAlignment="Center"
-                                               TextTrimming="CharacterEllipsis"
-                                               MaxWidth="160" />
-                                    <TextBlock Text="{Binding Description}"
-                                               FontSize="12"
-                                               Foreground="{StaticResource BrewTextSecondaryBrush}"
-                                               HorizontalAlignment="Center"
-                                               TextWrapping="Wrap"
-                                               TextAlignment="Center"
-                                               MaxWidth="160" />
-                                </StackPanel>
-                            </Border>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <!-- Divider between columns -->
+        <Border Grid.Column="1"
+                Width="1"
+                Margin="12,4,12,4"
+                Background="#22ffffff"
+                IsVisible="{Binding HasRecentBrews}" />
+
+        <!-- RIGHT: Recent activity timeline -->
+        <Border Grid.Column="2"
+                Classes="brew-panel"
+                IsVisible="{Binding HasRecentBrews}">
+            <Grid RowDefinitions="Auto,*">
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,0,2,8">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding RecentBrewsLabel}"
+                               Classes="brew-section"
+                               VerticalAlignment="Center" />
+                    <Border Grid.Column="1" Classes="brew-pill">
+                        <TextBlock Text="{Binding RecentBrewsCount}"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource BrewTextSecondaryBrush}" />
+                    </Border>
+                </Grid>
+
+                <ScrollViewer Grid.Row="1"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding RecentBrews}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="2" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="brew-history-row">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                        <Border Grid.Column="0" Classes="brew-icon-disc">
+                                            <TextBlock Text="{Binding Icon}"
+                                                       FontSize="18"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1"
+                                                    VerticalAlignment="Center"
+                                                    Spacing="1">
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource BrewTextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding DurationText}"
+                                                       FontSize="11"
+                                                       Foreground="{StaticResource BrewTextSecondaryBrush}" />
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding RelativeTime}"
+                                                   FontSize="11"
+                                                   Foreground="{StaticResource BrewTextSecondaryBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>
