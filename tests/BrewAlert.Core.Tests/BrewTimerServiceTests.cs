@@ -105,5 +105,79 @@ public class BrewTimerServiceTests : IDisposable
         Assert.Null(_sut.GetActiveSession());
     }
 
+    // Invariant (AGENT.md §4.2): events fire OUTSIDE the lock. Each handler below
+    // probes the same lock from a *different* thread. C# locks are re-entrant on
+    // the same thread, so a handler running on the firing thread would still get
+    // through even if the event were fired inside the lock — a same-thread probe
+    // would mask the regression. A separate-thread probe must acquire the lock
+    // independently; if the event were fired inside the lock the firing thread
+    // would still be holding it while waiting on the probe, hence deadlock and
+    // the bounded Wait() returns false.
+    private const int LockProbeTimeoutMs = 1000;
+
+    [Fact]
+    public void BrewStarted_IsFiredOutsideLock()
+    {
+        Exception? failure = null;
+        BrewSession? observed = null;
+        _sut.BrewStarted += (_, _) =>
+        {
+            var probe = Task.Run(() => _sut.GetActiveSession());
+            if (!probe.Wait(LockProbeTimeoutMs))
+                failure = new TimeoutException("BrewStarted fired inside the lock — cross-thread probe deadlocked.");
+            else
+                observed = probe.Result;
+        };
+
+        var session = _sut.Start(CreateProfile());
+
+        Assert.Null(failure);
+        Assert.NotNull(observed);
+        Assert.Equal(session.Id, observed!.Id);
+    }
+
+    [Fact]
+    public void BrewCancelled_IsFiredOutsideLock()
+    {
+        var session = _sut.Start(CreateProfile());
+        Exception? failure = null;
+        BrewSession? observed = session;
+        _sut.BrewCancelled += (_, _) =>
+        {
+            var probe = Task.Run(() => _sut.GetActiveSession());
+            if (!probe.Wait(LockProbeTimeoutMs))
+                failure = new TimeoutException("BrewCancelled fired inside the lock — cross-thread probe deadlocked.");
+            else
+                observed = probe.Result;
+        };
+
+        _sut.Cancel(session.Id);
+
+        Assert.Null(failure);
+        Assert.Null(observed);
+    }
+
+    [Fact]
+    public async Task BrewCompleted_IsFiredOutsideLock()
+    {
+        var probeResult = new TaskCompletionSource<BrewSession?>();
+        var probeTimedOut = new TaskCompletionSource<bool>();
+        _sut.BrewCompleted += (_, _) =>
+        {
+            var probe = Task.Run(() => _sut.GetActiveSession());
+            if (!probe.Wait(LockProbeTimeoutMs))
+                probeTimedOut.TrySetResult(true);
+            else
+                probeResult.TrySetResult(probe.Result);
+        };
+
+        _sut.Start(CreateProfile(seconds: 1));
+
+        var finished = await Task.WhenAny(probeResult.Task, probeTimedOut.Task)
+            .WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Same(probeResult.Task, finished);
+        Assert.Null(await probeResult.Task);
+    }
+
     public void Dispose() => _sut.Dispose();
 }

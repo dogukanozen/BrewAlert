@@ -243,6 +243,24 @@ public class SettingsViewModelTests
     }
 
     [Fact]
+    public void Dispose_UnsubscribesFromLanguageChanged()
+    {
+        // Invariant (AGENT.md §4.3): subscribers unsubscribe on Dispose.
+        // Verify the -= call directly so the test fails if Dispose ever stops
+        // unsubscribing — a state-based check would mask the regression.
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+        loc.CurrentLanguage.Returns("English");
+        var vm = new SettingsViewModel(
+            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
+            _profileService, _preferencesService, loc, _updateService, _configurationRoot);
+
+        vm.Dispose();
+
+        loc.Received(1).LanguageChanged -= Arg.Any<Action<string>>();
+    }
+
+    [Fact]
     public async Task SaveWebhookUrlCommand_OnError_SetsTestResult()
     {
         _preferencesService

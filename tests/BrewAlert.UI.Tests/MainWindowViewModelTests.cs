@@ -241,6 +241,56 @@ public class MainWindowViewModelTests
         Assert.Equal("already shown", vm.UpdateToastMessage);
     }
 
+    // Invariants (AGENT.md §4.3): event handlers unsubscribe on Dispose.
+    // We verify the -= calls directly via NSubstitute.Received() rather than
+    // raising the event and observing state — a state-based check can pass
+    // accidentally when an unrelated path also produces the same final state.
+
+    [Fact]
+    public void Dispose_UnsubscribesFromTimerServiceEvents()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+
+        vm.Dispose();
+
+        _timerService.Received(1).BrewStarted -= Arg.Any<EventHandler<BrewStartedEvent>>();
+        _timerService.Received(1).BrewCompleted -= Arg.Any<EventHandler<BrewCompletedEvent>>();
+        _timerService.Received(1).BrewCancelled -= Arg.Any<EventHandler<BrewCancelledEvent>>();
+    }
+
+    [Fact]
+    public void Dispose_UnsubscribesFromLanguageChanged()
+    {
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+        loc.CurrentLanguage.Returns("English");
+        var vm = new MainWindowViewModel(_navigation, _timerService, loc, _updateService);
+
+        vm.Dispose();
+
+        loc.Received(1).LanguageChanged -= Arg.Any<Action<string>>();
+    }
+
+    [Fact]
+    public void Dispose_UnsubscribesFromUpdateAvailable()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+
+        vm.Dispose();
+
+        _updateService.Received(1).UpdateAvailable -= Arg.Any<Action>();
+    }
+
+    [Fact]
+    public void Dispose_UnsubscribesFromNavigationCurrentViewChanged()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+
+        vm.Dispose();
+
+        _navigation.Received(1).CurrentViewChanged -= Arg.Any<Action<ViewModelBase>>();
+    }
+
     [Fact]
     public void LanguageChanged_WhenToastNotVisible_DoesNotRefreshToastTexts()
     {
