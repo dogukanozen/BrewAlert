@@ -18,7 +18,7 @@ namespace BrewAlert.UI.ViewModels;
 /// </summary>
 public partial class ProfileListViewModel : ViewModelBase, IDisposable
 {
-    private const int RecentBrewLimit = 5;
+    private const int RecentBrewLimit = 30;
     private static readonly TimeSpan RecentBrewRefreshInterval = TimeSpan.FromSeconds(30);
 
     private readonly BrewProfileService _profileService;
@@ -37,6 +37,7 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _loadingText = string.Empty;
     [ObservableProperty] private string _recentBrewsLabel = string.Empty;
     [ObservableProperty] private bool _hasRecentBrews;
+    [ObservableProperty] private int _recentBrewsCount;
 
     public ObservableCollection<BrewProfile> Profiles { get; } = [];
     public ObservableCollection<RecentBrewItem> RecentBrews { get; } = [];
@@ -140,6 +141,12 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
                         RelativeTime: FormatRelative(now - entry.CompletedAtUtc),
                         DurationText: FormatDuration(entry.DurationSeconds)));
                 }
+#if DEBUG
+                RecentBrews.Clear();
+                foreach (var mock in BuildMockRecentBrews(30, now))
+                    RecentBrews.Add(mock);
+#endif
+                RecentBrewsCount = RecentBrews.Count;
                 HasRecentBrews = RecentBrews.Count > 0;
             }
             while (_reloadRecentBrewsRequested && !_disposed);
@@ -168,6 +175,39 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
             return string.Format(CultureInfo.CurrentCulture, _loc.Get("HoursAgo"), (int)delta.TotalHours);
         return string.Format(CultureInfo.CurrentCulture, _loc.Get("DaysAgo"), (int)delta.TotalDays);
     }
+
+#if DEBUG
+    private IEnumerable<RecentBrewItem> BuildMockRecentBrews(int count, DateTime now)
+    {
+        var samples = new (string Icon, string Name)[]
+        {
+            ("♨",  "Çay"),
+            ("☕", "Filtre Kahve"),
+            ("☕", "Türk Kahvesi"),
+            ("☕", "Espresso"),
+            ("🍵", "Yeşil Çay"),
+            ("🌿", "Bitki Çayı"),
+            ("🥛", "Latte"),
+            ("☕", "Americano"),
+            ("☕", "Cappuccino"),
+            ("🍯", "Ihlamur"),
+        };
+        var rng = new Random(42);
+        var cumulativeMinutes = 0;
+        for (var i = 0; i < count; i++)
+        {
+            var sample = samples[rng.Next(samples.Length)];
+            cumulativeMinutes += rng.Next(7, 240);
+            var completedAt = now - TimeSpan.FromMinutes(cumulativeMinutes);
+            var duration = rng.Next(60, 1200);
+            yield return new RecentBrewItem(
+                Icon: sample.Icon,
+                Name: sample.Name,
+                RelativeTime: FormatRelative(now - completedAt),
+                DurationText: FormatDuration(duration));
+        }
+    }
+#endif
 
     private string FormatDuration(int durationSeconds)
     {
