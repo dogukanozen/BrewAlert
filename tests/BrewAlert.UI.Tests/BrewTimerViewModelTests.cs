@@ -264,8 +264,14 @@ public class BrewTimerViewModelTests
     [AvaloniaFact]
     public async Task BackToProfiles_CancelsPendingAutoReturn()
     {
+        // Use a long auto-return delay so the race between auto-return firing and
+        // the manual Back tap is removed entirely: if the cancel works the CTS
+        // field is nulled synchronously; if it doesn't, the field still holds a
+        // non-cancelled CTS that would later fire NavigateTo. We assert on the
+        // private state directly rather than relying on Task.Delay timing — the
+        // previous version was flaky under some headless dispatcher setups.
         using var vm = CreateVm();
-        vm.AutoReturnDelay = TimeSpan.FromMilliseconds(50);
+        vm.AutoReturnDelay = TimeSpan.FromMinutes(5);
         var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4) };
         var session = new BrewSession { Profile = profile, Remaining = profile.BrewDuration };
         _timerService.GetActiveSession().Returns((BrewSession?)null);
@@ -276,12 +282,20 @@ public class BrewTimerViewModelTests
             Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
         await Dispatcher.UIThread.InvokeAsync(() => { });
 
+        Assert.NotNull(GetAutoReturnCts(vm)); // sanity: auto-return is armed
+
         vm.BackToProfilesCommand.Execute(null);
 
-        await Task.Delay(100);
-        await Dispatcher.UIThread.InvokeAsync(() => { });
-
+        // BackToProfiles → Dispose → CancelAutoReturn nulls the field synchronously.
+        Assert.Null(GetAutoReturnCts(vm));
         _navigation.Received(1).NavigateTo<ProfileListViewModel>();
+    }
+
+    private static CancellationTokenSource? GetAutoReturnCts(BrewTimerViewModel vm)
+    {
+        var field = typeof(BrewTimerViewModel)
+            .GetField("_autoReturnCts", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        return (CancellationTokenSource?)field!.GetValue(vm);
     }
 
     // Helper to read the private _activeSessionId via reflection for testing attachment.
@@ -293,45 +307,37 @@ public class BrewTimerViewModelTests
     }
 
     // Invariant (AGENT.md §4.3): event subscribers implement IDisposable and
-    // unsubscribe on Dispose. These tests guard against a regression where
-    // an event handler keeps firing on a stale VM after navigation.
+    // unsubscribe on Dispose. We verify the -= calls directly via NSubstitute's
+    // Received() on the event accessor — a state-based check (e.g. raising the
+    // event after Dispose and asserting "no state change") would silently pass
+    // because the VM also has an internal `_disposed` guard inside its handlers.
 
-    [AvaloniaFact]
-    public async Task Dispose_UnsubscribesFromTimerTick()
+    [Fact]
+    public void Dispose_UnsubscribesFromTimerServiceEvents()
     {
-        var vm = CreateVm();
-        var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4) };
-        var session = new BrewSession { Profile = profile, Remaining = profile.BrewDuration };
-        _timerService.GetActiveSession().Returns((BrewSession?)null);
-        _timerService.Start(profile).Returns(session);
-        vm.StartBrew(profile);
-        var remainingBeforeDispose = vm.Remaining;
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+        var vm = new BrewTimerViewModel(_timerService, _notificationCoordinator, _navigation, loc);
 
         vm.Dispose();
-        _timerService.TimerTick += Raise.Event<EventHandler<TimeSpan>>(this, TimeSpan.FromSeconds(7));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
 
-        Assert.Equal(remainingBeforeDispose, vm.Remaining);
+        _timerService.Received(1).TimerTick -= Arg.Any<EventHandler<TimeSpan>>();
+        _timerService.Received(1).BrewCompleted -= Arg.Any<EventHandler<BrewCompletedEvent>>();
     }
 
-    [AvaloniaFact]
-    public async Task Dispose_UnsubscribesFromBrewCompleted()
+    [Fact]
+    public void Dispose_UnsubscribesFromNotificationCoordinator()
     {
-        var vm = CreateVm();
-        var profile = new BrewProfile { Name = "Coffee", BrewDuration = TimeSpan.FromMinutes(4) };
-        var session = new BrewSession { Profile = profile, Remaining = profile.BrewDuration };
-        _timerService.GetActiveSession().Returns((BrewSession?)null);
-        _timerService.Start(profile).Returns(session);
-        vm.StartBrew(profile);
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+        var vm = new BrewTimerViewModel(_timerService, _notificationCoordinator, _navigation, loc);
 
         vm.Dispose();
-        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
 
-        Assert.False(vm.IsCompleted);
+        _notificationCoordinator.Received(1).NotificationCompleted -= Arg.Any<EventHandler<BrewNotificationResult>>();
     }
 
-    [AvaloniaFact]
+    [Fact]
     public void Dispose_UnsubscribesFromLanguageChanged()
     {
         var loc = Substitute.For<ILocalizationService>();
@@ -339,9 +345,7 @@ public class BrewTimerViewModelTests
         var vm = new BrewTimerViewModel(_timerService, _notificationCoordinator, _navigation, loc);
 
         vm.Dispose();
-        loc.ClearReceivedCalls();
-        loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
 
-        loc.DidNotReceive().Get(Arg.Any<string>());
+        loc.Received(1).LanguageChanged -= Arg.Any<Action<string>>();
     }
 }

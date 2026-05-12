@@ -10,26 +10,19 @@ namespace BrewAlert.UI.Tests;
 
 public class LocalizationServiceTests
 {
-    private static (IOptionsMonitor<LanguageOptions> monitor, Action<LanguageOptions, string?>? capturedListener, IDisposable changeRegistration) BuildMonitor(string initialLanguage)
+    private static IOptionsMonitor<LanguageOptions> BuildMonitor(string initialLanguage)
     {
         var monitor = Substitute.For<IOptionsMonitor<LanguageOptions>>();
         monitor.CurrentValue.Returns(new LanguageOptions { Language = initialLanguage });
-
-        var registration = Substitute.For<IDisposable>();
-        Action<LanguageOptions, string?>? captured = null;
-        monitor
-            .OnChange(Arg.Do<Action<LanguageOptions, string?>>(cb => captured = cb))
-            .Returns(registration);
-
-        return (monitor, captured, registration);
+        monitor.OnChange(Arg.Any<Action<LanguageOptions, string?>>())
+            .Returns(Substitute.For<IDisposable>());
+        return monitor;
     }
 
     [Fact]
     public void Constructor_ReadsInitialLanguageFromOptions()
     {
-        var (monitor, _, _) = BuildMonitor(AppLanguage.Turkish);
-
-        using var sut = new LocalizationService(monitor);
+        using var sut = new LocalizationService(BuildMonitor(AppLanguage.Turkish));
 
         Assert.Equal(AppLanguage.Turkish, sut.CurrentLanguage);
     }
@@ -37,8 +30,7 @@ public class LocalizationServiceTests
     [Fact]
     public void Get_ReturnsEnglishString_WhenLanguageIsEnglish()
     {
-        var (monitor, _, _) = BuildMonitor(AppLanguage.English);
-        using var sut = new LocalizationService(monitor);
+        using var sut = new LocalizationService(BuildMonitor(AppLanguage.English));
 
         Assert.Equal("⏸ Pause", sut.Get("PauseButton"));
         Assert.Equal("Brewing...", sut.Get("Brewing"));
@@ -47,8 +39,7 @@ public class LocalizationServiceTests
     [Fact]
     public void Get_ReturnsTurkishString_WhenLanguageIsTurkish()
     {
-        var (monitor, _, _) = BuildMonitor(AppLanguage.Turkish);
-        using var sut = new LocalizationService(monitor);
+        using var sut = new LocalizationService(BuildMonitor(AppLanguage.Turkish));
 
         Assert.Equal("⏸ Duraklat", sut.Get("PauseButton"));
         Assert.Equal("Demliyor...", sut.Get("Brewing"));
@@ -57,8 +48,7 @@ public class LocalizationServiceTests
     [Fact]
     public void Get_ReturnsKey_WhenKeyIsUnknown()
     {
-        var (monitor, _, _) = BuildMonitor(AppLanguage.English);
-        using var sut = new LocalizationService(monitor);
+        using var sut = new LocalizationService(BuildMonitor(AppLanguage.English));
 
         // Missing key falls back to returning the key itself so the UI shows
         // something diagnosable instead of crashing.
@@ -68,8 +58,7 @@ public class LocalizationServiceTests
     [Fact]
     public void SetLanguage_WhenLanguageDiffers_FiresLanguageChangedAndUpdatesCurrent()
     {
-        var (monitor, _, _) = BuildMonitor(AppLanguage.English);
-        using var sut = new LocalizationService(monitor);
+        using var sut = new LocalizationService(BuildMonitor(AppLanguage.English));
 
         string? notified = null;
         sut.LanguageChanged += lang => notified = lang;
@@ -83,8 +72,7 @@ public class LocalizationServiceTests
     [Fact]
     public void SetLanguage_WhenLanguageMatches_DoesNotFireEvent()
     {
-        var (monitor, _, _) = BuildMonitor(AppLanguage.English);
-        using var sut = new LocalizationService(monitor);
+        using var sut = new LocalizationService(BuildMonitor(AppLanguage.English));
 
         var notifyCount = 0;
         sut.LanguageChanged += _ => notifyCount++;

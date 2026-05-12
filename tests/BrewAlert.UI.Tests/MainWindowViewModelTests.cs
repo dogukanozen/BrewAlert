@@ -242,21 +242,20 @@ public class MainWindowViewModelTests
     }
 
     // Invariants (AGENT.md §4.3): event handlers unsubscribe on Dispose.
+    // We verify the -= calls directly via NSubstitute.Received() rather than
+    // raising the event and observing state — a state-based check can pass
+    // accidentally when an unrelated path also produces the same final state.
 
     [Fact]
-    public void Dispose_UnsubscribesFromTimerEvents()
+    public void Dispose_UnsubscribesFromTimerServiceEvents()
     {
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
-        var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
-        var session = new BrewSession { Profile = profile };
-        var titleBeforeDispose = vm.Title;
 
         vm.Dispose();
-        _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(this, new BrewStartedEvent(session));
-        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
-        _timerService.BrewCancelled += Raise.Event<EventHandler<BrewCancelledEvent>>(this, new BrewCancelledEvent(session, TimeSpan.Zero));
 
-        Assert.Equal(titleBeforeDispose, vm.Title);
+        _timerService.Received(1).BrewStarted -= Arg.Any<EventHandler<BrewStartedEvent>>();
+        _timerService.Received(1).BrewCompleted -= Arg.Any<EventHandler<BrewCompletedEvent>>();
+        _timerService.Received(1).BrewCancelled -= Arg.Any<EventHandler<BrewCancelledEvent>>();
     }
 
     [Fact]
@@ -268,35 +267,28 @@ public class MainWindowViewModelTests
         var vm = new MainWindowViewModel(_navigation, _timerService, loc, _updateService);
 
         vm.Dispose();
-        loc.ClearReceivedCalls();
-        loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
 
-        loc.DidNotReceive().Get(Arg.Any<string>());
+        loc.Received(1).LanguageChanged -= Arg.Any<Action<string>>();
     }
 
     [Fact]
     public void Dispose_UnsubscribesFromUpdateAvailable()
     {
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
-        vm.IsUpdateToastVisible = false;
 
         vm.Dispose();
-        _updateService.UpdateAvailable += Raise.Event<Action>();
 
-        Assert.False(vm.IsUpdateToastVisible);
+        _updateService.Received(1).UpdateAvailable -= Arg.Any<Action>();
     }
 
     [Fact]
     public void Dispose_UnsubscribesFromNavigationCurrentViewChanged()
     {
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
-        var stale = vm.CurrentView;
 
         vm.Dispose();
-        var newVm = Substitute.For<ViewModelBase>();
-        _navigation.CurrentViewChanged += Raise.Event<Action<ViewModelBase>>(newVm);
 
-        Assert.Equal(stale, vm.CurrentView);
+        _navigation.Received(1).CurrentViewChanged -= Arg.Any<Action<ViewModelBase>>();
     }
 
     [Fact]

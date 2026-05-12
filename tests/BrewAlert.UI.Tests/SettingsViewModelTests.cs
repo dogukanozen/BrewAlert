@@ -246,6 +246,8 @@ public class SettingsViewModelTests
     public void Dispose_UnsubscribesFromLanguageChanged()
     {
         // Invariant (AGENT.md §4.3): subscribers unsubscribe on Dispose.
+        // Verify the -= call directly so the test fails if Dispose ever stops
+        // unsubscribing — a state-based check would mask the regression.
         var loc = Substitute.For<ILocalizationService>();
         loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
         loc.CurrentLanguage.Returns("English");
@@ -254,10 +256,8 @@ public class SettingsViewModelTests
             _profileService, _preferencesService, loc, _updateService, _configurationRoot);
 
         vm.Dispose();
-        loc.ClearReceivedCalls();
-        loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
 
-        loc.DidNotReceive().Get(Arg.Any<string>());
+        loc.Received(1).LanguageChanged -= Arg.Any<Action<string>>();
     }
 
     [Fact]
