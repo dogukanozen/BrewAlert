@@ -27,8 +27,10 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
     private readonly IBrewHistoryService _history;
     private readonly ILogger<ProfileListViewModel> _logger;
     private readonly DispatcherTimer _recentRefreshTimer;
+    private readonly CancellationTokenSource _disposeCts = new();
     private bool _isLoadingRecentBrews;
     private bool _reloadRecentBrewsRequested;
+    private bool _disposed;
 
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string _pageTitle = string.Empty;
@@ -80,12 +82,17 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
 
     private void OnHistoryUpdated(object? sender, BrewHistoryEntry entry)
     {
-        Dispatcher.UIThread.Post(() => { _ = LoadRecentBrewsAsync(); });
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed)
+                _ = LoadRecentBrewsAsync();
+        });
     }
 
     private void OnRecentRefreshTimerTick(object? sender, EventArgs e)
     {
-        _ = LoadRecentBrewsAsync();
+        if (!_disposed)
+            _ = LoadRecentBrewsAsync();
     }
 
     private async Task LoadProfilesAsync()
@@ -106,6 +113,8 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
 
     private async Task LoadRecentBrewsAsync()
     {
+        if (_disposed) return;
+
         if (_isLoadingRecentBrews)
         {
             _reloadRecentBrewsRequested = true;
@@ -118,7 +127,9 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
             do
             {
                 _reloadRecentBrewsRequested = false;
-                var entries = await _history.GetRecentAsync(RecentBrewLimit);
+                var entries = await _history.GetRecentAsync(RecentBrewLimit, _disposeCts.Token);
+                if (_disposed) return;
+
                 var now = DateTime.UtcNow;
                 RecentBrews.Clear();
                 foreach (var entry in entries)
@@ -131,7 +142,10 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
                 }
                 HasRecentBrews = RecentBrews.Count > 0;
             }
-            while (_reloadRecentBrewsRequested);
+            while (_reloadRecentBrewsRequested && !_disposed);
+        }
+        catch (OperationCanceledException)
+        {
         }
         catch (Exception ex)
         {
@@ -177,6 +191,11 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
+        _disposeCts.Cancel();
+        _disposeCts.Dispose();
         _recentRefreshTimer.Stop();
         _recentRefreshTimer.Tick -= OnRecentRefreshTimerTick;
         _loc.LanguageChanged -= OnLanguageChanged;

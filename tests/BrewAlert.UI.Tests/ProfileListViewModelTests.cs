@@ -167,6 +167,40 @@ public class ProfileListViewModelTests
         Assert.Equal("4 min", vm.RecentBrews[0].DurationText);
     }
 
+    [AvaloniaFact]
+    public async Task Dispose_PreventsPendingRecentBrewLoadFromUpdatingCollection()
+    {
+        // Arrange
+        var loadCompletion = new TaskCompletionSource<IReadOnlyList<BrewHistoryEntry>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<BrewProfile>());
+        _history.GetRecentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(_ => loadCompletion.Task);
+
+        var vm = new ProfileListViewModel(
+            _profileService,
+            _navigation,
+            _loc,
+            _history,
+            NullLogger<ProfileListViewModel>.Instance);
+
+        vm.Dispose();
+        loadCompletion.SetResult([
+            new BrewHistoryEntry(
+                Guid.NewGuid(),
+                DateTime.UtcNow,
+                "Coffee",
+                BrewType.Coffee,
+                "☕",
+                240)
+        ]);
+
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        Assert.Empty(vm.RecentBrews);
+        Assert.False(vm.HasRecentBrews);
+    }
+
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
