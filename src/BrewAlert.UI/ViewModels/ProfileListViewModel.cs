@@ -132,9 +132,11 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
                 if (_disposed) return;
 
                 var now = DateTime.UtcNow;
+                var today = DateTime.Today;
                 RecentBrews.Clear();
                 foreach (var entry in entries)
                 {
+                    if (entry.CompletedAtUtc.ToLocalTime().Date != today) continue;
                     RecentBrews.Add(new RecentBrewItem(
                         Icon: entry.Icon,
                         Name: entry.ProfileName,
@@ -193,17 +195,20 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
             ("🍯", "Ihlamur"),
         };
         var rng = new Random(42);
+        var minutesSinceMidnight = (int)(DateTime.Now - DateTime.Today).TotalMinutes;
+        if (minutesSinceMidnight < 1) yield break;
+        var step = Math.Max(1, minutesSinceMidnight / Math.Max(1, count));
         var cumulativeMinutes = 0;
         for (var i = 0; i < count; i++)
         {
+            cumulativeMinutes += rng.Next(1, step + 1);
+            if (cumulativeMinutes > minutesSinceMidnight) break;
             var sample = samples[rng.Next(samples.Length)];
-            cumulativeMinutes += rng.Next(7, 240);
-            var completedAt = now - TimeSpan.FromMinutes(cumulativeMinutes);
             var duration = rng.Next(60, 1200);
             yield return new RecentBrewItem(
                 Icon: sample.Icon,
                 Name: sample.Name,
-                RelativeTime: FormatRelative(now - completedAt),
+                RelativeTime: FormatRelative(TimeSpan.FromMinutes(cumulativeMinutes)),
                 DurationText: FormatDuration(duration));
         }
     }
