@@ -132,22 +132,18 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
                 if (_disposed) return;
 
                 var now = DateTime.UtcNow;
-                var today = DateTime.Today;
+                var todayUtcStart = DateTime.Today.ToUniversalTime();
+                var todayUtcEnd = todayUtcStart.AddDays(1);
                 RecentBrews.Clear();
                 foreach (var entry in entries)
                 {
-                    if (entry.CompletedAtUtc.ToLocalTime().Date != today) continue;
+                    if (entry.CompletedAtUtc < todayUtcStart || entry.CompletedAtUtc >= todayUtcEnd) continue;
                     RecentBrews.Add(new RecentBrewItem(
                         Icon: entry.Icon,
                         Name: entry.ProfileName,
                         RelativeTime: FormatRelative(now - entry.CompletedAtUtc),
                         DurationText: FormatDuration(entry.DurationSeconds)));
                 }
-#if DEBUG
-                RecentBrews.Clear();
-                foreach (var mock in BuildMockRecentBrews(30, now))
-                    RecentBrews.Add(mock);
-#endif
                 RecentBrewsCount = RecentBrews.Count;
                 HasRecentBrews = RecentBrews.Count > 0;
             }
@@ -177,42 +173,6 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
             return string.Format(CultureInfo.CurrentCulture, _loc.Get("HoursAgo"), (int)delta.TotalHours);
         return string.Format(CultureInfo.CurrentCulture, _loc.Get("DaysAgo"), (int)delta.TotalDays);
     }
-
-#if DEBUG
-    private IEnumerable<RecentBrewItem> BuildMockRecentBrews(int count, DateTime now)
-    {
-        var samples = new (string Icon, string Name)[]
-        {
-            ("♨",  "Çay"),
-            ("☕", "Filtre Kahve"),
-            ("☕", "Türk Kahvesi"),
-            ("☕", "Espresso"),
-            ("🍵", "Yeşil Çay"),
-            ("🌿", "Bitki Çayı"),
-            ("🥛", "Latte"),
-            ("☕", "Americano"),
-            ("☕", "Cappuccino"),
-            ("🍯", "Ihlamur"),
-        };
-        var rng = new Random(42);
-        var minutesSinceMidnight = (int)(DateTime.Now - DateTime.Today).TotalMinutes;
-        if (minutesSinceMidnight < 1) yield break;
-        var step = Math.Max(1, minutesSinceMidnight / Math.Max(1, count));
-        var cumulativeMinutes = 0;
-        for (var i = 0; i < count; i++)
-        {
-            cumulativeMinutes += rng.Next(1, step + 1);
-            if (cumulativeMinutes > minutesSinceMidnight) break;
-            var sample = samples[rng.Next(samples.Length)];
-            var duration = rng.Next(60, 1200);
-            yield return new RecentBrewItem(
-                Icon: sample.Icon,
-                Name: sample.Name,
-                RelativeTime: FormatRelative(TimeSpan.FromMinutes(cumulativeMinutes)),
-                DurationText: FormatDuration(duration));
-        }
-    }
-#endif
 
     private string FormatDuration(int durationSeconds)
     {
