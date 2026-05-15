@@ -55,7 +55,6 @@ public partial class ActiveBrewsViewModel : ViewModelBase, IDisposable
 
         _timerService.BrewStarted += OnBrewStarted;
         _timerService.BrewCompleted += OnBrewCompleted;
-        _timerService.BrewCancelled += OnBrewCancelled;
         _loc.LanguageChanged += OnLanguageChanged;
 
         RefreshLocalizedStrings();
@@ -105,16 +104,6 @@ public partial class ActiveBrewsViewModel : ViewModelBase, IDisposable
         });
     }
 
-    private void OnBrewCancelled(object? sender, BrewCancelledEvent e)
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (_disposed) return;
-            if (_timerService.GetActiveSessions().Count == 0 && Items.Count == 0)
-                StopAutoReturnTimer();
-        });
-    }
-
     private void StartAutoReturnTimer()
     {
         StopAutoReturnTimer();
@@ -150,7 +139,13 @@ public partial class ActiveBrewsViewModel : ViewModelBase, IDisposable
         {
             StopAutoReturnTimer();
             _navigation.NavigateTo<ProfileListViewModel>();
+            return;
         }
+
+        // Last running brew was cancelled but completed rows remain visible — arm the
+        // auto-return timer so a stale finished screen doesn't sit indefinitely.
+        if (_timerService.GetActiveSessions().Count == 0)
+            StartAutoReturnTimer();
     }
 
     [RelayCommand]
@@ -163,7 +158,6 @@ public partial class ActiveBrewsViewModel : ViewModelBase, IDisposable
         StopAutoReturnTimer();
         _timerService.BrewStarted -= OnBrewStarted;
         _timerService.BrewCompleted -= OnBrewCompleted;
-        _timerService.BrewCancelled -= OnBrewCancelled;
         _loc.LanguageChanged -= OnLanguageChanged;
         foreach (var item in Items)
             item.Dispose();

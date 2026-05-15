@@ -127,11 +127,37 @@ public class ActiveBrewsViewModelTests
         _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
         _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
             this, new BrewCompletedEvent(session));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
 
-        await Task.Delay(200);
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await WaitUntilAsync(NavigatedHome, TimeSpan.FromSeconds(2));
 
+        _navigation.Received(1).NavigateTo<ProfileListViewModel>();
+    }
+
+    [AvaloniaFact]
+    public async Task LastRunningCancelled_WithCompletedRowVisible_StartsAutoReturn()
+    {
+        // Repro: one brew completes (stays as dismissable row), the other is cancelled.
+        // Active sessions drop to zero but Items is non-empty — auto-return must fire.
+        var completed = Session("Coffee");
+        var running = Session("Tea");
+        _timerService.GetActiveSessions().Returns([completed, running]);
+        using var vm = new ActiveBrewsViewModel(
+            _timerService, _notificationCoordinator, _navigation, _loc, TimeSpan.FromMilliseconds(50));
+
+        _timerService.GetActiveSessions().Returns([running]);
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
+            this, new BrewCompletedEvent(completed));
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+        _navigation.DidNotReceive().NavigateTo<ProfileListViewModel>();
+
+        _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
+        vm.Items.First(i => i.SessionId == running.Id).CancelCommand.Execute(null);
+
+        // Cancel removed only the running row — completed row still visible, no immediate nav.
+        Assert.Single(vm.Items);
+        _navigation.DidNotReceive().NavigateTo<ProfileListViewModel>();
+
+        await WaitUntilAsync(NavigatedHome, TimeSpan.FromSeconds(2));
         _navigation.Received(1).NavigateTo<ProfileListViewModel>();
     }
 
@@ -141,7 +167,7 @@ public class ActiveBrewsViewModelTests
         var s1 = Session("Coffee");
         _timerService.GetActiveSessions().Returns([s1]);
         using var vm = new ActiveBrewsViewModel(
-            _timerService, _notificationCoordinator, _navigation, _loc, TimeSpan.FromMilliseconds(100));
+            _timerService, _notificationCoordinator, _navigation, _loc, TimeSpan.FromMilliseconds(80));
 
         _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
         _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
@@ -153,10 +179,59 @@ public class ActiveBrewsViewModelTests
             this, new BrewStartedEvent(s2));
         await Dispatcher.UIThread.InvokeAsync(() => { });
 
-        await Task.Delay(250);
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        // Auto-return delay is 80ms; pump for well past it and assert nothing happens.
+        await PumpForAsync(TimeSpan.FromMilliseconds(300));
 
         _navigation.DidNotReceive().NavigateTo<ProfileListViewModel>();
+    }
+
+    [AvaloniaFact]
+    public async Task ItemDismiss_LastCompletedBrew_RemovesAndNavigatesHome()
+    {
+        using var vm = CreateVm();
+        var session = Session();
+        _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(
+            this, new BrewStartedEvent(session));
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
+            this, new BrewCompletedEvent(session));
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        vm.Items[0].DismissCommand.Execute(null);
+
+        Assert.Empty(vm.Items);
+        _navigation.Received(1).NavigateTo<ProfileListViewModel>();
+    }
+
+    private bool NavigatedHome() =>
+        _navigation.ReceivedCalls()
+            .Any(c => c.GetMethodInfo() is { IsGenericMethod: true } m
+                && m.GetGenericArguments().Length == 1
+                && m.GetGenericArguments()[0] == typeof(ProfileListViewModel));
+
+    private static async Task WaitUntilAsync(Func<bool> predicate, TimeSpan timeout)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (sw.Elapsed < timeout)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => { });
+            if (predicate()) return;
+            await Task.Delay(10);
+        }
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+        if (!predicate())
+            throw new TimeoutException($"Condition not met within {timeout.TotalMilliseconds}ms.");
+    }
+
+    private static async Task PumpForAsync(TimeSpan duration)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (sw.Elapsed < duration)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => { });
+            await Task.Delay(10);
+        }
     }
 
     [AvaloniaFact]
