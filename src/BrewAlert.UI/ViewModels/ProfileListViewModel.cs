@@ -25,6 +25,7 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
     private readonly INavigationService _navigation;
     private readonly ILocalizationService _loc;
     private readonly IBrewHistoryService _history;
+    private readonly IBrewTimerService _timerService;
     private readonly ILogger<ProfileListViewModel> _logger;
     private readonly DispatcherTimer _recentRefreshTimer;
     private readonly CancellationTokenSource _disposeCts = new();
@@ -47,12 +48,14 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
         INavigationService navigation,
         ILocalizationService loc,
         IBrewHistoryService history,
+        IBrewTimerService timerService,
         ILogger<ProfileListViewModel> logger)
     {
         _profileService = profileService;
         _navigation = navigation;
         _loc = loc;
         _history = history;
+        _timerService = timerService;
         _logger = logger;
 
         _loc.LanguageChanged += OnLanguageChanged;
@@ -183,9 +186,10 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void SelectProfile(BrewProfile profile)
     {
-        _navigation.NavigateTo<BrewTimerViewModel>();
-        if (_navigation.CurrentView is BrewTimerViewModel timerVm)
-            timerVm.StartBrew(profile);
+        // Start the brew first so the ActiveBrews VM picks it up via GetActiveSessions()
+        // when it constructs, regardless of whether BrewStarted fires before/after the nav.
+        _timerService.Start(profile);
+        _navigation.NavigateTo<ActiveBrewsViewModel>();
     }
 
     [RelayCommand]

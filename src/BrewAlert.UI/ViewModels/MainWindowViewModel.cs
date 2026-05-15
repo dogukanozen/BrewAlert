@@ -135,14 +135,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void NavigateToProfiles()
     {
-        var activeSession = _timerService.GetActiveSession();
-        if (activeSession is { State: BrewSessionState.Running or BrewSessionState.Paused })
+        var active = _timerService.GetActiveSessions();
+        if (active.Count > 0)
         {
-            _navigation.NavigateTo<BrewTimerViewModel>();
-            if (_navigation.CurrentView is BrewTimerViewModel timerVm)
-                timerVm.AttachToSession(activeSession);
+            _navigation.NavigateTo<ActiveBrewsViewModel>();
             _currentTitleKey = TitleKeyBrewRunning;
-            Title = $"{activeSession.Profile.Icon} {activeSession.Profile.Name}";
+            Title = ComposeBrewTitle(active);
         }
         else
         {
@@ -150,6 +148,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _currentTitleKey = TitleKeyAppName;
             Title = "BrewAlert";
         }
+    }
+
+    private string ComposeBrewTitle(IReadOnlyList<BrewSession> sessions)
+    {
+        if (sessions.Count == 1)
+            return $"{sessions[0].Profile.Icon} {sessions[0].Profile.Name}";
+        return string.Format(_loc.Get("ActiveBrewsCount"), sessions.Count);
     }
 
     [RelayCommand]
@@ -160,28 +165,26 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Title = _loc.Get("SettingsTitle");
     }
 
-    private void OnBrewStarted(object? sender, BrewStartedEvent e)
+    private void OnBrewStarted(object? sender, BrewStartedEvent e) => RefreshBrewTitle();
+
+    private void OnBrewCompleted(object? sender, BrewCompletedEvent e) => RefreshBrewTitle();
+
+    private void OnBrewCancelled(object? sender, BrewCancelledEvent e) => RefreshBrewTitle();
+
+    private void RefreshBrewTitle()
     {
+        var active = _timerService.GetActiveSessions();
+        if (active.Count == 0)
+        {
+            if (_currentTitleKey == TitleKeyBrewRunning)
+            {
+                _currentTitleKey = TitleKeyAppName;
+                Title = "BrewAlert";
+            }
+            return;
+        }
         _currentTitleKey = TitleKeyBrewRunning;
-        Title = $"{e.Session.Profile.Icon} {e.Session.Profile.Name}";
-    }
-
-    private void OnBrewCompleted(object? sender, BrewCompletedEvent e)
-    {
-        if (_currentTitleKey == TitleKeyBrewRunning)
-        {
-            _currentTitleKey = TitleKeyAppName;
-            Title = "BrewAlert";
-        }
-    }
-
-    private void OnBrewCancelled(object? sender, BrewCancelledEvent e)
-    {
-        if (_currentTitleKey == TitleKeyBrewRunning)
-        {
-            _currentTitleKey = TitleKeyAppName;
-            Title = "BrewAlert";
-        }
+        Title = ComposeBrewTitle(active);
     }
 
     private void HandleNavigationViewChanged(ViewModelBase viewModel)

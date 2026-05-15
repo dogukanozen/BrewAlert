@@ -82,22 +82,19 @@ public class MainWindowViewModelTests
     [Fact]
     public void NavigateToProfiles_WhenNoActiveSession_NavigatesToProfileList()
     {
-        // GetActiveSession() returns null by default (NSubstitute reference type default)
+        _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
         vm.NavigateToSettingsCommand.Execute(null);
 
-        // Act
         vm.NavigateToProfilesCommand.Execute(null);
 
-        // Assert
         _navigation.Received(2).NavigateTo<ProfileListViewModel>(); // once in ctor, once now
         Assert.Equal("BrewAlert", vm.Title);
     }
 
     [Fact]
-    public void NavigateToProfiles_WhenActiveSession_NavigatesToBrewTimerAndSetsTitle()
+    public void NavigateToProfiles_WhenSingleActiveSession_NavigatesToActiveBrewsAndSetsProfileTitle()
     {
-        // Arrange
         var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
         var session = new BrewSession
         {
@@ -105,15 +102,28 @@ public class MainWindowViewModelTests
             State = BrewSessionState.Running,
             Remaining = TimeSpan.FromMinutes(3)
         };
-        _timerService.GetActiveSession().Returns(session);
+        _timerService.GetActiveSessions().Returns([session]);
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
 
-        // Act
         vm.NavigateToProfilesCommand.Execute(null);
 
-        // Assert
-        _navigation.Received(1).NavigateTo<BrewTimerViewModel>();
+        _navigation.Received(1).NavigateTo<ActiveBrewsViewModel>();
         Assert.Equal("☕ Coffee", vm.Title);
+    }
+
+    [Fact]
+    public void NavigateToProfiles_WhenMultipleActiveSessions_ShowsCountTitle()
+    {
+        var s1 = new BrewSession { Profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) } };
+        var s2 = new BrewSession { Profile = new BrewProfile { Name = "Tea", Icon = "🍵", BrewDuration = TimeSpan.FromMinutes(3) } };
+        _timerService.GetActiveSessions().Returns([s1, s2]);
+        _loc.Get("ActiveBrewsCount").Returns("{0} active brews");
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+
+        vm.NavigateToProfilesCommand.Execute(null);
+
+        _navigation.Received(1).NavigateTo<ActiveBrewsViewModel>();
+        Assert.Equal("2 active brews", vm.Title);
     }
 
     [Fact]
@@ -137,16 +147,18 @@ public class MainWindowViewModelTests
     public void BrewCompleted_WhenTitleIsBrewRunning_ResetsToAppName()
     {
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
-        // Simulate brew starting (sets title to brew name)
         var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
         var startedSession = new BrewSession { Profile = profile };
+
+        // Brew starting — service reports it as active so title reflects it
+        _timerService.GetActiveSessions().Returns([startedSession]);
         _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(this, new BrewStartedEvent(startedSession));
         Assert.Equal("☕ Coffee", vm.Title);
 
-        // Act — brew completes
+        // Brew completes — no longer active
+        _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
         _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(startedSession));
 
-        // Assert
         Assert.Equal("BrewAlert", vm.Title);
     }
 
@@ -156,14 +168,28 @@ public class MainWindowViewModelTests
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
         var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
         var session = new BrewSession { Profile = profile };
+
+        _timerService.GetActiveSessions().Returns([session]);
         _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(this, new BrewStartedEvent(session));
         Assert.Equal("☕ Coffee", vm.Title);
 
-        // Act — brew cancelled
+        _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
         _timerService.BrewCancelled += Raise.Event<EventHandler<BrewCancelledEvent>>(this, new BrewCancelledEvent(session, TimeSpan.FromMinutes(2)));
 
-        // Assert
         Assert.Equal("BrewAlert", vm.Title);
+    }
+
+    [Fact]
+    public void BrewCompleted_WithRemainingSession_ShowsThatProfilesTitle()
+    {
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var coffee = new BrewSession { Profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) } };
+        var tea = new BrewSession { Profile = new BrewProfile { Name = "Tea", Icon = "🍵", BrewDuration = TimeSpan.FromMinutes(3) } };
+
+        _timerService.GetActiveSessions().Returns([coffee]);
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(tea));
+
+        Assert.Equal("☕ Coffee", vm.Title);
     }
 
     [Fact]

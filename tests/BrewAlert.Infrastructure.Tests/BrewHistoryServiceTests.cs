@@ -59,7 +59,7 @@ public class BrewHistoryServiceTests
     private sealed class FakeTimer : IBrewTimerService
     {
 #pragma warning disable CS0067 // unused — interface contract
-        public event EventHandler<TimeSpan>? TimerTick;
+        public event EventHandler<BrewTimerTickEvent>? TimerTick;
         public event EventHandler<BrewStartedEvent>? BrewStarted;
         public event EventHandler<BrewCancelledEvent>? BrewCancelled;
 #pragma warning restore CS0067
@@ -69,7 +69,7 @@ public class BrewHistoryServiceTests
         public void Cancel(Guid sessionId) { }
         public void Pause(Guid sessionId) { }
         public void Resume(Guid sessionId) { }
-        public BrewSession? GetActiveSession() => null;
+        public IReadOnlyList<BrewSession> GetActiveSessions() => Array.Empty<BrewSession>();
 
         public void Raise(BrewCompletedEvent e) => BrewCompleted?.Invoke(this, e);
     }
