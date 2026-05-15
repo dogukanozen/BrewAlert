@@ -94,6 +94,69 @@ public class ActiveBrewsViewModelTests
 
         Assert.Empty(vm.Items);
         Assert.False(vm.HasItems);
+        // Cancelling the last brew should hand the user back to the home screen.
+        _navigation.Received(1).NavigateTo<ProfileListViewModel>();
+    }
+
+    [AvaloniaFact]
+    public async Task ItemCancel_NotLastBrew_StaysOnActiveView()
+    {
+        using var vm = CreateVm();
+        var s1 = Session("Coffee");
+        var s2 = Session("Tea");
+        _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(
+            this, new BrewStartedEvent(s1));
+        _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(
+            this, new BrewStartedEvent(s2));
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        vm.Items[0].CancelCommand.Execute(null);
+
+        Assert.Single(vm.Items);
+        _navigation.DidNotReceive().NavigateTo<ProfileListViewModel>();
+    }
+
+    [AvaloniaFact]
+    public async Task AllBrewsCompleted_NavigatesHomeAfterAutoReturnDelay()
+    {
+        var session = Session();
+        _timerService.GetActiveSessions().Returns([session]);
+        using var vm = new ActiveBrewsViewModel(
+            _timerService, _notificationCoordinator, _navigation, _loc, TimeSpan.FromMilliseconds(50));
+
+        _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
+            this, new BrewCompletedEvent(session));
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        await Task.Delay(200);
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        _navigation.Received(1).NavigateTo<ProfileListViewModel>();
+    }
+
+    [AvaloniaFact]
+    public async Task NewBrewStartedDuringAutoReturn_CancelsReturn()
+    {
+        var s1 = Session("Coffee");
+        _timerService.GetActiveSessions().Returns([s1]);
+        using var vm = new ActiveBrewsViewModel(
+            _timerService, _notificationCoordinator, _navigation, _loc, TimeSpan.FromMilliseconds(100));
+
+        _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
+            this, new BrewCompletedEvent(s1));
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        var s2 = Session("Tea");
+        _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(
+            this, new BrewStartedEvent(s2));
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        await Task.Delay(250);
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        _navigation.DidNotReceive().NavigateTo<ProfileListViewModel>();
     }
 
     [AvaloniaFact]

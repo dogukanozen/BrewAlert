@@ -14,10 +14,14 @@ namespace BrewAlert.UI.ViewModels;
 /// </summary>
 public partial class ActiveBrewsViewModel : ViewModelBase, IDisposable
 {
+    private static readonly TimeSpan DefaultAutoReturnDelay = TimeSpan.FromSeconds(30);
+
     private readonly IBrewTimerService _timerService;
     private readonly IBrewCompletionNotificationService _notificationCoordinator;
     private readonly INavigationService _navigation;
     private readonly ILocalizationService _loc;
+    private readonly TimeSpan _autoReturnDelay;
+    private DispatcherTimer? _autoReturnTimer;
     private bool _disposed;
 
     public ObservableCollection<BrewItemViewModel> Items { get; } = [];
@@ -32,13 +36,26 @@ public partial class ActiveBrewsViewModel : ViewModelBase, IDisposable
         IBrewCompletionNotificationService notificationCoordinator,
         INavigationService navigation,
         ILocalizationService loc)
+        : this(timerService, notificationCoordinator, navigation, loc, DefaultAutoReturnDelay)
+    {
+    }
+
+    internal ActiveBrewsViewModel(
+        IBrewTimerService timerService,
+        IBrewCompletionNotificationService notificationCoordinator,
+        INavigationService navigation,
+        ILocalizationService loc,
+        TimeSpan autoReturnDelay)
     {
         _timerService = timerService;
         _notificationCoordinator = notificationCoordinator;
         _navigation = navigation;
         _loc = loc;
+        _autoReturnDelay = autoReturnDelay;
 
         _timerService.BrewStarted += OnBrewStarted;
+        _timerService.BrewCompleted += OnBrewCompleted;
+        _timerService.BrewCancelled += OnBrewCancelled;
         _loc.LanguageChanged += OnLanguageChanged;
 
         RefreshLocalizedStrings();
@@ -69,10 +86,57 @@ public partial class ActiveBrewsViewModel : ViewModelBase, IDisposable
         Dispatcher.UIThread.Post(() =>
         {
             if (_disposed) return;
+            StopAutoReturnTimer();
             if (Items.Any(i => i.SessionId == e.Session.Id)) return;
             Items.Add(new BrewItemViewModel(e.Session, _timerService, _notificationCoordinator, _loc, RemoveItem));
             HasItems = true;
         });
+    }
+
+    // When the last running brew completes, schedule an auto-return to home so a finished
+    // screen doesn't sit indefinitely. New brew / dismiss / cancel all reset the timer.
+    private void OnBrewCompleted(object? sender, BrewCompletedEvent e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_disposed) return;
+            if (_timerService.GetActiveSessions().Count == 0)
+                StartAutoReturnTimer();
+        });
+    }
+
+    private void OnBrewCancelled(object? sender, BrewCancelledEvent e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_disposed) return;
+            if (_timerService.GetActiveSessions().Count == 0 && Items.Count == 0)
+                StopAutoReturnTimer();
+        });
+    }
+
+    private void StartAutoReturnTimer()
+    {
+        StopAutoReturnTimer();
+        _autoReturnTimer = new DispatcherTimer { Interval = _autoReturnDelay };
+        _autoReturnTimer.Tick += OnAutoReturnTick;
+        _autoReturnTimer.Start();
+    }
+
+    private void StopAutoReturnTimer()
+    {
+        if (_autoReturnTimer is null) return;
+        _autoReturnTimer.Stop();
+        _autoReturnTimer.Tick -= OnAutoReturnTick;
+        _autoReturnTimer = null;
+    }
+
+    private void OnAutoReturnTick(object? sender, EventArgs e)
+    {
+        StopAutoReturnTimer();
+        if (_disposed) return;
+        if (_timerService.GetActiveSessions().Count != 0) return;
+        _navigation.NavigateTo<ProfileListViewModel>();
     }
 
     private void RemoveItem(BrewItemViewModel item)
@@ -81,6 +145,12 @@ public partial class ActiveBrewsViewModel : ViewModelBase, IDisposable
         Items.Remove(item);
         item.Dispose();
         HasItems = Items.Count > 0;
+
+        if (Items.Count == 0)
+        {
+            StopAutoReturnTimer();
+            _navigation.NavigateTo<ProfileListViewModel>();
+        }
     }
 
     [RelayCommand]
@@ -90,7 +160,10 @@ public partial class ActiveBrewsViewModel : ViewModelBase, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        StopAutoReturnTimer();
         _timerService.BrewStarted -= OnBrewStarted;
+        _timerService.BrewCompleted -= OnBrewCompleted;
+        _timerService.BrewCancelled -= OnBrewCancelled;
         _loc.LanguageChanged -= OnLanguageChanged;
         foreach (var item in Items)
             item.Dispose();

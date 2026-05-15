@@ -48,4 +48,8 @@
     <ProjectReference Include="..\BrewAlert.Core\BrewAlert.Core.csproj" />
     <ProjectReference Include="..\BrewAlert.Infrastructure\BrewAlert.Infrastructure.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="BrewAlert.UI.Tests" />
+  </ItemGroup>
 </Project>
