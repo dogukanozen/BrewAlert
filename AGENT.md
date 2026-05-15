@@ -48,9 +48,9 @@ If the request maps to nothing here, **ask** the user instead of scanning the wh
 
 All of the following are verified against the current code. If you see a change that violates one, reject it in review.
 
-1. **No service locator.** ViewModels never call `App.Services`, `IServiceProvider`, or `GetRequiredService<T>()`. Use `INavigationService` for view transitions and constructor injection for everything else. (see `BrewTimerViewModel.cs`, `App.axaml.cs`)
+1. **No service locator.** ViewModels never call `App.Services`, `IServiceProvider`, or `GetRequiredService<T>()`. Use `INavigationService` for view transitions and constructor injection for everything else. (see `ActiveBrewsViewModel.cs`, `BrewItemViewModel.cs`, `App.axaml.cs`)
 2. **Events fire outside `lock` blocks.** In `BrewTimerService` every `TimerTick` / `BrewStarted` / `BrewCompleted` / `BrewCancelled` invocation happens after the lock is released. Re-entrant handlers used to deadlock. (see `BrewTimerService.cs:53, 73, 143`)
-3. **Event subscribers implement `IDisposable`** and unsubscribe in `Dispose()`. Required for any VM holding `IBrewTimerService` events (`TimerTick`, `BrewStarted`, etc.) **and** `ILocalizationService.LanguageChanged`. (see `BrewTimerViewModel.cs`)
+3. **Event subscribers implement `IDisposable`** and unsubscribe in `Dispose()`. Required for any VM holding `IBrewTimerService` events (`TimerTick`, `BrewStarted`, etc.) **and** `ILocalizationService.LanguageChanged`. (see `BrewItemViewModel.cs`, `ActiveBrewsViewModel.cs`)
 4. **DI lifetimes** (in `App.axaml.cs:ConfigureServices`):
    - **Singleton**: `MainWindowViewModel`, `INavigationService`, `IBrewTimerService`, `BrewProfileService`, `IProfileRepository`, `INotificationService`, `IPreferencesService`, `ILocalizationService`.
    - **Transient**: `ActiveBrewsViewModel`, `ProfileListViewModel`, `SettingsViewModel` — fresh instance per navigation so state never goes stale.
