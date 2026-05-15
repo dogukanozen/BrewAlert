@@ -116,6 +116,7 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
 
     private async Task RunTimerLoopAsync(BrewSession session, CancellationToken ct)
     {
+        CancellationTokenSource? completedCts = null;
         try
         {
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
@@ -137,7 +138,14 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
                     {
                         session.Remaining = TimeSpan.Zero;
                         session.State = BrewSessionState.Completed;
-                        _sessions.Remove(session.Id);
+                        // Capture the CTS so we can dispose it after leaving the lock.
+                        // Removing the entry here means a racing Cancel/Dispose can't
+                        // dispose the same CTS again.
+                        if (_sessions.TryGetValue(session.Id, out var entry))
+                        {
+                            completedCts = entry.Cts;
+                            _sessions.Remove(session.Id);
+                        }
                         shouldComplete = true;
                     }
                     else
@@ -148,7 +156,7 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
                     remaining = session.Remaining;
                 }
 
-                // Fire events OUTSIDE the lock
+                // Fire events OUTSIDE the lock (AGENT.md §4.2).
                 if (shouldComplete)
                 {
                     TimerTick?.Invoke(this, new BrewTimerTickEvent(session.Id, TimeSpan.Zero));
@@ -164,7 +172,13 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
         }
         catch (OperationCanceledException)
         {
-            // Expected on cancel — no action needed.
+            // Expected on cancel — Cancel() owns disposing the CTS in that path.
+        }
+        finally
+        {
+            // Normal-completion path: CTS was captured above and is now safe to dispose
+            // (no further WaitForNextTickAsync calls reference its token).
+            completedCts?.Dispose();
         }
     }
 
