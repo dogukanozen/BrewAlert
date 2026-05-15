@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using BrewAlert.Core.Events;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
@@ -143,26 +144,24 @@ public class MainWindowViewModelTests
         Assert.Equal("BrewAlert", vm.Title);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public void BrewCompleted_WhenTitleIsBrewRunning_ResetsToAppName()
     {
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
         var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
         var startedSession = new BrewSession { Profile = profile };
 
-        // Brew starting — service reports it as active so title reflects it
         _timerService.GetActiveSessions().Returns([startedSession]);
         _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(this, new BrewStartedEvent(startedSession));
         Assert.Equal("☕ Coffee", vm.Title);
 
-        // Brew completes — no longer active
         _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
         _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(startedSession));
 
         Assert.Equal("BrewAlert", vm.Title);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public void BrewCancelled_WhenTitleIsBrewRunning_ResetsToAppName()
     {
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
@@ -179,7 +178,7 @@ public class MainWindowViewModelTests
         Assert.Equal("BrewAlert", vm.Title);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public void BrewCompleted_WithRemainingSession_ShowsThatProfilesTitle()
     {
         var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
@@ -190,6 +189,85 @@ public class MainWindowViewModelTests
         _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(tea));
 
         Assert.Equal("☕ Coffee", vm.Title);
+    }
+
+    [AvaloniaFact]
+    public void BrewCompleted_FromNonUiThread_UpdatesTitleViaDispatcher()
+    {
+        // BrewTimerService raises BrewCompleted from its background loop —
+        // the VM must marshal the title update onto the UI thread.
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
+        var session = new BrewSession { Profile = profile };
+
+        _timerService.GetActiveSessions().Returns([session]);
+        _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(this, new BrewStartedEvent(session));
+        Assert.Equal("☕ Coffee", vm.Title);
+
+        // Raise BrewCompleted from a background thread; the VM should Post to the dispatcher
+        // and not throw a cross-thread UI exception when the property change is processed.
+        _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
+        Task.Run(() =>
+            _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session))
+        ).GetAwaiter().GetResult();
+
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("BrewAlert", vm.Title);
+    }
+
+    [AvaloniaFact]
+    public void BrewCompleted_WhileOnSettings_DoesNotOverwriteSettingsTitle()
+    {
+        _loc.Get("SettingsTitle").Returns("Settings");
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+
+        // Two brews running, user navigates to Settings.
+        var s1 = new BrewSession { Profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) } };
+        var s2 = new BrewSession { Profile = new BrewProfile { Name = "Tea", Icon = "🍵", BrewDuration = TimeSpan.FromMinutes(3) } };
+        _timerService.GetActiveSessions().Returns([s1, s2]);
+        vm.NavigateToSettingsCommand.Execute(null);
+        Assert.Equal("Settings", vm.Title);
+
+        // One brew completes while user is on Settings — title must not change.
+        _timerService.GetActiveSessions().Returns([s2]);
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(s1));
+
+        Assert.Equal("Settings", vm.Title);
+    }
+
+    [AvaloniaFact]
+    public void BrewCancelled_WhileOnSettings_DoesNotOverwriteSettingsTitle()
+    {
+        _loc.Get("SettingsTitle").Returns("Settings");
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+
+        var s1 = new BrewSession { Profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) } };
+        var s2 = new BrewSession { Profile = new BrewProfile { Name = "Tea", Icon = "🍵", BrewDuration = TimeSpan.FromMinutes(3) } };
+        _timerService.GetActiveSessions().Returns([s1, s2]);
+        vm.NavigateToSettingsCommand.Execute(null);
+        Assert.Equal("Settings", vm.Title);
+
+        _timerService.GetActiveSessions().Returns([s2]);
+        _timerService.BrewCancelled += Raise.Event<EventHandler<BrewCancelledEvent>>(this, new BrewCancelledEvent(s1, TimeSpan.FromMinutes(1)));
+
+        Assert.Equal("Settings", vm.Title);
+    }
+
+    [AvaloniaFact]
+    public void LanguageChanged_WithMultipleActiveBrews_RelocalizesCountTitle()
+    {
+        _loc.Get("ActiveBrewsCount").Returns("{0} active brews", "{0} aktif demleme");
+        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+
+        var s1 = new BrewSession { Profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) } };
+        var s2 = new BrewSession { Profile = new BrewProfile { Name = "Tea", Icon = "🍵", BrewDuration = TimeSpan.FromMinutes(3) } };
+        _timerService.GetActiveSessions().Returns([s1, s2]);
+
+        vm.NavigateToProfilesCommand.Execute(null);
+        Assert.Equal("2 active brews", vm.Title);
+
+        _loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
+        Assert.Equal("2 aktif demleme", vm.Title);
     }
 
     [Fact]
