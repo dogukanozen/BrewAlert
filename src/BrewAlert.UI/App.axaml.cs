@@ -134,7 +134,7 @@ public partial class App : Application
 
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();
-        services.AddTransient<BrewTimerViewModel>();
+        services.AddTransient<ActiveBrewsViewModel>();
         services.AddTransient<ProfileListViewModel>();
         services.AddTransient<SettingsViewModel>();
 

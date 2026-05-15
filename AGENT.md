@@ -23,7 +23,7 @@ BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams A
 
 | Request keyword | Open only these |
 |---|---|
-| timer, pause, resume, tick, elapsed, complete | `src/BrewAlert.Core/Services/BrewTimerService.cs`, `Interfaces/IBrewTimerService.cs`, `Events/*` |
+| timer, pause, resume, tick, elapsed, complete, concurrent brew | `src/BrewAlert.Core/Services/BrewTimerService.cs`, `Interfaces/IBrewTimerService.cs`, `Events/*`, `src/BrewAlert.UI/ViewModels/ActiveBrewsViewModel.cs`, `BrewItemViewModel.cs`, `Views/ActiveBrewsView.axaml` |
 | profile, brew type, defaults | `src/BrewAlert.Core/Services/BrewProfileService.cs`, `Models/BrewProfile.cs`, `Models/BrewType.cs` |
 | session state | `src/BrewAlert.Core/Models/BrewSession.cs` |
 | load/save profile, JSON file | `src/BrewAlert.Infrastructure/Persistence/JsonProfileRepository.cs` |
@@ -48,12 +48,12 @@ If the request maps to nothing here, **ask** the user instead of scanning the wh
 
 All of the following are verified against the current code. If you see a change that violates one, reject it in review.
 
-1. **No service locator.** ViewModels never call `App.Services`, `IServiceProvider`, or `GetRequiredService<T>()`. Use `INavigationService` for view transitions and constructor injection for everything else. (see `BrewTimerViewModel.cs`, `App.axaml.cs`)
+1. **No service locator.** ViewModels never call `App.Services`, `IServiceProvider`, or `GetRequiredService<T>()`. Use `INavigationService` for view transitions and constructor injection for everything else. (see `ActiveBrewsViewModel.cs`, `BrewItemViewModel.cs`, `App.axaml.cs`)
 2. **Events fire outside `lock` blocks.** In `BrewTimerService` every `TimerTick` / `BrewStarted` / `BrewCompleted` / `BrewCancelled` invocation happens after the lock is released. Re-entrant handlers used to deadlock. (see `BrewTimerService.cs:53, 73, 143`)
-3. **Event subscribers implement `IDisposable`** and unsubscribe in `Dispose()`. Required for any VM holding `IBrewTimerService` events (`TimerTick`, `BrewStarted`, etc.) **and** `ILocalizationService.LanguageChanged`. (see `BrewTimerViewModel.cs`)
+3. **Event subscribers implement `IDisposable`** and unsubscribe in `Dispose()`. Required for any VM holding `IBrewTimerService` events (`TimerTick`, `BrewStarted`, etc.) **and** `ILocalizationService.LanguageChanged`. (see `BrewItemViewModel.cs`, `ActiveBrewsViewModel.cs`)
 4. **DI lifetimes** (in `App.axaml.cs:ConfigureServices`):
    - **Singleton**: `MainWindowViewModel`, `INavigationService`, `IBrewTimerService`, `BrewProfileService`, `IProfileRepository`, `INotificationService`, `IPreferencesService`, `ILocalizationService`.
-   - **Transient**: `BrewTimerViewModel`, `ProfileListViewModel`, `SettingsViewModel` — fresh instance per navigation so state never goes stale.
+   - **Transient**: `ActiveBrewsViewModel`, `ProfileListViewModel`, `SettingsViewModel` — fresh instance per navigation so state never goes stale.
 5. **Dependency direction** UI → Infrastructure → Core. Never add a reverse reference.
 6. **No secrets in repo.** Webhook URL via env var `BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl` (provider via `BREWALERT__BrewAlert__Notifications__Provider=Webhook`) or gitignored `appsettings.Development.json`. `git diff --cached` before committing. `preferences.json` is gitignored.
 7. **No new CI artifact uploads** without user approval — repo is on free-tier GitHub. `ci.yml` currently uploads only on `v*` tags.

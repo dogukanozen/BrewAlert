@@ -135,14 +135,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void NavigateToProfiles()
     {
-        var activeSession = _timerService.GetActiveSession();
-        if (activeSession is { State: BrewSessionState.Running or BrewSessionState.Paused })
+        var active = _timerService.GetActiveSessions();
+        if (active.Count > 0)
         {
-            _navigation.NavigateTo<BrewTimerViewModel>();
-            if (_navigation.CurrentView is BrewTimerViewModel timerVm)
-                timerVm.AttachToSession(activeSession);
+            _navigation.NavigateTo<ActiveBrewsViewModel>();
             _currentTitleKey = TitleKeyBrewRunning;
-            Title = $"{activeSession.Profile.Icon} {activeSession.Profile.Name}";
+            Title = ComposeBrewTitle(active);
         }
         else
         {
@@ -150,6 +148,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _currentTitleKey = TitleKeyAppName;
             Title = "BrewAlert";
         }
+    }
+
+    private string ComposeBrewTitle(IReadOnlyList<BrewSession> sessions)
+    {
+        if (sessions.Count == 1)
+            return $"{sessions[0].Profile.Icon} {sessions[0].Profile.Name}";
+        return string.Format(_loc.Get("ActiveBrewsCount"), sessions.Count);
     }
 
     [RelayCommand]
@@ -160,28 +165,38 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Title = _loc.Get("SettingsTitle");
     }
 
-    private void OnBrewStarted(object? sender, BrewStartedEvent e)
+    // Brew events arrive from BrewTimerService.RunTimerLoopAsync — a background task.
+    // Marshal title-property updates to the UI thread.
+    private void OnBrewStarted(object? sender, BrewStartedEvent e) => RefreshBrewTitleOnUi();
+
+    private void OnBrewCompleted(object? sender, BrewCompletedEvent e) => RefreshBrewTitleOnUi();
+
+    private void OnBrewCancelled(object? sender, BrewCancelledEvent e) => RefreshBrewTitleOnUi();
+
+    private void RefreshBrewTitleOnUi()
     {
+        if (Dispatcher.UIThread.CheckAccess())
+            RefreshBrewTitle();
+        else
+            Dispatcher.UIThread.Post(RefreshBrewTitle);
+    }
+
+    private void RefreshBrewTitle()
+    {
+        // Brew events must not clobber non-brew page titles (Settings, etc.) — only refresh
+        // when the user is currently in a brew-related context.
+        if (_currentTitleKey != TitleKeyAppName && _currentTitleKey != TitleKeyBrewRunning)
+            return;
+
+        var active = _timerService.GetActiveSessions();
+        if (active.Count == 0)
+        {
+            _currentTitleKey = TitleKeyAppName;
+            Title = "BrewAlert";
+            return;
+        }
         _currentTitleKey = TitleKeyBrewRunning;
-        Title = $"{e.Session.Profile.Icon} {e.Session.Profile.Name}";
-    }
-
-    private void OnBrewCompleted(object? sender, BrewCompletedEvent e)
-    {
-        if (_currentTitleKey == TitleKeyBrewRunning)
-        {
-            _currentTitleKey = TitleKeyAppName;
-            Title = "BrewAlert";
-        }
-    }
-
-    private void OnBrewCancelled(object? sender, BrewCancelledEvent e)
-    {
-        if (_currentTitleKey == TitleKeyBrewRunning)
-        {
-            _currentTitleKey = TitleKeyAppName;
-            Title = "BrewAlert";
-        }
+        Title = ComposeBrewTitle(active);
     }
 
     private void HandleNavigationViewChanged(ViewModelBase viewModel)
@@ -192,8 +207,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void OnLanguageChanged(string _)
     {
         BrewsNavText = _loc.Get("BrewsNavButton");
-        if (_currentTitleKey != TitleKeyAppName && _currentTitleKey != TitleKeyBrewRunning)
+        if (_currentTitleKey == TitleKeyBrewRunning)
+        {
+            // The 2+-active title is the localized "{0} active brews" — relocalize it.
+            var active = _timerService.GetActiveSessions();
+            if (active.Count > 0) Title = ComposeBrewTitle(active);
+        }
+        else if (_currentTitleKey != TitleKeyAppName)
+        {
             Title = _loc.Get(_currentTitleKey);
+        }
         if (IsUpdateToastVisible)
             ShowUpdateToast();
     }

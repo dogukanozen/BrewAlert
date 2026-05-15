@@ -94,9 +94,9 @@ public class BrewCompletionNotificationServiceTests
     }
 
     [Fact]
-    public async Task BrewCompleted_WhenTimerViewIsNotPresent_StillSendsNotification()
+    public async Task BrewCompleted_WhenNoActiveBrewViewIsPresent_StillSendsNotification()
     {
-        // Coordinator exists but no BrewTimerViewModel is listening to NotificationCompleted
+        // Coordinator exists but no ActiveBrewsViewModel/BrewItemViewModel is listening to NotificationCompleted
         var session = MakeSession();
         _notificationService
             .SendBrewCompletedAsync(session, Arg.Any<CancellationToken>())

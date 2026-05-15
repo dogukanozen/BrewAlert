@@ -29,7 +29,7 @@ All services are consumed through interfaces under `BrewAlert.Core/Interfaces/`.
 ViewModels **never** touch `App.Services` / `IServiceProvider`. All view transitions go through `INavigationService`:
 
 ```
-ProfileListVM ──→ INavigationService.NavigateTo<BrewTimerVM>()
+ProfileListVM ──→ INavigationService.NavigateTo<ActiveBrewsVM>()
                      │
                NavigationService resolves VM from DI
                      │
@@ -43,7 +43,7 @@ ProfileListVM ──→ INavigationService.NavigateTo<BrewTimerVM>()
 Why: all dependencies visible in the constructor, VMs unit-testable with a mocked `INavigationService`, no hidden coupling.
 
 ### 2.3 Event-driven timer
-`BrewTimerService` runs a `PeriodicTimer` (1 s) in a background task and raises `TimerTick` / `BrewStarted` / `BrewCompleted` / `BrewCancelled`. The UI layer marshals those onto the Avalonia UI thread via `Dispatcher.UIThread`.
+`BrewTimerService` supports **any number of concurrent sessions** — each call to `Start(profile)` spins up its own `PeriodicTimer` (1 s) in a background task. It raises `TimerTick` / `BrewStarted` / `BrewCompleted` / `BrewCancelled`; `TimerTick` carries a `BrewTimerTickEvent` (session id + remaining) so listeners can filter by session. The UI layer (`ActiveBrewsViewModel` + per-row `BrewItemViewModel`) marshals those onto the Avalonia UI thread via `Dispatcher.UIThread`.
 
 **Thread-safety rules (all enforced in code today):**
 - Session state mutations are inside a single `lock (_lock)` block.
@@ -58,13 +58,13 @@ Registered in `src/BrewAlert.UI/App.axaml.cs → ConfigureServices`.
 |---|---|---|
 | `MainWindowViewModel` | Singleton | Lives for the whole window |
 | `INavigationService` | Singleton | Shared navigation state |
-| `IBrewTimerService` | Singleton | One active brew session at a time |
+| `IBrewTimerService` | Singleton | Manages all concurrent brew sessions |
 | `BrewProfileService` | Singleton | Stateless helper |
 | `IProfileRepository` | Singleton | Stateless I/O facade |
 | `INotificationService` | Singleton | Routing facade → Teams (Graph or Webhook) or Console |
 | `IPreferencesService` | Singleton | Persists user preferences to `preferences.json` |
 | `ILocalizationService` | Singleton | Runtime EN/TR string table; fires `LanguageChanged` |
-| `BrewTimerViewModel` | Transient | Fresh instance per navigation (prevents stale state) |
+| `ActiveBrewsViewModel` | Transient | Hosts a live list of `BrewItemViewModel`s; fresh per navigation |
 | `ProfileListViewModel` | Transient | Re-fetches profiles on each visit |
 | `SettingsViewModel` | Transient | Re-reads config on each visit |
 
@@ -129,20 +129,20 @@ User taps profile card
 ProfileListVM.SelectProfile()
   │
   ▼
-INavigationService.NavigateTo<BrewTimerVM>()   →   MainWindowVM.CurrentView updates
+IBrewTimerService.Start(profile)   →   BrewStarted event   →   MainWindowVM updates Title (via dispatcher)
   │
   ▼
-BrewTimerVM.StartBrew(profile)
+INavigationService.NavigateTo<ActiveBrewsVM>()   →   MainWindowVM.CurrentView updates
   │
   ▼
-IBrewTimerService.Start(profile)   →   BrewStarted event   →   MainWindowVM updates Title
+ActiveBrewsVM hydrates a BrewItemViewModel for the new session (and any others already running)
   │
   ▼
-PeriodicTimer loop (1 s)
+Per-session PeriodicTimer loop (1 s)
   │
-  ├─ TimerTick        →   BrewTimerVM (UI thread)   →   countdown display
+  ├─ TimerTick (with session id)  →   BrewItemViewModel filters & updates its countdown
   │
-  └─ BrewCompleted    →   BrewTimerVM                →   INotificationService.SendBrewCompletedAsync()
+  └─ BrewCompleted               →   BrewCompletionNotificationService dedupes & sends one notification
                                                               │
                                                               ▼
                                                    [Teams Graph | Teams Webhook | Console]

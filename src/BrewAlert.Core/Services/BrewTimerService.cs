@@ -6,17 +6,23 @@ using BrewAlert.Core.Models;
 
 /// <summary>
 /// Default implementation of <see cref="IBrewTimerService"/>.
-/// Uses a background task with <see cref="PeriodicTimer"/> for second-by-second countdown.
-/// Thread-safe: all state mutations are guarded by a lock.
-/// Events are fired OUTSIDE the lock to prevent potential deadlocks.
+/// Each session runs its own <see cref="PeriodicTimer"/> loop so coffee and tea
+/// (and anything else) can brew side-by-side.
+/// Thread-safe: dictionary and per-session state mutations are guarded by a single lock.
+/// Events are fired OUTSIDE the lock to prevent re-entrant deadlocks.
 /// </summary>
 public sealed class BrewTimerService : IBrewTimerService, IDisposable
 {
-    private BrewSession? _activeSession;
-    private CancellationTokenSource? _timerCts;
+    private sealed class SessionEntry
+    {
+        public required BrewSession Session { get; init; }
+        public required CancellationTokenSource Cts { get; init; }
+    }
+
+    private readonly Dictionary<Guid, SessionEntry> _sessions = [];
     private readonly object _lock = new();
 
-    public event EventHandler<TimeSpan>? TimerTick;
+    public event EventHandler<BrewTimerTickEvent>? TimerTick;
     public event EventHandler<BrewCompletedEvent>? BrewCompleted;
     public event EventHandler<BrewStartedEvent>? BrewStarted;
     public event EventHandler<BrewCancelledEvent>? BrewCancelled;
@@ -26,18 +32,11 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
         ArgumentNullException.ThrowIfNull(profile);
 
         BrewSession session;
+        CancellationTokenSource cts;
 
         lock (_lock)
         {
-            if (_activeSession is { State: BrewSessionState.Running or BrewSessionState.Paused })
-            {
-                throw new InvalidOperationException("A brew session is already active. Cancel it first.");
-            }
-
-            _timerCts?.Cancel();
-            _timerCts?.Dispose();
-            _timerCts = new CancellationTokenSource();
-
+            cts = new CancellationTokenSource();
             session = new BrewSession
             {
                 Profile = profile,
@@ -47,11 +46,11 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
                 State = BrewSessionState.Running
             };
 
-            _activeSession = session;
+            _sessions[session.Id] = new SessionEntry { Session = session, Cts = cts };
         }
 
         // Fire events and start timer OUTSIDE the lock
-        _ = RunTimerLoopAsync(session, _timerCts.Token);
+        _ = RunTimerLoopAsync(session, cts.Token);
         BrewStarted?.Invoke(this, new BrewStartedEvent(session));
         return session;
     }
@@ -59,18 +58,21 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
     public void Cancel(Guid sessionId)
     {
         BrewCancelledEvent? cancelledEvent = null;
+        CancellationTokenSource? ctsToDispose = null;
 
         lock (_lock)
         {
-            if (_activeSession is null || _activeSession.Id != sessionId) return;
+            if (!_sessions.TryGetValue(sessionId, out var entry)) return;
 
-            _timerCts?.Cancel();
-            _activeSession.State = BrewSessionState.Cancelled;
-            cancelledEvent = new BrewCancelledEvent(_activeSession, _activeSession.Remaining);
-            _activeSession = null;
+            entry.Session.State = BrewSessionState.Cancelled;
+            cancelledEvent = new BrewCancelledEvent(entry.Session, entry.Session.Remaining);
+            _sessions.Remove(sessionId);
+            ctsToDispose = entry.Cts;
         }
 
         // Fire event OUTSIDE the lock
+        ctsToDispose?.Cancel();
+        ctsToDispose?.Dispose();
         if (cancelledEvent is not null)
         {
             BrewCancelled?.Invoke(this, cancelledEvent);
@@ -81,10 +83,10 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
     {
         lock (_lock)
         {
-            if (_activeSession is not null && _activeSession.Id == sessionId
-                && _activeSession.State == BrewSessionState.Running)
+            if (_sessions.TryGetValue(sessionId, out var entry)
+                && entry.Session.State == BrewSessionState.Running)
             {
-                _activeSession.State = BrewSessionState.Paused;
+                entry.Session.State = BrewSessionState.Paused;
             }
         }
     }
@@ -93,21 +95,28 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
     {
         lock (_lock)
         {
-            if (_activeSession is not null && _activeSession.Id == sessionId
-                && _activeSession.State == BrewSessionState.Paused)
+            if (_sessions.TryGetValue(sessionId, out var entry)
+                && entry.Session.State == BrewSessionState.Paused)
             {
-                _activeSession.State = BrewSessionState.Running;
+                entry.Session.State = BrewSessionState.Running;
             }
         }
     }
 
-    public BrewSession? GetActiveSession()
+    public IReadOnlyList<BrewSession> GetActiveSessions()
     {
-        lock (_lock) { return _activeSession; }
+        lock (_lock)
+        {
+            return _sessions.Values
+                .Select(e => e.Session)
+                .OrderBy(s => s.StartedAtUtc)
+                .ToList();
+        }
     }
 
     private async Task RunTimerLoopAsync(BrewSession session, CancellationToken ct)
     {
+        CancellationTokenSource? completedCts = null;
         try
         {
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
@@ -129,7 +138,14 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
                     {
                         session.Remaining = TimeSpan.Zero;
                         session.State = BrewSessionState.Completed;
-                        _activeSession = null;
+                        // Capture the CTS so we can dispose it after leaving the lock.
+                        // Removing the entry here means a racing Cancel/Dispose can't
+                        // dispose the same CTS again.
+                        if (_sessions.TryGetValue(session.Id, out var entry))
+                        {
+                            completedCts = entry.Cts;
+                            _sessions.Remove(session.Id);
+                        }
                         shouldComplete = true;
                     }
                     else
@@ -140,29 +156,44 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
                     remaining = session.Remaining;
                 }
 
-                // Fire events OUTSIDE the lock
+                // Fire events OUTSIDE the lock (AGENT.md §4.2).
                 if (shouldComplete)
                 {
-                    TimerTick?.Invoke(this, TimeSpan.Zero);
+                    TimerTick?.Invoke(this, new BrewTimerTickEvent(session.Id, TimeSpan.Zero));
                     BrewCompleted?.Invoke(this, new BrewCompletedEvent(session));
                     break;
                 }
 
                 if (shouldTick)
                 {
-                    TimerTick?.Invoke(this, remaining);
+                    TimerTick?.Invoke(this, new BrewTimerTickEvent(session.Id, remaining));
                 }
             }
         }
         catch (OperationCanceledException)
         {
-            // Expected on cancel — no action needed.
+            // Expected on cancel — Cancel() owns disposing the CTS in that path.
+        }
+        finally
+        {
+            // Normal-completion path: CTS was captured above and is now safe to dispose
+            // (no further WaitForNextTickAsync calls reference its token).
+            completedCts?.Dispose();
         }
     }
 
     public void Dispose()
     {
-        _timerCts?.Cancel();
-        _timerCts?.Dispose();
+        List<CancellationTokenSource> toDispose;
+        lock (_lock)
+        {
+            toDispose = _sessions.Values.Select(e => e.Cts).ToList();
+            _sessions.Clear();
+        }
+        foreach (var cts in toDispose)
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
     }
 }

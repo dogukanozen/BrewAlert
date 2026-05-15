@@ -2,9 +2,9 @@ using Avalonia.Controls;
 
 namespace BrewAlert.UI.Views;
 
-public partial class BrewTimerView : UserControl
+public partial class ActiveBrewsView : UserControl
 {
-    public BrewTimerView()
+    public ActiveBrewsView()
     {
         InitializeComponent();
     }
