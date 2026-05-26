@@ -30,6 +30,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
     private IReadOnlyList<AmbientSceneItem> _scenes = Array.Empty<AmbientSceneItem>();
     private int _sceneIndex;
+    private int _showRequestId;
     private bool _disposed;
 
     [ObservableProperty] private bool _isVisible;
@@ -62,8 +63,9 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     public async Task ShowAsync()
     {
         if (_disposed) return;
+        var requestId = ++_showRequestId;
         await RefreshScenesAsync();
-        if (_disposed) return;
+        if (_disposed || requestId != _showRequestId) return;
 
         IsVisible = true;
         _animationTimer.Start();
@@ -74,6 +76,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
     public void Hide()
     {
+        _showRequestId++;
         IsVisible = false;
         _animationTimer.Stop();
         _sceneTimer.Stop();
@@ -99,19 +102,29 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
             if (_disposed) return;
 
             var todayStart = DateTime.Today.ToUniversalTime();
-            var todayEnd = todayStart.AddDays(1);
+            var todayEnd = DateTime.Today.AddDays(1).ToUniversalTime();
             var today = entries
                 .Where(e => e.CompletedAtUtc >= todayStart && e.CompletedAtUtc < todayEnd)
                 .OrderByDescending(e => e.CompletedAtUtc)
                 .ToList();
 
-            _scenes = BuildScenes(today, DateTime.UtcNow);
-            _sceneIndex = 0;
-            PickFloatIcons(today);
+            ApplyScenesFromToday(today);
         }
         catch (OperationCanceledException)
         {
         }
+        catch (Exception)
+        {
+            if (_disposed) return;
+            ApplyScenesFromToday(Array.Empty<BrewHistoryEntry>());
+        }
+    }
+
+    private void ApplyScenesFromToday(IReadOnlyList<BrewHistoryEntry> today)
+    {
+        _scenes = BuildScenes(today, DateTime.UtcNow);
+        _sceneIndex = 0;
+        PickFloatIcons(today);
     }
 
     private IReadOnlyList<AmbientSceneItem> BuildScenes(
