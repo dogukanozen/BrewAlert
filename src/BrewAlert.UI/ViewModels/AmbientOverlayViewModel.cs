@@ -64,7 +64,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     {
         if (_disposed) return;
         var requestId = ++_showRequestId;
-        await RefreshScenesAsync();
+        await RefreshScenesAsync(requestId);
         if (_disposed || requestId != _showRequestId) return;
 
         IsVisible = true;
@@ -89,17 +89,20 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     {
         RefreshTapHint();
         if (IsVisible)
-            _ = RefreshScenesAsync();
+        {
+            var requestId = ++_showRequestId;
+            _ = RefreshScenesAsync(requestId);
+        }
     }
 
     private void RefreshTapHint() => TapHint = _loc.Get("AmbientTapToWake");
 
-    private async Task RefreshScenesAsync()
+    private async Task RefreshScenesAsync(int requestId)
     {
         try
         {
             var entries = await _history.GetRecentAsync(50, _disposeCts.Token);
-            if (_disposed) return;
+            if (_disposed || requestId != _showRequestId) return;
 
             var todayStart = DateTime.Today.ToUniversalTime();
             var todayEnd = DateTime.Today.AddDays(1).ToUniversalTime();
@@ -115,7 +118,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         }
         catch (Exception)
         {
-            if (_disposed) return;
+            if (_disposed || requestId != _showRequestId) return;
             ApplyScenesFromToday(Array.Empty<BrewHistoryEntry>());
         }
     }
