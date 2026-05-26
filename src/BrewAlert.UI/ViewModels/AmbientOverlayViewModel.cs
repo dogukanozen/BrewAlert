@@ -21,6 +21,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 {
     private static readonly TimeSpan SceneRotationInterval = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan AnimationTickInterval = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan SceneRefreshInterval = TimeSpan.FromMinutes(5);
 
     private readonly IBrewHistoryService _history;
     private readonly ILocalizationService _loc;
@@ -32,6 +33,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     private int _sceneIndex;
     private int _showRequestId;
     private bool _disposed;
+    private DateTime _lastRefreshUtc;
 
     [ObservableProperty] private bool _isVisible;
     [ObservableProperty] private int _animationPhase;
@@ -72,6 +74,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         _sceneTimer.Start();
         ApplyScene(0);
         UpdateClock();
+        _lastRefreshUtc = DateTime.UtcNow;
     }
 
     public void Hide()
@@ -246,7 +249,17 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     private void OnAnimationTick(object? sender, EventArgs e) =>
         AnimationPhase = (AnimationPhase + 1) & 7;
 
-    private void OnSceneTick(object? sender, EventArgs e) => AdvanceScene();
+    private void OnSceneTick(object? sender, EventArgs e)
+    {
+        AdvanceScene();
+        // Long kiosk sessions cause relative-time labels and the weekday header to drift; refresh periodically.
+        if (DateTime.UtcNow - _lastRefreshUtc > SceneRefreshInterval)
+        {
+            _lastRefreshUtc = DateTime.UtcNow;
+            var requestId = ++_showRequestId;
+            _ = RefreshScenesAsync(requestId);
+        }
+    }
 
     private void ApplyScene(int index)
     {

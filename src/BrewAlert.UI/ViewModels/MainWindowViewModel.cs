@@ -145,9 +145,19 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IsUpdateToastVisible = true;
     }
 
-    /// <summary>Called from the view on pointer / key input to reset idle tracking.</summary>
+    /// <summary>
+    /// Called from the view on pointer / key input and from <see cref="IBrewTimerService"/> events
+    /// (which fire on a background thread). Marshalled to the UI thread so it can safely touch
+    /// observable properties on <see cref="AmbientOverlayViewModel"/>.
+    /// </summary>
     public void RecordUserActivity()
     {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(RecordUserActivity);
+            return;
+        }
+
         _lastUserActivityUtc = DateTime.UtcNow;
         if (_ambient.IsVisible)
             _ambient.Hide();
