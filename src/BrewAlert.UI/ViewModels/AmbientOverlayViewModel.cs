@@ -145,6 +145,10 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         _scenes = BuildScenes(today, DateTime.UtcNow);
         _sceneIndex = 0;
         PickFloatIcons(today);
+        // Language change & periodic refresh happen while visible — repaint scene 0 immediately
+        // so the user doesn't see stale text until the next 10s rotation.
+        if (IsVisible)
+            ApplyScene(0);
     }
 
     private IReadOnlyList<AmbientSceneItem> BuildScenes(
