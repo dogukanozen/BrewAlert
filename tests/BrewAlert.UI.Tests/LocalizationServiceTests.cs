@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using BrewAlert.Infrastructure.Configuration;
@@ -106,6 +107,49 @@ public class LocalizationServiceTests
 
         Assert.Equal(AppLanguage.Turkish, sut.CurrentLanguage);
         Assert.Equal(AppLanguage.Turkish, notified);
+    }
+
+    [Fact]
+    public void CurrentCulture_ReturnsTurkishCulture_WhenLanguageIsTurkish()
+    {
+        using var sut = new LocalizationService(BuildMonitor(AppLanguage.Turkish));
+
+        Assert.Equal("tr-TR", sut.CurrentCulture.Name);
+    }
+
+    [Fact]
+    public void CurrentCulture_ReturnsEnglishCulture_WhenLanguageIsEnglish()
+    {
+        using var sut = new LocalizationService(BuildMonitor(AppLanguage.English));
+
+        Assert.Equal("en-US", sut.CurrentCulture.Name);
+    }
+
+    [Fact]
+    public void CurrentCulture_TracksLanguageSwitch()
+    {
+        // The whole point of exposing this property is so consumers can react to
+        // language changes -- it must flip culture when SetLanguage flips the language.
+        using var sut = new LocalizationService(BuildMonitor(AppLanguage.English));
+        Assert.Equal("en-US", sut.CurrentCulture.Name);
+
+        sut.SetLanguage(AppLanguage.Turkish);
+
+        Assert.Equal("tr-TR", sut.CurrentCulture.Name);
+    }
+
+    [Fact]
+    public void CurrentCulture_TurkishCulture_FormatsWeekdayInTurkish()
+    {
+        // Regression guard for the ambient overlay bug ("Güzel bir Tuesday günü"):
+        // the returned culture must actually translate weekday names, not just
+        // carry the tr-TR tag.
+        using var sut = new LocalizationService(BuildMonitor(AppLanguage.Turkish));
+        var someTuesday = new DateTime(2026, 5, 26, 12, 0, 0, DateTimeKind.Utc);
+
+        var weekday = someTuesday.ToString("dddd", sut.CurrentCulture);
+
+        Assert.Equal("Salı", weekday, ignoreCase: true);
     }
 
     [Fact]
