@@ -165,7 +165,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
             new(
                 "☕",
                 _loc.Get("AmbientWelcomeTitle"),
-                string.Format(appCulture, _loc.Get("AmbientWelcomeSubtitle"), DateTime.Now.ToString("dddd", appCulture)),
+                string.Format(appCulture, _loc.Get("AmbientWelcomeSubtitle"), nowUtc.ToLocalTime().ToString("dddd", appCulture)),
                 "calm")
         };
 

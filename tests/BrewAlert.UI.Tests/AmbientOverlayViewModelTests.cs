@@ -118,4 +118,21 @@ public class AmbientOverlayViewModelTests
 
         Assert.Single(scenes, s => s.Headline == "AmbientNoBrewsTitle");
     }
+
+    [Fact]
+    public void BuildScenes_WelcomeSubtitle_UsesProvidedNowUtcNotSystemClock()
+    {
+        // Locks in the determinism contract: the welcome weekday must come from
+        // the nowUtc parameter, not DateTime.Now. Pick a fixed date far away from
+        // any plausible test-run date so a regression to DateTime.Now produces a
+        // different weekday and visibly fails this test.
+        _loc.Get("AmbientWelcomeSubtitle").Returns("welcome {0}");
+        var newYears2020 = new DateTime(2020, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var expectedWeekday = newYears2020.ToLocalTime().ToString("dddd", CultureInfo.InvariantCulture);
+        var vm = CreateVm();
+
+        var scenes = vm.BuildScenes(Array.Empty<BrewHistoryEntry>(), newYears2020);
+
+        Assert.Equal($"welcome {expectedWeekday}", scenes[0].Subheadline);
+    }
 }
