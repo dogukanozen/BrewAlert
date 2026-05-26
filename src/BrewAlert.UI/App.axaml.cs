@@ -133,6 +133,7 @@ public partial class App : Application
         services.AddSingleton<IUpdateService, UpdateService>();
 
         // ViewModels
+        services.AddSingleton<AmbientOverlayViewModel>();
         services.AddSingleton<MainWindowViewModel>();
         services.AddTransient<ActiveBrewsViewModel>();
         services.AddTransient<ProfileListViewModel>();
