@@ -1,3 +1,4 @@
+using System.Globalization;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
 using BrewAlert.UI.Services;
@@ -26,6 +27,9 @@ public class AmbientOverlayViewModelTests
         _loc.Get("AmbientCustomWarning").Returns("{0} cooling {1}");
         _loc.Get("AmbientStillGood").Returns("{0} still good");
         _loc.CurrentLanguage.Returns("English");
+        // ILocalizationService.CurrentCulture is non-nullable in production; stub it
+        // here with an invariant culture so weekday formatting is deterministic across CI hosts.
+        _loc.CurrentCulture.Returns(CultureInfo.InvariantCulture);
     }
 
     private AmbientOverlayViewModel CreateVm() => new(_history, _loc);
