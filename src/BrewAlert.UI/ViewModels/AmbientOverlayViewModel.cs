@@ -151,10 +151,12 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
             ApplyScene(0);
     }
 
-    private IReadOnlyList<AmbientSceneItem> BuildScenes(
+    internal IReadOnlyList<AmbientSceneItem> BuildScenes(
         IReadOnlyList<BrewHistoryEntry> today,
         DateTime nowUtc)
     {
+        ArgumentNullException.ThrowIfNull(today);
+
         var scenes = new List<AmbientSceneItem>
         {
             new(
@@ -180,7 +182,14 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
             _loc.Get("AmbientTodayCountHint"),
             "fresh"));
 
-        foreach (var entry in today)
+        // One freshness card per brew type — older repeats of the same type would only
+        // make the rotation stale (an hour-old tea is irrelevant if a fresh tea exists).
+        // MaxBy makes the latest-per-type selection independent of the caller's sort order.
+        var latestPerType = today
+            .GroupBy(e => e.Type)
+            .Select(g => g.MaxBy(e => e.CompletedAtUtc)!);
+
+        foreach (var entry in latestPerType)
         {
             var age = nowUtc - entry.CompletedAtUtc;
             var level = BrewFreshnessEvaluator.Evaluate(entry.Type, age);
