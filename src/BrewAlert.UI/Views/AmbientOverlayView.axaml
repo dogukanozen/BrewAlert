@@ -11,16 +11,15 @@
     </UserControl.Resources>
 
     <Panel>
-        <!-- Layer 1: vertical gradient base — gives depth without per-frame cost -->
-        <Panel>
-            <Panel.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#1d1d33" />
-                    <GradientStop Offset="0.55" Color="#15152a" />
-                    <GradientStop Offset="1" Color="#0b0b1a" />
-                </LinearGradientBrush>
-            </Panel.Background>
-        </Panel>
+        <!-- Layer 1: vertical gradient base — applied directly on the root Panel so
+             we don't introduce an empty child Panel just to host a Background brush. -->
+        <Panel.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Offset="0" Color="#1d1d33" />
+                <GradientStop Offset="0.55" Color="#15152a" />
+                <GradientStop Offset="1" Color="#0b0b1a" />
+            </LinearGradientBrush>
+        </Panel.Background>
 
         <!-- Layer 2: feathered corner blobs (radial gradients fade to fully transparent) -->
         <Ellipse Width="520" Height="520"
