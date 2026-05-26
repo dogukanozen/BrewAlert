@@ -240,12 +240,15 @@ public class ActiveBrewsViewModelTests
         {
             await Dispatcher.UIThread.InvokeAsync(action);
         }
-        catch (PlatformNotSupportedException)
+        catch (Exception ex) when (IsUnsupportedHeadlessDispatcher(ex))
         {
-            // Avalonia headless on Linux: PushFrame is unsupported; run inline so handlers still fire.
             action();
         }
     }
+
+    private static bool IsUnsupportedHeadlessDispatcher(Exception ex) =>
+        ex is PlatformNotSupportedException
+        || ex.InnerException is PlatformNotSupportedException;
 
     private static async Task PumpForAsync(TimeSpan duration)
     {
