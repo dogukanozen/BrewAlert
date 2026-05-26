@@ -48,10 +48,12 @@ public class AmbientOverlayViewModelTests
         // Act
         var scenes = vm.BuildScenes(today, now);
 
-        // Assert — the 5h-old tea is dropped; only one tea card (Earl Grey) and one coffee card remain.
-        Assert.DoesNotContain(scenes, s => s.Headline.Contains("Green Tea"));
-        Assert.Contains(scenes, s => s.Headline.Contains("Earl Grey"));
-        Assert.Contains(scenes, s => s.Headline.Contains("Espresso"));
+        // Assert — the 5h-old tea is dropped; exactly one tea card (Earl Grey)
+        // and exactly one coffee card remain. Use Assert.Single so accidentally
+        // emitting two cards of the same type would fail the test.
+        Assert.All(scenes, s => Assert.DoesNotContain("Green Tea", s.Headline));
+        Assert.Single(scenes, s => s.Headline.Contains("Earl Grey"));
+        Assert.Single(scenes, s => s.Headline.Contains("Espresso"));
     }
 
     [Fact]
@@ -69,8 +71,8 @@ public class AmbientOverlayViewModelTests
 
         var scenes = vm.BuildScenes(today, now);
 
-        Assert.Contains(scenes, s => s.Headline.Contains("Filter Coffee"));
-        Assert.Contains(scenes, s => s.Headline.Contains("Chamomile"));
+        Assert.Single(scenes, s => s.Headline.Contains("Filter Coffee"));
+        Assert.Single(scenes, s => s.Headline.Contains("Chamomile"));
     }
 
     [Fact]
@@ -81,6 +83,6 @@ public class AmbientOverlayViewModelTests
 
         var scenes = vm.BuildScenes(Array.Empty<BrewHistoryEntry>(), now);
 
-        Assert.Contains(scenes, s => s.Headline == "AmbientNoBrewsTitle");
+        Assert.Single(scenes, s => s.Headline == "AmbientNoBrewsTitle");
     }
 }
