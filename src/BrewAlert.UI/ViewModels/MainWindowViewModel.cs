@@ -19,7 +19,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private const string TitleKeyBrewRunning = "__BrewRunning";
 
     private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(1);
-    private static readonly TimeSpan IdleThreshold = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan IdleThreshold = TimeSpan.FromMinutes(3);
     private static readonly TimeSpan IdleCheckInterval = TimeSpan.FromSeconds(30);
 
     private readonly INavigationService _navigation;

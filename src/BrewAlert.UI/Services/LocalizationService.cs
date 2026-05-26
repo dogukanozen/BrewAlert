@@ -1,5 +1,6 @@
 namespace BrewAlert.UI.Services;
 
+using System.Globalization;
 using Avalonia.Threading;
 using BrewAlert.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
@@ -10,11 +11,18 @@ using Microsoft.Extensions.Options;
 /// </summary>
 public sealed class LocalizationService : ILocalizationService, IDisposable
 {
+    // Cached so we don't allocate a CultureInfo on every formatting call. The Turkish
+    // weekday/month forms come from the framework's CLDR data — no manual mapping needed.
+    private static readonly CultureInfo TurkishCulture = new("tr-TR");
+    private static readonly CultureInfo EnglishCulture = new("en-US");
+
     private string _currentLanguage;
     private readonly IDisposable? _changeListener;
 
     public event Action<string>? LanguageChanged;
     public string CurrentLanguage => _currentLanguage;
+    public CultureInfo CurrentCulture =>
+        _currentLanguage == AppLanguage.Turkish ? TurkishCulture : EnglishCulture;
 
     public LocalizationService(IOptionsMonitor<LanguageOptions> options)
     {
