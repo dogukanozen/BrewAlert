@@ -125,10 +125,14 @@ public class ActiveBrewsViewModelTests
             _timerService, _notificationCoordinator, _navigation, _loc, TimeSpan.FromMilliseconds(50));
 
         _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
-        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
-            this, new BrewCompletedEvent(session));
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
+                this, new BrewCompletedEvent(session));
+        });
 
-        await WaitUntilAsync(NavigatedHome, TimeSpan.FromSeconds(2));
+        // PumpForAsync avoids WaitUntilAsync's PushFrame loop, which throws on Linux headless CI.
+        await PumpForAsync(TimeSpan.FromMilliseconds(200));
 
         _navigation.Received(1).NavigateTo<ProfileListViewModel>();
     }
@@ -215,13 +219,25 @@ public class ActiveBrewsViewModelTests
         var sw = System.Diagnostics.Stopwatch.StartNew();
         while (sw.Elapsed < timeout)
         {
-            await Dispatcher.UIThread.InvokeAsync(() => { });
+            await PumpDispatcherAsync();
             if (predicate()) return;
             await Task.Delay(10);
         }
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await PumpDispatcherAsync();
         if (!predicate())
             throw new TimeoutException($"Condition not met within {timeout.TotalMilliseconds}ms.");
+    }
+
+    private static async Task PumpDispatcherAsync()
+    {
+        try
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => { });
+        }
+        catch (PlatformNotSupportedException)
+        {
+            // Avalonia headless on Linux: PushFrame is unsupported; timers still advance via Task.Delay.
+        }
     }
 
     private static async Task PumpForAsync(TimeSpan duration)
@@ -229,7 +245,7 @@ public class ActiveBrewsViewModelTests
         var sw = System.Diagnostics.Stopwatch.StartNew();
         while (sw.Elapsed < duration)
         {
-            await Dispatcher.UIThread.InvokeAsync(() => { });
+            await PumpDispatcherAsync();
             await Task.Delay(10);
         }
     }
