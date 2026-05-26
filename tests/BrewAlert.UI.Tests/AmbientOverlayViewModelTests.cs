@@ -76,6 +76,35 @@ public class AmbientOverlayViewModelTests
     }
 
     [Fact]
+    public void BuildScenes_LatestPerType_IsIndependentOfInputOrder()
+    {
+        // Caller's contract should not silently break if today arrives unsorted —
+        // BuildScenes must compute "latest per type" by timestamp, not list position.
+        var now = new DateTime(2026, 5, 26, 18, 0, 0, DateTimeKind.Utc);
+        var unsorted = new List<BrewHistoryEntry>
+        {
+            new(Guid.NewGuid(), now.AddMinutes(-300), "Green Tea",  BrewType.Tea,    "🍵", 180),
+            new(Guid.NewGuid(), now.AddMinutes(-60),  "Earl Grey",  BrewType.Tea,    "🍵", 240),
+            new(Guid.NewGuid(), now.AddMinutes(-120), "Espresso",   BrewType.Coffee, "☕", 30),
+        };
+        var vm = CreateVm();
+
+        var scenes = vm.BuildScenes(unsorted, now);
+
+        Assert.All(scenes, s => Assert.DoesNotContain("Green Tea", s.Headline));
+        Assert.Single(scenes, s => s.Headline.Contains("Earl Grey"));
+        Assert.Single(scenes, s => s.Headline.Contains("Espresso"));
+    }
+
+    [Fact]
+    public void BuildScenes_NullToday_Throws()
+    {
+        var vm = CreateVm();
+
+        Assert.Throws<ArgumentNullException>(() => vm.BuildScenes(null!, DateTime.UtcNow));
+    }
+
+    [Fact]
     public void BuildScenes_EmptyToday_AddsNoBrewsScene()
     {
         var now = DateTime.UtcNow;
