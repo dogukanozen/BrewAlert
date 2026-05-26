@@ -98,7 +98,7 @@
                 <RadialGradientBrush Center="50%,50%" GradientOrigin="50%,50%" RadiusX="0.5" RadiusY="0.5">
                     <GradientStop Offset="0" Color="#80f0a500" />
                     <GradientStop Offset="0.55" Color="#33e07c24" />
-                    <GradientStop Offset="1" Color="#00000000" />
+                    <GradientStop Offset="1" Color="#00e07c24" />
                 </RadialGradientBrush>
             </Ellipse.Fill>
         </Ellipse>
