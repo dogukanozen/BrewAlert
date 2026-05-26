@@ -33,7 +33,10 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     private int _sceneIndex;
     private int _showRequestId;
     private bool _disposed;
+    private bool _showPending;
     private DateTime _lastRefreshUtc;
+
+    public bool ShowPending => _showPending;
 
     [ObservableProperty] private bool _isVisible;
     [ObservableProperty] private int _animationPhase;
@@ -65,8 +68,16 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     public async Task ShowAsync()
     {
         if (_disposed) return;
+        _showPending = true;
         var requestId = ++_showRequestId;
-        await RefreshScenesAsync(requestId);
+        try
+        {
+            await RefreshScenesAsync(requestId);
+        }
+        finally
+        {
+            _showPending = false;
+        }
         if (_disposed || requestId != _showRequestId) return;
 
         IsVisible = true;
@@ -79,6 +90,9 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
     public void Hide()
     {
+        // No-op when idle so frequent user input doesn't churn the request id or timers.
+        if (!IsVisible && !_showPending) return;
+
         _showRequestId++;
         IsVisible = false;
         _animationTimer.Stop();

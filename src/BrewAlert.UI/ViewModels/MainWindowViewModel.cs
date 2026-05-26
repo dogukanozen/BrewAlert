@@ -159,8 +159,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         _lastUserActivityUtc = DateTime.UtcNow;
-        if (_ambient.IsVisible)
-            _ambient.Hide();
+        // Hide() is idempotent and also cancels any in-flight ShowAsync via the request id.
+        _ambient.Hide();
     }
 
     [RelayCommand]
@@ -256,7 +256,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         if (DateTime.UtcNow - _lastUserActivityUtc < IdleThreshold) return;
         if (_timerService.GetActiveSessions().Count > 0) return;
-        if (_ambient.IsVisible) return;
+        if (_ambient.IsVisible || _ambient.ShowPending) return;
         _ = _ambient.ShowAsync();
     }
 
