@@ -157,12 +157,17 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     {
         ArgumentNullException.ThrowIfNull(today);
 
+        // Weekday name must follow the *app* language, not the OS locale — on an en-US
+        // host with the UI switched to Turkish we'd otherwise render "Güzel bir Tuesday günü".
+        // Fall back to OS culture only when the localization service hasn't been wired up
+        // (e.g. in NSubstitute-mocked unit tests).
+        var appCulture = _loc.CurrentCulture ?? CultureInfo.CurrentCulture;
         var scenes = new List<AmbientSceneItem>
         {
             new(
                 "☕",
                 _loc.Get("AmbientWelcomeTitle"),
-                string.Format(CultureInfo.CurrentCulture, _loc.Get("AmbientWelcomeSubtitle"), DateTime.Now.ToString("dddd", CultureInfo.CurrentCulture)),
+                string.Format(appCulture, _loc.Get("AmbientWelcomeSubtitle"), DateTime.Now.ToString("dddd", appCulture)),
                 "calm")
         };
 
