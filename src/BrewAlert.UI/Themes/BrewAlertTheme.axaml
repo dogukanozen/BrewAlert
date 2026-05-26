@@ -75,6 +75,11 @@
         <Setter Property="RenderTransform" Value="scale(1.04)" />
     </Style>
 
+    <Style Selector="TextBlock.ambient-headline">
+        <Setter Property="FontSize" Value="26" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
     <!-- Title text -->
     <Style Selector="TextBlock.brew-title">
         <Setter Property="Foreground" Value="{StaticResource BrewTextPrimaryBrush}" />

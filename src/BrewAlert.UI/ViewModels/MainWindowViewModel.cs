@@ -19,13 +19,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private const string TitleKeyBrewRunning = "__BrewRunning";
 
     private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(1);
+    private static readonly TimeSpan IdleThreshold = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan IdleCheckInterval = TimeSpan.FromSeconds(30);
 
     private readonly INavigationService _navigation;
     private readonly IBrewTimerService _timerService;
     private readonly ILocalizationService _loc;
     private readonly IUpdateService _updateService;
+    private readonly AmbientOverlayViewModel _ambient;
     private readonly CancellationTokenSource _updateCts = new();
     private readonly DispatcherTimer _clockTimer;
+    private readonly DispatcherTimer _idleTimer;
+    private DateTime _lastUserActivityUtc = DateTime.UtcNow;
 
     private string _currentTitleKey = TitleKeyAppName;
 
@@ -53,18 +58,22 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _currentDateTime = string.Empty;
 
+    public AmbientOverlayViewModel Ambient => _ambient;
+
     public MainWindowViewModel(
         INavigationService navigation,
         IBrewTimerService timerService,
         ILocalizationService loc,
-        IUpdateService updateService)
+        IUpdateService updateService,
+        AmbientOverlayViewModel ambient)
     {
         _navigation = navigation;
         _timerService = timerService;
         _loc = loc;
         _updateService = updateService;
+        _ambient = ambient;
 
-        _navigation.CurrentViewChanged += HandleNavigationViewChanged;
+        _navigation.CurrentViewChanged += OnNavigationOrActivity;
         _timerService.BrewStarted += OnBrewStarted;
         _timerService.BrewCompleted += OnBrewCompleted;
         _timerService.BrewCancelled += OnBrewCancelled;
@@ -75,8 +84,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         UpdateClock();
         _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _clockTimer.Tick += (_, _) => UpdateClock();
+        _clockTimer.Tick += OnClockTick;
         _clockTimer.Start();
+
+        _idleTimer = new DispatcherTimer { Interval = IdleCheckInterval };
+        _idleTimer.Tick += OnIdleCheck;
+        _idleTimer.Start();
 
         // Start on the profile list screen
         _navigation.NavigateTo<ProfileListViewModel>();
@@ -132,9 +145,31 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IsUpdateToastVisible = true;
     }
 
+    /// <summary>
+    /// Called from the view on pointer / key input and from <see cref="IBrewTimerService"/> events
+    /// (which fire on a background thread). Marshalled to the UI thread so it can safely touch
+    /// observable properties on <see cref="AmbientOverlayViewModel"/>.
+    /// </summary>
+    public void RecordUserActivity()
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(RecordUserActivity);
+            return;
+        }
+
+        _lastUserActivityUtc = DateTime.UtcNow;
+        // Hide() is idempotent and also cancels any in-flight ShowAsync via the request id.
+        _ambient.Hide();
+    }
+
+    [RelayCommand]
+    private void DismissAmbient() => RecordUserActivity();
+
     [RelayCommand]
     private void NavigateToProfiles()
     {
+        RecordUserActivity();
         var active = _timerService.GetActiveSessions();
         if (active.Count > 0)
         {
@@ -160,6 +195,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void NavigateToSettings()
     {
+        RecordUserActivity();
         _navigation.NavigateTo<SettingsViewModel>();
         _currentTitleKey = "SettingsTitle";
         Title = _loc.Get("SettingsTitle");
@@ -167,7 +203,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     // Brew events arrive from BrewTimerService.RunTimerLoopAsync — a background task.
     // Marshal title-property updates to the UI thread.
-    private void OnBrewStarted(object? sender, BrewStartedEvent e) => RefreshBrewTitleOnUi();
+    private void OnBrewStarted(object? sender, BrewStartedEvent e)
+    {
+        RecordUserActivity();
+        RefreshBrewTitleOnUi();
+    }
 
     private void OnBrewCompleted(object? sender, BrewCompletedEvent e) => RefreshBrewTitleOnUi();
 
@@ -199,9 +239,25 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Title = ComposeBrewTitle(active);
     }
 
-    private void HandleNavigationViewChanged(ViewModelBase viewModel)
+    private void OnNavigationOrActivity(ViewModelBase viewModel)
     {
+        RecordUserActivity();
         CurrentView = viewModel;
+    }
+
+    private void OnClockTick(object? sender, EventArgs e)
+    {
+        UpdateClock();
+        if (_ambient.IsVisible)
+            _ambient.UpdateClock();
+    }
+
+    private void OnIdleCheck(object? sender, EventArgs e)
+    {
+        if (DateTime.UtcNow - _lastUserActivityUtc < IdleThreshold) return;
+        if (_timerService.GetActiveSessions().Count > 0) return;
+        if (_ambient.IsVisible || _ambient.ShowPending) return;
+        _ = _ambient.ShowAsync();
     }
 
     private void OnLanguageChanged(string _)
@@ -227,13 +283,17 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         _clockTimer.Stop();
+        _idleTimer.Stop();
         _updateCts.Cancel();
         _updateCts.Dispose();
-        _navigation.CurrentViewChanged -= HandleNavigationViewChanged;
+        _clockTimer.Tick -= OnClockTick;
+        _idleTimer.Tick -= OnIdleCheck;
+        _navigation.CurrentViewChanged -= OnNavigationOrActivity;
         _timerService.BrewStarted -= OnBrewStarted;
         _timerService.BrewCompleted -= OnBrewCompleted;
         _timerService.BrewCancelled -= OnBrewCancelled;
         _loc.LanguageChanged -= OnLanguageChanged;
         _updateService.UpdateAvailable -= OnUpdateAvailable;
+        _ambient.Dispose();
     }
 }

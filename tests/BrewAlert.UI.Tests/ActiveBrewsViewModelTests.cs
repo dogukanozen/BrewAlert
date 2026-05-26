@@ -59,7 +59,7 @@ public class ActiveBrewsViewModelTests
         var session = Session();
         _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(
             this, new BrewStartedEvent(session));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await PumpDispatcherAsync();
 
         Assert.Single(vm.Items);
         Assert.Equal(session.Id, vm.Items[0].SessionId);
@@ -76,7 +76,7 @@ public class ActiveBrewsViewModelTests
             this, new BrewStartedEvent(session));
         _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(
             this, new BrewStartedEvent(session));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await PumpDispatcherAsync();
 
         Assert.Single(vm.Items);
     }
@@ -88,7 +88,7 @@ public class ActiveBrewsViewModelTests
         var session = Session();
         _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(
             this, new BrewStartedEvent(session));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await PumpDispatcherAsync();
 
         vm.Items[0].CancelCommand.Execute(null);
 
@@ -108,7 +108,7 @@ public class ActiveBrewsViewModelTests
             this, new BrewStartedEvent(s1));
         _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(
             this, new BrewStartedEvent(s2));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await PumpDispatcherAsync();
 
         vm.Items[0].CancelCommand.Execute(null);
 
@@ -125,10 +125,14 @@ public class ActiveBrewsViewModelTests
             _timerService, _notificationCoordinator, _navigation, _loc, TimeSpan.FromMilliseconds(50));
 
         _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
-        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
-            this, new BrewCompletedEvent(session));
+        await PumpDispatcherAsync(() =>
+        {
+            _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
+                this, new BrewCompletedEvent(session));
+        });
 
-        await WaitUntilAsync(NavigatedHome, TimeSpan.FromSeconds(2));
+        // PumpForAsync avoids WaitUntilAsync's PushFrame loop, which throws on Linux headless CI.
+        await PumpForAsync(TimeSpan.FromMilliseconds(200));
 
         _navigation.Received(1).NavigateTo<ProfileListViewModel>();
     }
@@ -147,7 +151,7 @@ public class ActiveBrewsViewModelTests
         _timerService.GetActiveSessions().Returns([running]);
         _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
             this, new BrewCompletedEvent(completed));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await PumpDispatcherAsync();
         _navigation.DidNotReceive().NavigateTo<ProfileListViewModel>();
 
         _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
@@ -170,14 +174,18 @@ public class ActiveBrewsViewModelTests
             _timerService, _notificationCoordinator, _navigation, _loc, TimeSpan.FromMilliseconds(80));
 
         _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
-        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
-            this, new BrewCompletedEvent(s1));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await PumpDispatcherAsync(() =>
+        {
+            _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
+                this, new BrewCompletedEvent(s1));
+        });
 
         var s2 = Session("Tea");
-        _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(
-            this, new BrewStartedEvent(s2));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await PumpDispatcherAsync(() =>
+        {
+            _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(
+                this, new BrewStartedEvent(s2));
+        });
 
         // Auto-return delay is 80ms; pump for well past it and assert nothing happens.
         await PumpForAsync(TimeSpan.FromMilliseconds(300));
@@ -192,11 +200,11 @@ public class ActiveBrewsViewModelTests
         var session = Session();
         _timerService.BrewStarted += Raise.Event<EventHandler<BrewStartedEvent>>(
             this, new BrewStartedEvent(session));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await PumpDispatcherAsync();
 
         _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(
             this, new BrewCompletedEvent(session));
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await PumpDispatcherAsync();
 
         vm.Items[0].DismissCommand.Execute(null);
 
@@ -215,21 +223,39 @@ public class ActiveBrewsViewModelTests
         var sw = System.Diagnostics.Stopwatch.StartNew();
         while (sw.Elapsed < timeout)
         {
-            await Dispatcher.UIThread.InvokeAsync(() => { });
+            await PumpDispatcherAsync();
             if (predicate()) return;
             await Task.Delay(10);
         }
-        await Dispatcher.UIThread.InvokeAsync(() => { });
+        await PumpDispatcherAsync();
         if (!predicate())
             throw new TimeoutException($"Condition not met within {timeout.TotalMilliseconds}ms.");
     }
+
+    private static Task PumpDispatcherAsync() => PumpDispatcherAsync(static () => { });
+
+    private static async Task PumpDispatcherAsync(Action action)
+    {
+        try
+        {
+            await Dispatcher.UIThread.InvokeAsync(action);
+        }
+        catch (Exception ex) when (IsUnsupportedHeadlessDispatcher(ex))
+        {
+            action();
+        }
+    }
+
+    private static bool IsUnsupportedHeadlessDispatcher(Exception ex) =>
+        ex is PlatformNotSupportedException
+        || ex.InnerException is PlatformNotSupportedException;
 
     private static async Task PumpForAsync(TimeSpan duration)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         while (sw.Elapsed < duration)
         {
-            await Dispatcher.UIThread.InvokeAsync(() => { });
+            await PumpDispatcherAsync();
             await Task.Delay(10);
         }
     }

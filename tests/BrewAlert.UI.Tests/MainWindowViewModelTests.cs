@@ -17,6 +17,8 @@ public class MainWindowViewModelTests
     private readonly IBrewTimerService _timerService = Substitute.For<IBrewTimerService>();
     private readonly ILocalizationService _loc;
     private readonly IUpdateService _updateService = Substitute.For<IUpdateService>();
+    private readonly IBrewHistoryService _history = Substitute.For<IBrewHistoryService>();
+    private readonly AmbientOverlayViewModel _ambient;
 
     public MainWindowViewModelTests()
     {
@@ -24,13 +26,19 @@ public class MainWindowViewModelTests
         _loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
         _loc.CurrentLanguage.Returns("English");
         _updateService.CheckForUpdatesAsync().Returns(false);
+        _history.GetRecentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<BrewHistoryEntry>());
+        _ambient = new AmbientOverlayViewModel(_history, _loc);
     }
+
+    private MainWindowViewModel CreateVm() =>
+        new(_navigation, _timerService, _loc, _updateService, _ambient);
 
     [Fact]
     public void Constructor_NavigatesToProfileList()
     {
         // Act
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
 
         // Assert
         _navigation.Received(1).NavigateTo<ProfileListViewModel>();
@@ -40,7 +48,7 @@ public class MainWindowViewModelTests
     public void HandleNavigationViewChanged_UpdatesCurrentView()
     {
         // Arrange
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         var mockVm = Substitute.For<ViewModelBase>();
 
         // Act
@@ -54,7 +62,7 @@ public class MainWindowViewModelTests
     public void NavigateToSettings_SetsLocalizedTitle()
     {
         // Arrange
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
 
         // Act
         vm.NavigateToSettingsCommand.Execute(null);
@@ -69,7 +77,7 @@ public class MainWindowViewModelTests
     {
         // Arrange — first call returns English label, second returns Turkish.
         _loc.Get("SettingsTitle").Returns("Settings", "Ayarlar");
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         vm.NavigateToSettingsCommand.Execute(null);
         Assert.Equal("Settings", vm.Title);
 
@@ -84,7 +92,7 @@ public class MainWindowViewModelTests
     public void NavigateToProfiles_WhenNoActiveSession_NavigatesToProfileList()
     {
         _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         vm.NavigateToSettingsCommand.Execute(null);
 
         vm.NavigateToProfilesCommand.Execute(null);
@@ -104,7 +112,7 @@ public class MainWindowViewModelTests
             Remaining = TimeSpan.FromMinutes(3)
         };
         _timerService.GetActiveSessions().Returns([session]);
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
 
         vm.NavigateToProfilesCommand.Execute(null);
 
@@ -119,7 +127,7 @@ public class MainWindowViewModelTests
         var s2 = new BrewSession { Profile = new BrewProfile { Name = "Tea", Icon = "🍵", BrewDuration = TimeSpan.FromMinutes(3) } };
         _timerService.GetActiveSessions().Returns([s1, s2]);
         _loc.Get("ActiveBrewsCount").Returns("{0} active brews");
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
 
         vm.NavigateToProfilesCommand.Execute(null);
 
@@ -131,7 +139,7 @@ public class MainWindowViewModelTests
     public void NavigateToProfiles_SetsAppNameTitle_NotLocalized()
     {
         // Arrange
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         vm.NavigateToSettingsCommand.Execute(null);
 
         // Act
@@ -147,7 +155,7 @@ public class MainWindowViewModelTests
     [AvaloniaFact]
     public void BrewCompleted_WhenTitleIsBrewRunning_ResetsToAppName()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
         var startedSession = new BrewSession { Profile = profile };
 
@@ -164,7 +172,7 @@ public class MainWindowViewModelTests
     [AvaloniaFact]
     public void BrewCancelled_WhenTitleIsBrewRunning_ResetsToAppName()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
         var session = new BrewSession { Profile = profile };
 
@@ -181,7 +189,7 @@ public class MainWindowViewModelTests
     [AvaloniaFact]
     public void BrewCompleted_WithRemainingSession_ShowsThatProfilesTitle()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         var coffee = new BrewSession { Profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) } };
         var tea = new BrewSession { Profile = new BrewProfile { Name = "Tea", Icon = "🍵", BrewDuration = TimeSpan.FromMinutes(3) } };
 
@@ -196,7 +204,7 @@ public class MainWindowViewModelTests
     {
         // BrewTimerService raises BrewCompleted from its background loop —
         // the VM must marshal the title update onto the UI thread.
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         var profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) };
         var session = new BrewSession { Profile = profile };
 
@@ -219,7 +227,7 @@ public class MainWindowViewModelTests
     public void BrewCompleted_WhileOnSettings_DoesNotOverwriteSettingsTitle()
     {
         _loc.Get("SettingsTitle").Returns("Settings");
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
 
         // Two brews running, user navigates to Settings.
         var s1 = new BrewSession { Profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) } };
@@ -239,7 +247,7 @@ public class MainWindowViewModelTests
     public void BrewCancelled_WhileOnSettings_DoesNotOverwriteSettingsTitle()
     {
         _loc.Get("SettingsTitle").Returns("Settings");
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
 
         var s1 = new BrewSession { Profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) } };
         var s2 = new BrewSession { Profile = new BrewProfile { Name = "Tea", Icon = "🍵", BrewDuration = TimeSpan.FromMinutes(3) } };
@@ -257,7 +265,7 @@ public class MainWindowViewModelTests
     public void LanguageChanged_WithMultipleActiveBrews_RelocalizesCountTitle()
     {
         _loc.Get("ActiveBrewsCount").Returns("{0} active brews", "{0} aktif demleme");
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
 
         var s1 = new BrewSession { Profile = new BrewProfile { Name = "Coffee", Icon = "☕", BrewDuration = TimeSpan.FromMinutes(4) } };
         var s2 = new BrewSession { Profile = new BrewProfile { Name = "Tea", Icon = "🍵", BrewDuration = TimeSpan.FromMinutes(3) } };
@@ -273,7 +281,7 @@ public class MainWindowViewModelTests
     [Fact]
     public void DismissUpdate_HidesToast()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         vm.IsUpdateToastVisible = true;
 
         vm.DismissUpdateCommand.Execute(null);
@@ -284,7 +292,7 @@ public class MainWindowViewModelTests
     [Fact]
     public async Task InstallUpdate_OnSuccess_CallsServiceAndHidesToast()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         vm.IsUpdateToastVisible = true;
 
         await ((IAsyncRelayCommand)vm.InstallUpdateCommand).ExecuteAsync(null);
@@ -297,7 +305,7 @@ public class MainWindowViewModelTests
     public async Task InstallUpdate_OnFailure_ShowsErrorMessageInToast()
     {
         _updateService.DownloadAndInstallUpdatesAsync().Returns(Task.FromException(new Exception("network error")));
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         vm.IsUpdateToastVisible = true;
 
         await ((IAsyncRelayCommand)vm.InstallUpdateCommand).ExecuteAsync(null);
@@ -309,7 +317,7 @@ public class MainWindowViewModelTests
     [Fact]
     public void LanguageChanged_WhenToastVisible_RefreshesToastTexts()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         vm.IsUpdateToastVisible = true;
 
         _loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
@@ -322,7 +330,7 @@ public class MainWindowViewModelTests
     [AvaloniaFact]
     public void UpdateAvailableEvent_WhenRaised_ShowsToastWithLocalizedTexts()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         Assert.False(vm.IsUpdateToastVisible);
 
         _updateService.UpdateAvailable += Raise.Event<Action>();
@@ -336,7 +344,7 @@ public class MainWindowViewModelTests
     [AvaloniaFact]
     public void UpdateAvailableEvent_WhenToastAlreadyVisible_DoesNotResetTexts()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         vm.IsUpdateToastVisible = true;
         vm.UpdateToastMessage = "already shown";
 
@@ -353,7 +361,7 @@ public class MainWindowViewModelTests
     [Fact]
     public void Dispose_UnsubscribesFromTimerServiceEvents()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
 
         vm.Dispose();
 
@@ -368,17 +376,19 @@ public class MainWindowViewModelTests
         var loc = Substitute.For<ILocalizationService>();
         loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
         loc.CurrentLanguage.Returns("English");
-        var vm = new MainWindowViewModel(_navigation, _timerService, loc, _updateService);
+        var ambient = new AmbientOverlayViewModel(_history, loc);
+        var vm = new MainWindowViewModel(_navigation, _timerService, loc, _updateService, ambient);
 
         vm.Dispose();
 
-        loc.Received(1).LanguageChanged -= Arg.Any<Action<string>>();
+        // Main window + ambient overlay both subscribe to language changes.
+        loc.Received(2).LanguageChanged -= Arg.Any<Action<string>>();
     }
 
     [Fact]
     public void Dispose_UnsubscribesFromUpdateAvailable()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
 
         vm.Dispose();
 
@@ -388,7 +398,7 @@ public class MainWindowViewModelTests
     [Fact]
     public void Dispose_UnsubscribesFromNavigationCurrentViewChanged()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
 
         vm.Dispose();
 
@@ -398,7 +408,7 @@ public class MainWindowViewModelTests
     [Fact]
     public void LanguageChanged_WhenToastNotVisible_DoesNotRefreshToastTexts()
     {
-        var vm = new MainWindowViewModel(_navigation, _timerService, _loc, _updateService);
+        var vm = CreateVm();
         vm.IsUpdateToastVisible = false;
         vm.UpdateToastMessage = "stale";
 
