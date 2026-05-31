@@ -12,7 +12,7 @@ namespace BrewAlert.Infrastructure.Persistence;
 public sealed class JsonPreferencesService(ILogger<JsonPreferencesService> logger, string? customPath = null) : IPreferencesService
 {
     private static readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly string _path = customPath ?? BrewAlertConstants.PreferencesPath;
+    private readonly string _path = string.IsNullOrWhiteSpace(customPath) ? BrewAlertConstants.PreferencesPath : customPath;
 
     public async Task<string?> GetNotificationProviderAsync()
     {
