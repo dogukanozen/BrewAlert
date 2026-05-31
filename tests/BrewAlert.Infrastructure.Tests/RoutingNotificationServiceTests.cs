@@ -138,4 +138,29 @@ public class RoutingNotificationServiceTests
         // Will be false if routed to Graph correctly because ChatId is empty
         Assert.False(result);
     }
+
+    [Fact]
+    public async Task SendBrewCompletedAsync_FallsBackToConsole_WhenProviderIsUnknown()
+    {
+        var monitor = CreateMonitor("InvalidProvider");
+        var webhookNotifier = new TeamsWebhookNotifier(
+            Substitute.For<IHttpClientFactory>(),
+            Substitute.For<IOptionsMonitor<TeamsNotificationOptions>>(),
+            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
+            Substitute.For<ILogger<TeamsWebhookNotifier>>());
+
+        var graphNotifier = new TeamsGraphNotifier(
+            Substitute.For<IHttpClientFactory>(),
+            Substitute.For<IOptionsMonitor<TeamsGraphOptions>>(),
+            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
+            Substitute.For<ILogger<TeamsGraphNotifier>>());
+
+        var consoleNotifier = new ConsoleNotifier(Substitute.For<ILogger<ConsoleNotifier>>());
+
+        var svc = new RoutingNotificationService(webhookNotifier, graphNotifier, consoleNotifier, monitor, Substitute.For<ILogger<RoutingNotificationService>>());
+
+        var result = await svc.SendBrewCompletedAsync(CreateSession());
+
+        Assert.True(result.IsSuccess);
+    }
 }
