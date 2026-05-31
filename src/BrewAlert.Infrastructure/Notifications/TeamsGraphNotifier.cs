@@ -14,7 +14,7 @@ using Microsoft.Extensions.Options;
 /// Uses client-credentials OAuth flow; token is cached until 60 seconds before expiry.
 /// Token refresh is protected by a SemaphoreSlim to prevent concurrent re-fetches.
 /// </summary>
-public sealed class TeamsGraphNotifier : INotificationService, IDisposable
+public sealed class TeamsGraphNotifier : ITeamsGraphNotifier, IDisposable
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IOptionsMonitor<TeamsGraphOptions> _optionsMonitor;

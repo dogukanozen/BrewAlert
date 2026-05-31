@@ -13,9 +13,9 @@ namespace BrewAlert.Infrastructure.Notifications;
 /// a write to preferences.json takes effect immediately.
 /// </summary>
 public sealed class RoutingNotificationService(
-    TeamsWebhookNotifier webhookNotifier,
-    TeamsGraphNotifier graphNotifier,
-    ConsoleNotifier consoleNotifier,
+    ITeamsWebhookNotifier webhookNotifier,
+    ITeamsGraphNotifier graphNotifier,
+    IConsoleNotifier consoleNotifier,
     IOptionsMonitor<NotificationProviderOptions> providerOptions,
     ILogger<RoutingNotificationService> logger) : INotificationService
 {

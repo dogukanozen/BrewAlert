@@ -114,9 +114,9 @@ public partial class App : Application
                 if (opts.TimeoutSeconds > 0) client.Timeout = TimeSpan.FromSeconds(opts.TimeoutSeconds);
             });
 
-        services.AddSingleton<TeamsWebhookNotifier>();
-        services.AddSingleton<TeamsGraphNotifier>();
-        services.AddSingleton<ConsoleNotifier>();
+        services.AddSingleton<ITeamsWebhookNotifier, TeamsWebhookNotifier>();
+        services.AddSingleton<ITeamsGraphNotifier, TeamsGraphNotifier>();
+        services.AddSingleton<IConsoleNotifier, ConsoleNotifier>();
         services.AddSingleton<INotificationService, RoutingNotificationService>();
 
         // Preferences & localization

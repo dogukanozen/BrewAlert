@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 /// Fallback notifier that writes to the console / debug output.
 /// Useful during development when Teams webhook is not configured.
 /// </summary>
-public sealed class ConsoleNotifier(ILogger<ConsoleNotifier> logger) : INotificationService
+public sealed class ConsoleNotifier(ILogger<ConsoleNotifier> logger) : IConsoleNotifier
 {
     public Task<NotificationResult> SendBrewCompletedAsync(BrewSession session, CancellationToken ct = default)
     {

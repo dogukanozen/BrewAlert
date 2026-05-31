@@ -15,7 +15,7 @@ public sealed class TeamsWebhookNotifier(
     IHttpClientFactory httpClientFactory,
     IOptionsMonitor<TeamsNotificationOptions> options,
     IOptionsMonitor<LanguageOptions> languageOptions,
-    ILogger<TeamsWebhookNotifier> logger) : INotificationService
+    ILogger<TeamsWebhookNotifier> logger) : ITeamsWebhookNotifier
 {
     public async Task<NotificationResult> SendBrewCompletedAsync(BrewSession session, CancellationToken ct = default)
     {

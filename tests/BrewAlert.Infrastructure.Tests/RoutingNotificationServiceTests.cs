@@ -30,137 +30,84 @@ public class RoutingNotificationServiceTests
     public async Task SendBrewCompletedAsync_RoutesToConsole_WhenProviderIsConsole()
     {
         var monitor = CreateMonitor(NotificationProvider.Console);
-
-        // Since we cannot mock sealed classes via NSubstitute's Substiute.ForPartsOf,
-        // we instantiate them with mock dependencies.
-        var webhookNotifier = new TeamsWebhookNotifier(
-            Substitute.For<IHttpClientFactory>(),
-            Substitute.For<IOptionsMonitor<TeamsNotificationOptions>>(),
-            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
-            Substitute.For<ILogger<TeamsWebhookNotifier>>());
-
-        var graphNotifier = new TeamsGraphNotifier(
-            Substitute.For<IHttpClientFactory>(),
-            Substitute.For<IOptionsMonitor<TeamsGraphOptions>>(),
-            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
-            Substitute.For<ILogger<TeamsGraphNotifier>>());
-
-        var consoleNotifier = new ConsoleNotifier(Substitute.For<ILogger<ConsoleNotifier>>());
+        var webhookNotifier = Substitute.For<ITeamsWebhookNotifier>();
+        var graphNotifier = Substitute.For<ITeamsGraphNotifier>();
+        var consoleNotifier = Substitute.For<IConsoleNotifier>();
+        consoleNotifier.SendBrewCompletedAsync(Arg.Any<BrewSession>()).Returns(NotificationResult.Success());
 
         var svc = new RoutingNotificationService(webhookNotifier, graphNotifier, consoleNotifier, monitor, Substitute.For<ILogger<RoutingNotificationService>>());
 
         var result = await svc.SendBrewCompletedAsync(CreateSession());
 
         Assert.True(result.IsSuccess);
+        await consoleNotifier.Received(1).SendBrewCompletedAsync(Arg.Any<BrewSession>());
     }
 
     [Fact]
     public async Task TestConnectionAsync_RoutesToConsole_WhenProviderIsConsole()
     {
         var monitor = CreateMonitor(NotificationProvider.Console);
-        var webhookNotifier = new TeamsWebhookNotifier(
-            Substitute.For<IHttpClientFactory>(),
-            Substitute.For<IOptionsMonitor<TeamsNotificationOptions>>(),
-            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
-            Substitute.For<ILogger<TeamsWebhookNotifier>>());
-
-        var graphNotifier = new TeamsGraphNotifier(
-            Substitute.For<IHttpClientFactory>(),
-            Substitute.For<IOptionsMonitor<TeamsGraphOptions>>(),
-            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
-            Substitute.For<ILogger<TeamsGraphNotifier>>());
-
-        var consoleNotifier = new ConsoleNotifier(Substitute.For<ILogger<ConsoleNotifier>>());
+        var webhookNotifier = Substitute.For<ITeamsWebhookNotifier>();
+        var graphNotifier = Substitute.For<ITeamsGraphNotifier>();
+        var consoleNotifier = Substitute.For<IConsoleNotifier>();
+        consoleNotifier.TestConnectionAsync().Returns(true);
 
         var svc = new RoutingNotificationService(webhookNotifier, graphNotifier, consoleNotifier, monitor, Substitute.For<ILogger<RoutingNotificationService>>());
 
         var result = await svc.TestConnectionAsync();
 
         Assert.True(result);
+        await consoleNotifier.Received(1).TestConnectionAsync();
     }
 
     [Fact]
     public async Task SendBrewCompletedAsync_RoutesToWebhook_WhenProviderIsWebhook()
     {
         var monitor = CreateMonitor(NotificationProvider.Webhook);
-
-        var teamsOptions = Substitute.For<IOptionsMonitor<TeamsNotificationOptions>>();
-        teamsOptions.CurrentValue.Returns(new TeamsNotificationOptions { WebhookUrl = "" }); // Force failure to prove routing to Webhook
-
-        var webhookNotifier = new TeamsWebhookNotifier(
-            Substitute.For<IHttpClientFactory>(),
-            teamsOptions,
-            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
-            Substitute.For<ILogger<TeamsWebhookNotifier>>());
-
-        var graphNotifier = new TeamsGraphNotifier(
-            Substitute.For<IHttpClientFactory>(),
-            Substitute.For<IOptionsMonitor<TeamsGraphOptions>>(),
-            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
-            Substitute.For<ILogger<TeamsGraphNotifier>>());
-
-        var consoleNotifier = new ConsoleNotifier(Substitute.For<ILogger<ConsoleNotifier>>());
-
-        var svc = new RoutingNotificationService(webhookNotifier, graphNotifier, consoleNotifier, monitor, Substitute.For<ILogger<RoutingNotificationService>>());
-
-        var result = await svc.SendBrewCompletedAsync(CreateSession());
-
-        // Should be false because Webhook URL is not configured, meaning it reached the webhook notifier.
-        Assert.False(result.IsSuccess);
-        Assert.Equal("Webhook URL is not configured.", result.ErrorMessage);
-    }
-
-    [Fact]
-    public async Task TestConnectionAsync_RoutesToGraph_WhenProviderIsGraph()
-    {
-        var monitor = CreateMonitor(NotificationProvider.Graph);
-        var webhookNotifier = new TeamsWebhookNotifier(
-            Substitute.For<IHttpClientFactory>(),
-            Substitute.For<IOptionsMonitor<TeamsNotificationOptions>>(),
-            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
-            Substitute.For<ILogger<TeamsWebhookNotifier>>());
-
-        var graphOptions = Substitute.For<IOptionsMonitor<TeamsGraphOptions>>();
-        graphOptions.CurrentValue.Returns(new TeamsGraphOptions { ChatId = "" }); // Causes test connection to return false
-
-        var graphNotifier = new TeamsGraphNotifier(
-            Substitute.For<IHttpClientFactory>(),
-            graphOptions,
-            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
-            Substitute.For<ILogger<TeamsGraphNotifier>>());
-
-        var consoleNotifier = new ConsoleNotifier(Substitute.For<ILogger<ConsoleNotifier>>());
-
-        var svc = new RoutingNotificationService(webhookNotifier, graphNotifier, consoleNotifier, monitor, Substitute.For<ILogger<RoutingNotificationService>>());
-
-        var result = await svc.TestConnectionAsync();
-
-        // Will be false if routed to Graph correctly because ChatId is empty
-        Assert.False(result);
-    }
-
-    [Fact]
-    public async Task SendBrewCompletedAsync_FallsBackToConsole_WhenProviderIsUnknown()
-    {
-        var monitor = CreateMonitor("InvalidProvider");
-        var webhookNotifier = new TeamsWebhookNotifier(
-            Substitute.For<IHttpClientFactory>(),
-            Substitute.For<IOptionsMonitor<TeamsNotificationOptions>>(),
-            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
-            Substitute.For<ILogger<TeamsWebhookNotifier>>());
-
-        var graphNotifier = new TeamsGraphNotifier(
-            Substitute.For<IHttpClientFactory>(),
-            Substitute.For<IOptionsMonitor<TeamsGraphOptions>>(),
-            Substitute.For<IOptionsMonitor<LanguageOptions>>(),
-            Substitute.For<ILogger<TeamsGraphNotifier>>());
-
-        var consoleNotifier = new ConsoleNotifier(Substitute.For<ILogger<ConsoleNotifier>>());
+        var webhookNotifier = Substitute.For<ITeamsWebhookNotifier>();
+        var graphNotifier = Substitute.For<ITeamsGraphNotifier>();
+        var consoleNotifier = Substitute.For<IConsoleNotifier>();
+        webhookNotifier.SendBrewCompletedAsync(Arg.Any<BrewSession>()).Returns(NotificationResult.Success());
 
         var svc = new RoutingNotificationService(webhookNotifier, graphNotifier, consoleNotifier, monitor, Substitute.For<ILogger<RoutingNotificationService>>());
 
         var result = await svc.SendBrewCompletedAsync(CreateSession());
 
         Assert.True(result.IsSuccess);
+        await webhookNotifier.Received(1).SendBrewCompletedAsync(Arg.Any<BrewSession>());
+    }
+
+    [Fact]
+    public async Task TestConnectionAsync_RoutesToGraph_WhenProviderIsGraph()
+    {
+        var monitor = CreateMonitor(NotificationProvider.Graph);
+        var webhookNotifier = Substitute.For<ITeamsWebhookNotifier>();
+        var graphNotifier = Substitute.For<ITeamsGraphNotifier>();
+        var consoleNotifier = Substitute.For<IConsoleNotifier>();
+        graphNotifier.TestConnectionAsync().Returns(true);
+
+        var svc = new RoutingNotificationService(webhookNotifier, graphNotifier, consoleNotifier, monitor, Substitute.For<ILogger<RoutingNotificationService>>());
+
+        var result = await svc.TestConnectionAsync();
+
+        Assert.True(result);
+        await graphNotifier.Received(1).TestConnectionAsync();
+    }
+
+    [Fact]
+    public async Task SendBrewCompletedAsync_FallsBackToConsole_WhenProviderIsUnknown()
+    {
+        var monitor = CreateMonitor("InvalidProvider");
+        var webhookNotifier = Substitute.For<ITeamsWebhookNotifier>();
+        var graphNotifier = Substitute.For<ITeamsGraphNotifier>();
+        var consoleNotifier = Substitute.For<IConsoleNotifier>();
+        consoleNotifier.SendBrewCompletedAsync(Arg.Any<BrewSession>()).Returns(NotificationResult.Success());
+
+        var svc = new RoutingNotificationService(webhookNotifier, graphNotifier, consoleNotifier, monitor, Substitute.For<ILogger<RoutingNotificationService>>());
+
+        var result = await svc.SendBrewCompletedAsync(CreateSession());
+
+        Assert.True(result.IsSuccess);
+        await consoleNotifier.Received(1).SendBrewCompletedAsync(Arg.Any<BrewSession>());
     }
 }
