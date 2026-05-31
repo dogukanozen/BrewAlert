@@ -15,11 +15,7 @@ public class JsonPreferencesServiceTests : IDisposable
     {
         _tempPath = Path.Combine(Path.GetTempPath(), $"preferences_{Guid.NewGuid()}.json");
         var logger = Substitute.For<ILogger<JsonPreferencesService>>();
-        _service = new JsonPreferencesService(logger);
-
-        // Overwrite the private _path field for testing
-        var pathField = typeof(JsonPreferencesService).GetField("_path", BindingFlags.NonPublic | BindingFlags.Instance);
-        pathField!.SetValue(_service, _tempPath);
+        _service = new JsonPreferencesService(logger, _tempPath);
     }
 
     public void Dispose()
