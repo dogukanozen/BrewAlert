@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using BrewAlert.Core.Events;
@@ -86,6 +87,24 @@ public class MainWindowViewModelTests
 
         // Assert
         Assert.Equal("Ayarlar", vm.Title);
+    }
+
+    [Fact]
+    public void LanguageChanged_LocalizesHeaderDateMonthName()
+    {
+        // The header date used the OS locale, so a Turkish UI on an en-US host showed
+        // "Jun" instead of "Haz". The month name must follow the app language.
+        var turkish = new CultureInfo("tr-TR");
+        _loc.CurrentCulture.Returns(turkish);
+        var vm = CreateVm();
+
+        // Act — language switch must repaint the clock immediately.
+        _loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
+
+        // Format is "dd MMM yyyy HH:mm:ss"; index 1 is the month abbreviation.
+        var expectedMonth = DateTime.Now.ToString("MMM", turkish);
+        var actualMonth = vm.CurrentDateTime.Split(' ')[1];
+        Assert.Equal(expectedMonth, actualMonth);
     }
 
     [Fact]
