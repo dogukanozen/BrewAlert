@@ -275,10 +275,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
         if (IsUpdateToastVisible)
             ShowUpdateToast();
+        // Repaint the header clock now so the month name flips language immediately
+        // instead of on the next 1s tick.
+        UpdateClock();
     }
 
     private void UpdateClock() =>
-        CurrentDateTime = DateTime.Now.ToString("dd MMM yyyy HH:mm:ss");
+        // Month name must follow the *app* language, not the OS locale — otherwise a
+        // Turkish UI on an en-US host renders "Jun" instead of "Haz".
+        CurrentDateTime = DateTime.Now.ToString("dd MMM yyyy HH:mm:ss", _loc.CurrentCulture);
 
     public void Dispose()
     {

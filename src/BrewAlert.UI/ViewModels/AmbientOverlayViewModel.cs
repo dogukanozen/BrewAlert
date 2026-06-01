@@ -6,7 +6,6 @@ using BrewAlert.UI.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -181,7 +180,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
         scenes.Add(new AmbientSceneItem(
             today[0].Icon,
-            string.Format(CultureInfo.CurrentCulture, _loc.Get("AmbientTodayCount"), today.Count),
+            string.Format(_loc.CurrentCulture, _loc.Get("AmbientTodayCount"), today.Count),
             _loc.Get("AmbientTodayCountHint"),
             "fresh"));
 
@@ -193,24 +192,33 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
             .Select(g => g.MaxBy(e => e.CompletedAtUtc)!);
 
         foreach (var entry in latestPerType)
-        {
-            var age = nowUtc - entry.CompletedAtUtc;
-            var level = BrewFreshnessEvaluator.Evaluate(entry.Type, age);
-            var relative = FormatRelative(age);
-            var scene = level switch
-            {
-                BrewFreshnessLevel.Stale => BuildStaleScene(entry, relative),
-                BrewFreshnessLevel.Cooling => BuildWarningScene(entry, relative),
-                _ => new AmbientSceneItem(
-                    entry.Icon,
-                    string.Format(CultureInfo.CurrentCulture, _loc.Get("AmbientStillGood"), entry.ProfileName),
-                    string.Format(CultureInfo.CurrentCulture, _loc.Get("AmbientStillGoodHint"), relative),
-                    "fresh")
-            };
-            scenes.Add(scene);
-        }
+            scenes.Add(BuildFreshnessScene(entry, nowUtc));
 
         return scenes;
+    }
+
+    /// <summary>
+    /// Renders a single freshness card for <paramref name="entry"/> against
+    /// <paramref name="nowUtc"/>. Called both at scene-build time and live on every
+    /// apply, so the relative-time label and mood track the real clock instead of
+    /// freezing at the moment the rotation was last rebuilt.
+    /// </summary>
+    private AmbientSceneItem BuildFreshnessScene(BrewHistoryEntry entry, DateTime nowUtc)
+    {
+        var age = nowUtc - entry.CompletedAtUtc;
+        var level = BrewFreshnessEvaluator.Evaluate(entry.Type, age);
+        var relative = FormatRelative(age);
+        return level switch
+        {
+            BrewFreshnessLevel.Stale => BuildStaleScene(entry, relative),
+            BrewFreshnessLevel.Cooling => BuildWarningScene(entry, relative),
+            _ => new AmbientSceneItem(
+                entry.Icon,
+                string.Format(_loc.CurrentCulture, _loc.Get("AmbientStillGood"), entry.ProfileName),
+                string.Format(_loc.CurrentCulture, _loc.Get("AmbientStillGoodHint"), relative),
+                "fresh",
+                entry)
+        };
     }
 
     private AmbientSceneItem BuildStaleScene(BrewHistoryEntry entry, string relative)
@@ -223,9 +231,10 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         };
         return new AmbientSceneItem(
             entry.Icon,
-            string.Format(CultureInfo.CurrentCulture, _loc.Get(key), entry.ProfileName, relative),
+            string.Format(_loc.CurrentCulture, _loc.Get(key), entry.ProfileName, relative),
             _loc.Get("AmbientStaleHint"),
-            "stale");
+            "stale",
+            entry);
     }
 
     private AmbientSceneItem BuildWarningScene(BrewHistoryEntry entry, string relative)
@@ -238,19 +247,20 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         };
         return new AmbientSceneItem(
             entry.Icon,
-            string.Format(CultureInfo.CurrentCulture, _loc.Get(key), entry.ProfileName, relative),
+            string.Format(_loc.CurrentCulture, _loc.Get(key), entry.ProfileName, relative),
             _loc.Get("AmbientWarningHint"),
-            "warning");
+            "warning",
+            entry);
     }
 
     private string FormatRelative(TimeSpan delta)
     {
         if (delta < TimeSpan.FromMinutes(1)) return _loc.Get("JustNow");
         if (delta < TimeSpan.FromHours(1))
-            return string.Format(CultureInfo.CurrentCulture, _loc.Get("MinutesAgo"), (int)delta.TotalMinutes);
+            return string.Format(_loc.CurrentCulture, _loc.Get("MinutesAgo"), (int)delta.TotalMinutes);
         if (delta < TimeSpan.FromDays(1))
-            return string.Format(CultureInfo.CurrentCulture, _loc.Get("HoursAgo"), (int)delta.TotalHours);
-        return string.Format(CultureInfo.CurrentCulture, _loc.Get("DaysAgo"), (int)delta.TotalDays);
+            return string.Format(_loc.CurrentCulture, _loc.Get("HoursAgo"), (int)delta.TotalHours);
+        return string.Format(_loc.CurrentCulture, _loc.Get("DaysAgo"), (int)delta.TotalDays);
     }
 
     private void PickFloatIcons(IReadOnlyList<BrewHistoryEntry> today)
@@ -276,8 +286,15 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         UpdateClock();
     }
 
-    private void OnAnimationTick(object? sender, EventArgs e) =>
+    private void OnAnimationTick(object? sender, EventArgs e)
+    {
         AnimationPhase = (AnimationPhase + 1) & 7;
+        // Keep the relative-time label and freshness mood of the card currently on
+        // screen advancing live, not just when the 10s rotation re-applies it.
+        // ObservableProperty dedups unchanged values, so this only repaints when a
+        // minute boundary (or freshness threshold) is actually crossed.
+        ApplyScene(_sceneIndex);
+    }
 
     private void OnSceneTick(object? sender, EventArgs e)
     {
@@ -293,8 +310,12 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
     private void ApplyScene(int index)
     {
-        if (_scenes.Count == 0) return;
+        if (index < 0 || index >= _scenes.Count) return;
         var scene = _scenes[index];
+        // Freshness cards carry their source entry — re-render against the current
+        // clock so age-dependent text and mood reflect "now", not build time.
+        if (scene.Entry is not null)
+            scene = BuildFreshnessScene(scene.Entry, DateTime.UtcNow);
         HeroIcon = scene.Icon;
         Headline = scene.Headline;
         Subheadline = scene.Subheadline;

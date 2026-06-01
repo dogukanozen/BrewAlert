@@ -101,6 +101,46 @@ public class AmbientOverlayViewModelTests
     }
 
     [Fact]
+    public void BuildScenes_FreshnessScenes_CarrySourceEntryForLiveRefresh()
+    {
+        // The relative-time label and mood used to freeze at build time because the
+        // formatted strings were baked into the scene. Freshness cards must keep a
+        // reference to their source entry so the VM can re-render them against the
+        // live clock; static cards must not carry one.
+        var now = new DateTime(2026, 5, 26, 18, 0, 0, DateTimeKind.Utc);
+        var today = new List<BrewHistoryEntry>
+        {
+            new(Guid.NewGuid(), now.AddMinutes(-10), "Filter Coffee", BrewType.Coffee, "☕", 300),
+        };
+        var vm = CreateVm();
+
+        var scenes = vm.BuildScenes(today, now);
+
+        var freshness = Assert.Single(scenes, s => s.Headline.Contains("Filter Coffee"));
+        Assert.NotNull(freshness.Entry);
+        Assert.Equal("Filter Coffee", freshness.Entry!.ProfileName);
+        Assert.Null(scenes[0].Entry); // welcome card is static
+    }
+
+    [Fact]
+    public void BuildScenes_RelativeTime_AdvancesAsTimePasses()
+    {
+        // Same entry rendered at two different "now" values must yield different
+        // relative-time text — proving the age is computed live, not frozen.
+        _loc.Get("MinutesAgo").Returns("{0} min ago");
+        _loc.Get("AmbientStillGoodHint").Returns("{0}");
+        var brewedAt = new DateTime(2026, 5, 26, 18, 0, 0, DateTimeKind.Utc);
+        var entry = new BrewHistoryEntry(Guid.NewGuid(), brewedAt, "Filter Coffee", BrewType.Coffee, "☕", 300);
+        var today = new List<BrewHistoryEntry> { entry };
+        var vm = CreateVm();
+
+        var at3 = vm.BuildScenes(today, brewedAt.AddMinutes(3)).Single(s => s.Headline.Contains("Filter Coffee"));
+        var at9 = vm.BuildScenes(today, brewedAt.AddMinutes(9)).Single(s => s.Headline.Contains("Filter Coffee"));
+
+        Assert.NotEqual(at3.Subheadline, at9.Subheadline);
+    }
+
+    [Fact]
     public void BuildScenes_NullToday_Throws()
     {
         var vm = CreateVm();
