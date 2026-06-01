@@ -6,7 +6,6 @@ using BrewAlert.UI.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -181,7 +180,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
         scenes.Add(new AmbientSceneItem(
             today[0].Icon,
-            string.Format(CultureInfo.CurrentCulture, _loc.Get("AmbientTodayCount"), today.Count),
+            string.Format(_loc.CurrentCulture, _loc.Get("AmbientTodayCount"), today.Count),
             _loc.Get("AmbientTodayCountHint"),
             "fresh"));
 
@@ -215,8 +214,8 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
             BrewFreshnessLevel.Cooling => BuildWarningScene(entry, relative),
             _ => new AmbientSceneItem(
                 entry.Icon,
-                string.Format(CultureInfo.CurrentCulture, _loc.Get("AmbientStillGood"), entry.ProfileName),
-                string.Format(CultureInfo.CurrentCulture, _loc.Get("AmbientStillGoodHint"), relative),
+                string.Format(_loc.CurrentCulture, _loc.Get("AmbientStillGood"), entry.ProfileName),
+                string.Format(_loc.CurrentCulture, _loc.Get("AmbientStillGoodHint"), relative),
                 "fresh",
                 entry)
         };
@@ -232,7 +231,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         };
         return new AmbientSceneItem(
             entry.Icon,
-            string.Format(CultureInfo.CurrentCulture, _loc.Get(key), entry.ProfileName, relative),
+            string.Format(_loc.CurrentCulture, _loc.Get(key), entry.ProfileName, relative),
             _loc.Get("AmbientStaleHint"),
             "stale",
             entry);
@@ -248,7 +247,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         };
         return new AmbientSceneItem(
             entry.Icon,
-            string.Format(CultureInfo.CurrentCulture, _loc.Get(key), entry.ProfileName, relative),
+            string.Format(_loc.CurrentCulture, _loc.Get(key), entry.ProfileName, relative),
             _loc.Get("AmbientWarningHint"),
             "warning",
             entry);
@@ -258,10 +257,10 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     {
         if (delta < TimeSpan.FromMinutes(1)) return _loc.Get("JustNow");
         if (delta < TimeSpan.FromHours(1))
-            return string.Format(CultureInfo.CurrentCulture, _loc.Get("MinutesAgo"), (int)delta.TotalMinutes);
+            return string.Format(_loc.CurrentCulture, _loc.Get("MinutesAgo"), (int)delta.TotalMinutes);
         if (delta < TimeSpan.FromDays(1))
-            return string.Format(CultureInfo.CurrentCulture, _loc.Get("HoursAgo"), (int)delta.TotalHours);
-        return string.Format(CultureInfo.CurrentCulture, _loc.Get("DaysAgo"), (int)delta.TotalDays);
+            return string.Format(_loc.CurrentCulture, _loc.Get("HoursAgo"), (int)delta.TotalHours);
+        return string.Format(_loc.CurrentCulture, _loc.Get("DaysAgo"), (int)delta.TotalDays);
     }
 
     private void PickFloatIcons(IReadOnlyList<BrewHistoryEntry> today)
