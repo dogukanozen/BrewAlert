@@ -140,6 +140,22 @@ public class AmbientOverlayViewModelTests
         Assert.NotEqual(at3.Subheadline, at9.Subheadline);
     }
 
+    [Theory]
+    [InlineData(false, true, 1.0, 0.0)]
+    [InlineData(true, false, 0.0, 0.5)]
+    public void DvdMode_DrivesCardAndBackdropState(bool dvd, bool expectedCardMode, double expectedCardOpacity, double expectedDimOpacity)
+    {
+        // The view hides particles via IsCardMode, fades the card text via CardOpacity, and
+        // dims the backdrop via DvdDimOpacity — all must track the DVD-bounce flag.
+        var vm = CreateVm();
+
+        vm.IsDvdMode = dvd;
+
+        Assert.Equal(expectedCardMode, vm.IsCardMode);
+        Assert.Equal(expectedCardOpacity, vm.CardOpacity);
+        Assert.Equal(expectedDimOpacity, vm.DvdDimOpacity);
+    }
+
     [Fact]
     public void BuildScenes_NullToday_Throws()
     {

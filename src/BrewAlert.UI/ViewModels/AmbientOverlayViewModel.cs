@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using Avalonia.Threading;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
@@ -21,12 +22,21 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     private static readonly TimeSpan SceneRotationInterval = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan AnimationTickInterval = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan SceneRefreshInterval = TimeSpan.FromMinutes(5);
+    // Animation "modes" swap every period so the screen isn't one look all day: the
+    // info-card animation and the retro DVD-logo bounce take turns, each holding the
+    // screen for ModePeriod. The view owns the bounce geometry (needs layout bounds);
+    // this VM owns the timing. Backgrounds within a mode are picked at random (PickNextPalette).
+    private static readonly TimeSpan ModePeriod = TimeSpan.FromMinutes(5);
 
     private readonly IBrewHistoryService _history;
     private readonly ILocalizationService _loc;
     private readonly DispatcherTimer _animationTimer;
     private readonly DispatcherTimer _sceneTimer;
+    private readonly DispatcherTimer _modeTimer;
     private readonly CancellationTokenSource _disposeCts = new();
+    private readonly IReadOnlyList<AmbientPalette> _palettes = AmbientPalette.All;
+    private readonly Random _random = new();
+    private AmbientPalette _currentPalette = AmbientPalette.All[0];
 
     private IReadOnlyList<AmbientSceneItem> _scenes = Array.Empty<AmbientSceneItem>();
     private int _sceneIndex;
@@ -49,6 +59,33 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _floatIconB = "🍵";
     [ObservableProperty] private string _floatIconC = "💨";
 
+    // Background palette — changes to a random palette per scene (see PickNextPalette) so the
+    // overlay never sits on the same colours. Brushes are shared instances from AmbientPalette,
+    // so re-assigning the same palette on the 500ms animation tick is deduped by ObservableProperty.
+    [ObservableProperty] private IBrush _backgroundBrush = AmbientPalette.All[0].Background;
+    [ObservableProperty] private IBrush _glowTopBrush = AmbientPalette.All[0].GlowTop;
+    [ObservableProperty] private IBrush _glowBottomBrush = AmbientPalette.All[0].GlowBottom;
+    [ObservableProperty] private IBrush _haloBrush = AmbientPalette.All[0].Halo;
+
+    // True while the retro DVD-logo bounce mode is on screen. The view shows/hides the
+    // bouncing "ozbilim" logo and fades the info card accordingly; IsCardMode/CardOpacity
+    // keep the always-on clock from shifting when the card content fades out.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCardMode))]
+    [NotifyPropertyChangedFor(nameof(CardOpacity))]
+    [NotifyPropertyChangedFor(nameof(DvdDimOpacity))]
+    private bool _isDvdMode;
+
+    public bool IsCardMode => !IsDvdMode;
+    public double CardOpacity => IsDvdMode ? 0.0 : 1.0;
+
+    /// <summary>Opacity of the scrim that dims the lively backdrop in DVD mode so the
+    /// bouncing logo reads clearly. The clock sits above the scrim and stays bright.</summary>
+    public double DvdDimOpacity => IsDvdMode ? 0.5 : 0.0;
+
+    /// <summary>Text that bounces around the screen in DVD-logo mode.</summary>
+    public string DvdLogoText => "ozbilim";
+
     public AmbientOverlayViewModel(IBrewHistoryService history, ILocalizationService loc)
     {
         _history = history;
@@ -59,6 +96,9 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
         _sceneTimer = new DispatcherTimer { Interval = SceneRotationInterval };
         _sceneTimer.Tick += OnSceneTick;
+
+        _modeTimer = new DispatcherTimer { Interval = ModePeriod };
+        _modeTimer.Tick += OnModeTick;
 
         _loc.LanguageChanged += OnLanguageChanged;
         RefreshTapHint();
@@ -80,8 +120,12 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         if (_disposed || requestId != _showRequestId) return;
 
         IsVisible = true;
+        IsDvdMode = false;
         _animationTimer.Start();
         _sceneTimer.Start();
+        _modeTimer.Interval = ModePeriod;
+        _modeTimer.Start();
+        PickNextPalette();
         ApplyScene(0);
         UpdateClock();
         _lastRefreshUtc = DateTime.UtcNow;
@@ -94,8 +138,33 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
         _showRequestId++;
         IsVisible = false;
+        IsDvdMode = false;
         _animationTimer.Stop();
         _sceneTimer.Stop();
+        _modeTimer.Stop();
+    }
+
+    // Every ModePeriod, swap between the info-card animation and the retro DVD bounce, and
+    // reroll the backdrop so the next stretch always looks different.
+    private void OnModeTick(object? sender, EventArgs e)
+    {
+        IsDvdMode = !IsDvdMode;
+        PickNextPalette();
+    }
+
+    // Pick a random backdrop that isn't the current one, so palettes appear in a shuffled
+    // order rather than a predictable cycle. Brushes are shared instances, so assigning the
+    // chosen palette on each 500ms tick is deduped by ObservableProperty.
+    private void PickNextPalette()
+    {
+        if (_palettes.Count <= 1) return;
+        AmbientPalette next;
+        do
+        {
+            next = _palettes[_random.Next(_palettes.Count)];
+        }
+        while (ReferenceEquals(next, _currentPalette));
+        _currentPalette = next;
     }
 
     public void UpdateClock() =>
@@ -282,6 +351,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     {
         if (_scenes.Count == 0) return;
         _sceneIndex = (_sceneIndex + 1) % _scenes.Count;
+        PickNextPalette();
         ApplyScene(_sceneIndex);
         UpdateClock();
     }
@@ -311,6 +381,15 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     private void ApplyScene(int index)
     {
         if (index < 0 || index >= _scenes.Count) return;
+
+        // Apply the current (randomly chosen) palette. The view crossfades (BrushTransition)
+        // when these change on rotation, and dedups when the animation tick re-applies the
+        // same scene — so this assignment is safe to run on every 500ms tick.
+        BackgroundBrush = _currentPalette.Background;
+        GlowTopBrush = _currentPalette.GlowTop;
+        GlowBottomBrush = _currentPalette.GlowBottom;
+        HaloBrush = _currentPalette.Halo;
+
         var scene = _scenes[index];
         // Freshness cards carry their source entry — re-render against the current
         // clock so age-dependent text and mood reflect "now", not build time.
@@ -330,8 +409,10 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         _disposeCts.Dispose();
         _animationTimer.Stop();
         _sceneTimer.Stop();
+        _modeTimer.Stop();
         _animationTimer.Tick -= OnAnimationTick;
         _sceneTimer.Tick -= OnSceneTick;
+        _modeTimer.Tick -= OnModeTick;
         _loc.LanguageChanged -= OnLanguageChanged;
     }
 }
