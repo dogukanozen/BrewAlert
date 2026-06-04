@@ -8,46 +8,87 @@
     <UserControl.Resources>
         <conv:AmbientFloatConverter x:Key="AmbientFloat" />
         <conv:AmbientPulseOpacityConverter x:Key="AmbientPulse" />
+        <conv:AmbientDriftConverter x:Key="AmbientDrift" />
+        <conv:AmbientBreatheConverter x:Key="AmbientBreathe" />
     </UserControl.Resources>
 
-    <Panel>
-        <!-- Layer 1: vertical gradient base — applied directly on the root Panel so
-             we don't introduce an empty child Panel just to host a Background brush. -->
-        <Panel.Background>
-            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                <GradientStop Offset="0" Color="#1d1d33" />
-                <GradientStop Offset="0.55" Color="#15152a" />
-                <GradientStop Offset="1" Color="#0b0b1a" />
-            </LinearGradientBrush>
-        </Panel.Background>
+    <Panel ClipToBounds="True">
+        <!-- Layer 1: vertical gradient base. Bound to the rotating palette so the whole
+             backdrop recolours per scene; BrushTransition crossfades the swap. -->
+        <Border Background="{Binding BackgroundBrush}">
+            <Border.Transitions>
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:1.4" />
+                </Transitions>
+            </Border.Transitions>
+        </Border>
 
-        <!-- Layer 2: feathered corner blobs (radial gradients fade to fully transparent) -->
+        <!-- Layer 2: large slow-drifting palette blobs — give the backdrop life without
+             per-pixel work (transform + opacity only). Fill recolours with the palette. -->
+        <Ellipse Width="640" Height="640"
+                 HorizontalAlignment="Left"
+                 VerticalAlignment="Top"
+                 Margin="-220,-260,0,0"
+                 Opacity="0.5"
+                 IsHitTestVisible="False"
+                 Fill="{Binding HaloBrush}">
+            <Ellipse.Transitions>
+                <Transitions>
+                    <BrushTransition Property="Fill" Duration="0:0:1.4" />
+                </Transitions>
+            </Ellipse.Transitions>
+            <Ellipse.RenderTransform>
+                <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=1:34}"
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=0:40}" />
+            </Ellipse.RenderTransform>
+        </Ellipse>
+        <Ellipse Width="580" Height="580"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Bottom"
+                 Margin="0,0,-200,-200"
+                 Opacity="0.55"
+                 IsHitTestVisible="False"
+                 Fill="{Binding GlowBottomBrush}">
+            <Ellipse.Transitions>
+                <Transitions>
+                    <BrushTransition Property="Fill" Duration="0:0:1.4" />
+                </Transitions>
+            </Ellipse.Transitions>
+            <Ellipse.RenderTransform>
+                <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=3:30}"
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=2:36}" />
+            </Ellipse.RenderTransform>
+        </Ellipse>
+
+        <!-- Layer 3: feathered corner glows, also palette-driven. -->
         <Ellipse Width="520" Height="520"
                  HorizontalAlignment="Left"
                  VerticalAlignment="Top"
                  Margin="-160,-200,0,0"
-                 IsHitTestVisible="False">
-            <Ellipse.Fill>
-                <RadialGradientBrush Center="50%,50%" GradientOrigin="50%,50%" RadiusX="0.5" RadiusY="0.5">
-                    <GradientStop Offset="0" Color="#66e07c24" />
-                    <GradientStop Offset="1" Color="#00e07c24" />
-                </RadialGradientBrush>
-            </Ellipse.Fill>
+                 IsHitTestVisible="False"
+                 Fill="{Binding GlowTopBrush}">
+            <Ellipse.Transitions>
+                <Transitions>
+                    <BrushTransition Property="Fill" Duration="0:0:1.4" />
+                </Transitions>
+            </Ellipse.Transitions>
         </Ellipse>
         <Ellipse Width="460" Height="460"
                  HorizontalAlignment="Right"
                  VerticalAlignment="Bottom"
                  Margin="0,0,-140,-140"
-                 IsHitTestVisible="False">
-            <Ellipse.Fill>
-                <RadialGradientBrush Center="50%,50%" GradientOrigin="50%,50%" RadiusX="0.5" RadiusY="0.5">
-                    <GradientStop Offset="0" Color="#55f0a500" />
-                    <GradientStop Offset="1" Color="#00f0a500" />
-                </RadialGradientBrush>
-            </Ellipse.Fill>
+                 IsHitTestVisible="False"
+                 Fill="{Binding GlowBottomBrush}">
+            <Ellipse.Transitions>
+                <Transitions>
+                    <BrushTransition Property="Fill" Duration="0:0:1.4" />
+                </Transitions>
+            </Ellipse.Transitions>
         </Ellipse>
 
-        <!-- Floating brew icons (transform-only animation) -->
+        <!-- Floating brew icons & particles (transform-only animation, orbit-like drift).
+             Grouped so they vanish cleanly when the DVD bounce takes the stage. -->
+        <Panel IsVisible="{Binding IsCardMode}">
         <TextBlock Text="{Binding FloatIconA}"
                    FontSize="52"
                    Opacity="0.35"
@@ -56,7 +97,10 @@
                    Margin="48,72,0,0"
                    RenderTransformOrigin="50%,50%">
             <TextBlock.RenderTransform>
-                <TranslateTransform Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=0}" />
+                <TransformGroup>
+                    <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=4:10}"
+                                        Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=0}" />
+                </TransformGroup>
             </TextBlock.RenderTransform>
         </TextBlock>
 
@@ -68,7 +112,8 @@
                    Margin="0,120,56,0"
                    RenderTransformOrigin="50%,50%">
             <TextBlock.RenderTransform>
-                <TranslateTransform Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=1}" />
+                <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=2:9}"
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=1}" />
             </TextBlock.RenderTransform>
         </TextBlock>
 
@@ -80,27 +125,65 @@
                    Margin="0,0,0,100"
                    RenderTransformOrigin="50%,50%">
             <TextBlock.RenderTransform>
-                <TranslateTransform Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=2}" />
+                <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=5:11}"
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=2}" />
             </TextBlock.RenderTransform>
         </TextBlock>
 
+        <TextBlock Text="✨"
+                   FontSize="22"
+                   Opacity="0.18"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center"
+                   Margin="120,0,0,0"
+                   RenderTransformOrigin="50%,50%">
+            <TextBlock.RenderTransform>
+                <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=6:8}"
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=3}" />
+            </TextBlock.RenderTransform>
+        </TextBlock>
+
+        <TextBlock Text="💧"
+                   FontSize="20"
+                   Opacity="0.16"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Center"
+                   Margin="0,0,160,40"
+                   RenderTransformOrigin="50%,50%">
+            <TextBlock.RenderTransform>
+                <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=1:7}"
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=4}" />
+            </TextBlock.RenderTransform>
+        </TextBlock>
+        </Panel>
+
         <!-- Pulsing halo: soft radial glow placed BELOW center so it hugs the hero
-             icon, never the clock numbers. Replaces the old hard-bordered ring that
-             used to sit straight behind the time. -->
+             icon, never the clock numbers. Recolours with the palette. -->
         <Ellipse Width="320" Height="320"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  Margin="0,80,0,0"
                  IsHitTestVisible="False"
+                 Fill="{Binding HaloBrush}"
                  Opacity="{Binding AnimationPhase, Converter={StaticResource AmbientPulse}}">
-            <Ellipse.Fill>
-                <RadialGradientBrush Center="50%,50%" GradientOrigin="50%,50%" RadiusX="0.5" RadiusY="0.5">
-                    <GradientStop Offset="0" Color="#80f0a500" />
-                    <GradientStop Offset="0.55" Color="#33e07c24" />
-                    <GradientStop Offset="1" Color="#00e07c24" />
-                </RadialGradientBrush>
-            </Ellipse.Fill>
+            <Ellipse.Transitions>
+                <Transitions>
+                    <BrushTransition Property="Fill" Duration="0:0:1.4" />
+                </Transitions>
+            </Ellipse.Transitions>
         </Ellipse>
+
+        <!-- DVD mode dims the lively backdrop so the bouncing logo reads clearly. Sits above
+             the animated background but below the clock, so the clock stays bright and fixed. -->
+        <Border Background="#000000"
+                IsHitTestVisible="False"
+                Opacity="{Binding DvdDimOpacity}">
+            <Border.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.8" />
+                </Transitions>
+            </Border.Transitions>
+        </Border>
 
         <StackPanel VerticalAlignment="Center"
                     HorizontalAlignment="Center"
@@ -115,23 +198,57 @@
                        HorizontalAlignment="Center"
                        LetterSpacing="2" />
 
-            <TextBlock Text="{Binding HeroIcon}"
-                       FontSize="64"
-                       HorizontalAlignment="Center"
-                       Margin="0,8,0,0" />
+            <!-- Card text fades out in DVD mode. Opacity (not IsVisible) keeps the layout
+                 slot, so the clock above never shifts when the mode flips. -->
+            <StackPanel Spacing="12"
+                        HorizontalAlignment="Center"
+                        Opacity="{Binding CardOpacity}">
+                <StackPanel.Transitions>
+                    <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.6" />
+                    </Transitions>
+                </StackPanel.Transitions>
 
-            <TextBlock Text="{Binding Headline}"
-                       Classes="brew-title ambient-headline"
-                       TextWrapping="Wrap"
-                       TextAlignment="Center" />
+                <TextBlock Text="{Binding HeroIcon}"
+                           FontSize="64"
+                           HorizontalAlignment="Center"
+                           Margin="0,8,0,0"
+                           RenderTransformOrigin="50%,50%">
+                    <TextBlock.RenderTransform>
+                        <ScaleTransform ScaleX="{Binding AnimationPhase, Converter={StaticResource AmbientBreathe}}"
+                                        ScaleY="{Binding AnimationPhase, Converter={StaticResource AmbientBreathe}}" />
+                    </TextBlock.RenderTransform>
+                </TextBlock>
 
-            <TextBlock Text="{Binding Subheadline}"
-                       Classes="brew-subtitle"
-                       TextWrapping="Wrap"
-                       TextAlignment="Center"
-                       Opacity="0.85"
-                       MaxWidth="520" />
+                <TextBlock Text="{Binding Headline}"
+                           Classes="brew-title ambient-headline"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center" />
+
+                <TextBlock Text="{Binding Subheadline}"
+                           Classes="brew-subtitle"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Opacity="0.85"
+                           MaxWidth="520" />
+            </StackPanel>
         </StackPanel>
+
+        <!-- Retro DVD-screensaver bounce. Position + edge colour changes are driven from
+             code-behind (needs live panel/text bounds); the VM only toggles visibility. -->
+        <TextBlock x:Name="DvdLogo"
+                   Text="{Binding DvdLogoText}"
+                   IsVisible="{Binding IsDvdMode}"
+                   FontSize="46"
+                   FontWeight="Bold"
+                   LetterSpacing="3"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Foreground="#f0a500">
+            <TextBlock.RenderTransform>
+                <TranslateTransform />
+            </TextBlock.RenderTransform>
+        </TextBlock>
 
         <TextBlock Text="{Binding TapHint}"
                    Classes="brew-subtitle"
