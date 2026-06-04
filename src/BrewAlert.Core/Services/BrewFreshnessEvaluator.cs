@@ -18,14 +18,14 @@ public static class BrewFreshnessEvaluator
     public static TimeSpan GetWarningThreshold(BrewType type) => type switch
     {
         BrewType.Tea => TimeSpan.FromMinutes(45),
-        BrewType.Coffee => TimeSpan.FromMinutes(15),
+        BrewType.Coffee => TimeSpan.FromHours(1),
         _ => TimeSpan.FromHours(1)
     };
 
     public static TimeSpan GetStaleThreshold(BrewType type) => type switch
     {
         BrewType.Tea => TimeSpan.FromHours(2),
-        BrewType.Coffee => TimeSpan.FromMinutes(45),
+        BrewType.Coffee => TimeSpan.FromHours(2),
         _ => TimeSpan.FromHours(3)
     };
 }

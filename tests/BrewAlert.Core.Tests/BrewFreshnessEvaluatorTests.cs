@@ -10,9 +10,10 @@ public class BrewFreshnessEvaluatorTests
     [InlineData(BrewType.Tea, 30, BrewFreshnessLevel.Fresh)]
     [InlineData(BrewType.Tea, 60, BrewFreshnessLevel.Cooling)]
     [InlineData(BrewType.Tea, 130, BrewFreshnessLevel.Stale)]
-    [InlineData(BrewType.Coffee, 10, BrewFreshnessLevel.Fresh)]
-    [InlineData(BrewType.Coffee, 20, BrewFreshnessLevel.Cooling)]
-    [InlineData(BrewType.Coffee, 50, BrewFreshnessLevel.Stale)]
+    [InlineData(BrewType.Coffee, 59, BrewFreshnessLevel.Fresh)]
+    [InlineData(BrewType.Coffee, 60, BrewFreshnessLevel.Cooling)]
+    [InlineData(BrewType.Coffee, 119, BrewFreshnessLevel.Cooling)]
+    [InlineData(BrewType.Coffee, 120, BrewFreshnessLevel.Stale)]
     public void Evaluate_UsesTypeSpecificThresholds(BrewType type, int ageMinutes, BrewFreshnessLevel expected)
     {
         var level = BrewFreshnessEvaluator.Evaluate(type, TimeSpan.FromMinutes(ageMinutes));
