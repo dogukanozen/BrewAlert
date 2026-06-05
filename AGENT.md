@@ -26,7 +26,7 @@ BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams A
 | timer, pause, resume, tick, elapsed, complete, concurrent brew | `src/BrewAlert.Core/Services/BrewTimerService.cs`, `Interfaces/IBrewTimerService.cs`, `Events/*`, `src/BrewAlert.UI/ViewModels/ActiveBrewsViewModel.cs`, `BrewItemViewModel.cs`, `Views/ActiveBrewsView.axaml` |
 | profile, brew type, defaults | `src/BrewAlert.Core/Services/BrewProfileService.cs`, `Models/BrewProfile.cs`, `Models/BrewType.cs` |
 | session state | `src/BrewAlert.Core/Models/BrewSession.cs` |
-| ambient, idle screen, screensaver, DVD bounce, freshness, bayat, stale, cooling | `src/BrewAlert.Core/Services/BrewFreshnessEvaluator.cs`, `Models/BrewFreshnessLevel.cs`, `src/BrewAlert.UI/ViewModels/AmbientOverlayViewModel.cs`, `AmbientSceneItem.cs`, `AmbientPalette.cs`, `Views/AmbientOverlayView.axaml(.cs)`, `Converters/Ambient*.cs` |
+| ambient, idle screen, screensaver, DVD bounce, orbit mode, animation mode, freshness, bayat, stale, cooling | `src/BrewAlert.Core/Services/BrewFreshnessEvaluator.cs`, `Models/BrewFreshnessLevel.cs`, `src/BrewAlert.UI/ViewModels/AmbientOverlayViewModel.cs`, `AmbientSceneItem.cs`, `AmbientMode.cs`, `AmbientPalette.cs`, `Views/AmbientOverlayView.axaml(.cs)`, `Converters/Ambient*.cs` |
 | load/save profile, JSON file | `src/BrewAlert.Infrastructure/Persistence/JsonProfileRepository.cs` |
 | teams, webhook, adaptive card, power automate | `src/BrewAlert.Infrastructure/Notifications/TeamsWebhookNotifier.cs`, `TeamsMessageBuilder.cs`, `Configuration/TeamsNotificationOptions.cs` |
 | teams graph api, graph notifier | `src/BrewAlert.Infrastructure/Notifications/TeamsGraphNotifier.cs`, `TeamsGraphMessageBuilder.cs`, `Configuration/TeamsGraphOptions.cs` |
