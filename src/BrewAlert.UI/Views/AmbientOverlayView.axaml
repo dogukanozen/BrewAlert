@@ -10,7 +10,102 @@
         <conv:AmbientPulseOpacityConverter x:Key="AmbientPulse" />
         <conv:AmbientDriftConverter x:Key="AmbientDrift" />
         <conv:AmbientBreatheConverter x:Key="AmbientBreathe" />
+        <conv:AmbientIconConverter x:Key="AmbientIcon" />
     </UserControl.Resources>
+
+    <!-- Smooth, compositor-driven idle motion (transform/opacity only, Pi-friendly). These
+         run independently of the 500ms VM tick, so they never stutter with it. -->
+    <UserControl.Styles>
+        <!-- Concentric rings that slowly rotate around the hero icon. -->
+        <Style Selector="Ellipse.ambient-ring-cw">
+            <Style.Animations>
+                <Animation Duration="0:0:32" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Ellipse.ambient-ring-ccw">
+            <Style.Animations>
+                <Animation Duration="0:0:48" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <!-- Steam wisps that rise and fade on a loop above the hero. Staggered delays keep
+             the three from puffing in unison. -->
+        <Style Selector="Viewbox.ambient-wisp.delay-0">
+            <Style.Animations>
+                <Animation Duration="0:0:6" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="TranslateTransform.Y" Value="20" />
+                    </KeyFrame>
+                    <KeyFrame Cue="35%">
+                        <Setter Property="Opacity" Value="0.22" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="TranslateTransform.Y" Value="-70" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Viewbox.ambient-wisp.delay-2">
+            <Style.Animations>
+                <Animation Duration="0:0:6" Delay="0:0:2" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="TranslateTransform.Y" Value="20" />
+                    </KeyFrame>
+                    <KeyFrame Cue="35%">
+                        <Setter Property="Opacity" Value="0.22" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="TranslateTransform.Y" Value="-70" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Viewbox.ambient-wisp.delay-4">
+            <Style.Animations>
+                <Animation Duration="0:0:6" Delay="0:0:4" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="TranslateTransform.Y" Value="20" />
+                    </KeyFrame>
+                    <KeyFrame Cue="35%">
+                        <Setter Property="Opacity" Value="0.22" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="TranslateTransform.Y" Value="-70" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <!-- Orbit mode: the ring spins one way while each icon counter-spins at the same rate,
+             so the icons travel the circle but stay upright. Same duration + linear timing
+             keeps the cancellation exact. -->
+        <Style Selector="Grid.orbit-spin">
+            <Style.Animations>
+                <Animation Duration="0:0:26" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Viewbox.orbit-counter">
+            <Style.Animations>
+                <Animation Duration="0:0:26" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="-360" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+    </UserControl.Styles>
 
     <Panel ClipToBounds="True">
         <!-- Layer 1: vertical gradient base. Bound to the rotating palette so the whole
@@ -86,75 +181,84 @@
             </Ellipse.Transitions>
         </Ellipse>
 
-        <!-- Floating brew icons & particles (transform-only animation, orbit-like drift).
-             Grouped so they vanish cleanly when the DVD bounce takes the stage. -->
+        <!-- Floating brew icons & particles — font-independent vector line art (orbit-like
+             drift, transform-only). Grouped so they vanish cleanly when the DVD bounce takes
+             the stage. -->
         <Panel IsVisible="{Binding IsCardMode}">
-        <TextBlock Text="{Binding FloatIconA}"
-                   FontSize="52"
-                   Opacity="0.35"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Top"
-                   Margin="48,72,0,0"
-                   RenderTransformOrigin="50%,50%">
-            <TextBlock.RenderTransform>
-                <TransformGroup>
-                    <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=4:10}"
-                                        Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=0}" />
-                </TransformGroup>
-            </TextBlock.RenderTransform>
-        </TextBlock>
+        <Viewbox Width="52" Height="52"
+                 Opacity="0.35"
+                 HorizontalAlignment="Left"
+                 VerticalAlignment="Top"
+                 Margin="48,72,0,0"
+                 RenderTransformOrigin="50%,50%">
+            <Viewbox.RenderTransform>
+                <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=4:10}"
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=0}" />
+            </Viewbox.RenderTransform>
+            <Path Data="{Binding FloatIconA, Converter={StaticResource AmbientIcon}}"
+                  Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
+                  StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+        </Viewbox>
 
-        <TextBlock Text="{Binding FloatIconB}"
-                   FontSize="44"
-                   Opacity="0.28"
-                   HorizontalAlignment="Right"
-                   VerticalAlignment="Top"
-                   Margin="0,120,56,0"
-                   RenderTransformOrigin="50%,50%">
-            <TextBlock.RenderTransform>
+        <Viewbox Width="44" Height="44"
+                 Opacity="0.28"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Top"
+                 Margin="0,120,56,0"
+                 RenderTransformOrigin="50%,50%">
+            <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=2:9}"
                                     Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=1}" />
-            </TextBlock.RenderTransform>
-        </TextBlock>
+            </Viewbox.RenderTransform>
+            <Path Data="{Binding FloatIconB, Converter={StaticResource AmbientIcon}}"
+                  Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
+                  StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+        </Viewbox>
 
-        <TextBlock Text="{Binding FloatIconC}"
-                   FontSize="38"
-                   Opacity="0.22"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Bottom"
-                   Margin="0,0,0,100"
-                   RenderTransformOrigin="50%,50%">
-            <TextBlock.RenderTransform>
+        <Viewbox Width="38" Height="38"
+                 Opacity="0.22"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Bottom"
+                 Margin="0,0,0,100"
+                 RenderTransformOrigin="50%,50%">
+            <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=5:11}"
                                     Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=2}" />
-            </TextBlock.RenderTransform>
-        </TextBlock>
+            </Viewbox.RenderTransform>
+            <Path Data="{Binding FloatIconC, Converter={StaticResource AmbientIcon}}"
+                  Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
+                  StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+        </Viewbox>
 
-        <TextBlock Text="✨"
-                   FontSize="22"
-                   Opacity="0.18"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Center"
-                   Margin="120,0,0,0"
-                   RenderTransformOrigin="50%,50%">
-            <TextBlock.RenderTransform>
+        <Viewbox Width="22" Height="22"
+                 Opacity="0.20"
+                 HorizontalAlignment="Left"
+                 VerticalAlignment="Center"
+                 Margin="120,0,0,0"
+                 RenderTransformOrigin="50%,50%">
+            <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=6:8}"
                                     Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=3}" />
-            </TextBlock.RenderTransform>
-        </TextBlock>
+            </Viewbox.RenderTransform>
+            <Path Data="M12,3 C12.5,8 13,9 18,12 C13,15 12.5,16 12,21 C11.5,16 11,15 6,12 C11,9 11.5,8 12,3 Z"
+                  Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.6"
+                  StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+        </Viewbox>
 
-        <TextBlock Text="💧"
-                   FontSize="20"
-                   Opacity="0.16"
-                   HorizontalAlignment="Right"
-                   VerticalAlignment="Center"
-                   Margin="0,0,160,40"
-                   RenderTransformOrigin="50%,50%">
-            <TextBlock.RenderTransform>
+        <Viewbox Width="20" Height="20"
+                 Opacity="0.18"
+                 HorizontalAlignment="Right"
+                 VerticalAlignment="Center"
+                 Margin="0,0,160,40"
+                 RenderTransformOrigin="50%,50%">
+            <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=1:7}"
                                     Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=4}" />
-            </TextBlock.RenderTransform>
-        </TextBlock>
+            </Viewbox.RenderTransform>
+            <Path Data="M12,3 C12,3 6,11 6,15 A6,6 0 0 0 18,15 C18,11 12,3 12,3 Z"
+                  Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.6"
+                  StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+        </Viewbox>
         </Panel>
 
         <!-- Pulsing halo: soft radial glow placed BELOW center so it hugs the hero
@@ -173,6 +277,76 @@
             </Ellipse.Transitions>
         </Ellipse>
 
+        <!-- Slowly counter-rotating dashed rings + rising steam wisps encircle the hero icon.
+             Card mode only; pure compositor transforms so the Pi stays smooth. -->
+        <Panel IsVisible="{Binding IsCardMode}">
+            <Ellipse Classes="ambient-ring-cw"
+                     Width="208" Height="208"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Margin="0,92,0,0"
+                     Opacity="0.16"
+                     IsHitTestVisible="False"
+                     Stroke="{StaticResource BrewTextPrimaryBrush}"
+                     StrokeThickness="1.4"
+                     StrokeDashArray="2,7"
+                     RenderTransformOrigin="50%,50%">
+                <Ellipse.RenderTransform>
+                    <RotateTransform />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse Classes="ambient-ring-ccw"
+                     Width="150" Height="150"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Margin="0,92,0,0"
+                     Opacity="0.18"
+                     IsHitTestVisible="False"
+                     Stroke="{StaticResource BrewAccentBrush}"
+                     StrokeThickness="1.2"
+                     StrokeDashArray="1,9"
+                     RenderTransformOrigin="50%,50%">
+                <Ellipse.RenderTransform>
+                    <RotateTransform />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+
+            <Viewbox Classes="ambient-wisp delay-0"
+                     Width="24" Height="24"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Margin="0,40,0,0"
+                     IsHitTestVisible="False">
+                <Viewbox.RenderTransform>
+                    <TranslateTransform />
+                </Viewbox.RenderTransform>
+                <Path Data="M3,8 H13 A3,3 0 1 0 10,5 M3,13 H17 A3,3 0 1 1 14,16 M3,18 H11"
+                      Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.4"
+                      StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+            </Viewbox>
+            <Viewbox Classes="ambient-wisp delay-2"
+                     Width="18" Height="18"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Margin="64,30,0,0"
+                     IsHitTestVisible="False">
+                <Viewbox.RenderTransform>
+                    <TranslateTransform />
+                </Viewbox.RenderTransform>
+                <Path Data="M12,3 C12.5,8 13,9 18,12 C13,15 12.5,16 12,21 C11.5,16 11,15 6,12 C11,9 11.5,8 12,3 Z"
+                      Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.6"
+                      StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+            </Viewbox>
+            <Viewbox Classes="ambient-wisp delay-4"
+                     Width="20" Height="20"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Margin="0,48,76,0"
+                     IsHitTestVisible="False">
+                <Viewbox.RenderTransform>
+                    <TranslateTransform />
+                </Viewbox.RenderTransform>
+                <Path Data="M3,8 H13 A3,3 0 1 0 10,5 M3,13 H17 A3,3 0 1 1 14,16 M3,18 H11"
+                      Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.4"
+                      StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+            </Viewbox>
+        </Panel>
+
         <!-- DVD mode dims the lively backdrop so the bouncing logo reads clearly. Sits above
              the animated background but below the clock, so the clock stays bright and fixed. -->
         <Border Background="#000000"
@@ -184,6 +358,51 @@
                 </Transitions>
             </Border.Transitions>
         </Border>
+
+        <!-- Orbit mode: brew icons revolve around the clock. Sits below the clock panel so the
+             icons sweep behind the time. Card text/particles are hidden in this mode. -->
+        <Grid Classes="orbit-spin"
+              IsVisible="{Binding IsOrbitMode}"
+              Width="300" Height="300"
+              HorizontalAlignment="Center" VerticalAlignment="Center"
+              IsHitTestVisible="False"
+              RenderTransformOrigin="50%,50%">
+            <Grid.RenderTransform>
+                <RotateTransform />
+            </Grid.RenderTransform>
+            <Viewbox Classes="orbit-counter" Width="48" Height="48"
+                     HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0.7"
+                     RenderTransformOrigin="50%,50%">
+                <Viewbox.RenderTransform><RotateTransform /></Viewbox.RenderTransform>
+                <Path Data="{Binding OrbitIconA, Converter={StaticResource AmbientIcon}}"
+                      Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
+                      StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+            </Viewbox>
+            <Viewbox Classes="orbit-counter" Width="48" Height="48"
+                     HorizontalAlignment="Right" VerticalAlignment="Center" Opacity="0.7"
+                     RenderTransformOrigin="50%,50%">
+                <Viewbox.RenderTransform><RotateTransform /></Viewbox.RenderTransform>
+                <Path Data="{Binding OrbitIconB, Converter={StaticResource AmbientIcon}}"
+                      Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.3"
+                      StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+            </Viewbox>
+            <Viewbox Classes="orbit-counter" Width="48" Height="48"
+                     HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.7"
+                     RenderTransformOrigin="50%,50%">
+                <Viewbox.RenderTransform><RotateTransform /></Viewbox.RenderTransform>
+                <Path Data="{Binding OrbitIconC, Converter={StaticResource AmbientIcon}}"
+                      Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
+                      StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+            </Viewbox>
+            <Viewbox Classes="orbit-counter" Width="48" Height="48"
+                     HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0.7"
+                     RenderTransformOrigin="50%,50%">
+                <Viewbox.RenderTransform><RotateTransform /></Viewbox.RenderTransform>
+                <Path Data="{Binding OrbitIconD, Converter={StaticResource AmbientIcon}}"
+                      Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.3"
+                      StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+            </Viewbox>
+        </Grid>
 
         <StackPanel VerticalAlignment="Center"
                     HorizontalAlignment="Center"
@@ -209,16 +428,18 @@
                     </Transitions>
                 </StackPanel.Transitions>
 
-                <TextBlock Text="{Binding HeroIcon}"
-                           FontSize="64"
-                           HorizontalAlignment="Center"
-                           Margin="0,8,0,0"
-                           RenderTransformOrigin="50%,50%">
-                    <TextBlock.RenderTransform>
+                <Viewbox Width="68" Height="68"
+                         HorizontalAlignment="Center"
+                         Margin="0,8,0,0"
+                         RenderTransformOrigin="50%,50%">
+                    <Viewbox.RenderTransform>
                         <ScaleTransform ScaleX="{Binding AnimationPhase, Converter={StaticResource AmbientBreathe}}"
                                         ScaleY="{Binding AnimationPhase, Converter={StaticResource AmbientBreathe}}" />
-                    </TextBlock.RenderTransform>
-                </TextBlock>
+                    </Viewbox.RenderTransform>
+                    <Path Data="{Binding HeroIcon, Converter={StaticResource AmbientIcon}}"
+                          Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.4"
+                          StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+                </Viewbox>
 
                 <TextBlock Text="{Binding Headline}"
                            Classes="brew-title ambient-headline"
