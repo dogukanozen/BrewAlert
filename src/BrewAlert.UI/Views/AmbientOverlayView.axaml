@@ -7,9 +7,7 @@
 
     <UserControl.Resources>
         <conv:AmbientFloatConverter x:Key="AmbientFloat" />
-        <conv:AmbientPulseOpacityConverter x:Key="AmbientPulse" />
         <conv:AmbientDriftConverter x:Key="AmbientDrift" />
-        <conv:AmbientBreatheConverter x:Key="AmbientBreathe" />
         <conv:AmbientIconConverter x:Key="AmbientIcon" />
     </UserControl.Resources>
 
@@ -105,6 +103,36 @@
                 </Animation>
             </Style.Animations>
         </Style>
+        <!-- Hero icon "breathing" and the halo "pulse" are continuous compositor keyframe
+             animations (SineEaseInOut), not sampled off the 500ms VM tick — so the scale and
+             glow glide smoothly instead of stepping 8 times per cycle. -->
+        <Style Selector="Viewbox.ambient-breathe">
+            <Style.Animations>
+                <Animation Duration="0:0:6" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="ScaleTransform.ScaleX" Value="0.955" />
+                        <Setter Property="ScaleTransform.ScaleY" Value="0.955" />
+                    </KeyFrame>
+                    <KeyFrame Cue="50%">
+                        <Setter Property="ScaleTransform.ScaleX" Value="1.045" />
+                        <Setter Property="ScaleTransform.ScaleY" Value="1.045" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="ScaleTransform.ScaleX" Value="0.955" />
+                        <Setter Property="ScaleTransform.ScaleY" Value="0.955" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Ellipse.ambient-pulse">
+            <Style.Animations>
+                <Animation Duration="0:0:6" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.22" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.40" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.22" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
     </UserControl.Styles>
 
     <Panel ClipToBounds="True">
@@ -133,8 +161,18 @@
                 </Transitions>
             </Ellipse.Transitions>
             <Ellipse.RenderTransform>
+                <!-- The drift offset is resampled every 500ms VM tick; a 0.5s transition (matched
+                     to the tick) interpolates between samples so the blob glides instead of
+                     snapping in 8 steps per cycle. -->
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=1:34}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=0:40}" />
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=0:40}">
+                    <TranslateTransform.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="X" Duration="0:0:0.5" />
+                            <DoubleTransition Property="Y" Duration="0:0:0.5" />
+                        </Transitions>
+                    </TranslateTransform.Transitions>
+                </TranslateTransform>
             </Ellipse.RenderTransform>
         </Ellipse>
         <Ellipse Width="580" Height="580"
@@ -151,7 +189,14 @@
             </Ellipse.Transitions>
             <Ellipse.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=3:30}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=2:36}" />
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=2:36}">
+                    <TranslateTransform.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="X" Duration="0:0:0.5" />
+                            <DoubleTransition Property="Y" Duration="0:0:0.5" />
+                        </Transitions>
+                    </TranslateTransform.Transitions>
+                </TranslateTransform>
             </Ellipse.RenderTransform>
         </Ellipse>
 
@@ -193,7 +238,14 @@
                  RenderTransformOrigin="50%,50%">
             <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=4:10}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=0}" />
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=0}">
+                    <TranslateTransform.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="X" Duration="0:0:0.5" />
+                            <DoubleTransition Property="Y" Duration="0:0:0.5" />
+                        </Transitions>
+                    </TranslateTransform.Transitions>
+                </TranslateTransform>
             </Viewbox.RenderTransform>
             <Path Data="{Binding FloatIconA, Converter={StaticResource AmbientIcon}}"
                   Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
@@ -208,7 +260,14 @@
                  RenderTransformOrigin="50%,50%">
             <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=2:9}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=1}" />
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=1}">
+                    <TranslateTransform.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="X" Duration="0:0:0.5" />
+                            <DoubleTransition Property="Y" Duration="0:0:0.5" />
+                        </Transitions>
+                    </TranslateTransform.Transitions>
+                </TranslateTransform>
             </Viewbox.RenderTransform>
             <Path Data="{Binding FloatIconB, Converter={StaticResource AmbientIcon}}"
                   Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
@@ -223,7 +282,14 @@
                  RenderTransformOrigin="50%,50%">
             <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=5:11}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=2}" />
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=2}">
+                    <TranslateTransform.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="X" Duration="0:0:0.5" />
+                            <DoubleTransition Property="Y" Duration="0:0:0.5" />
+                        </Transitions>
+                    </TranslateTransform.Transitions>
+                </TranslateTransform>
             </Viewbox.RenderTransform>
             <Path Data="{Binding FloatIconC, Converter={StaticResource AmbientIcon}}"
                   Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
@@ -238,7 +304,14 @@
                  RenderTransformOrigin="50%,50%">
             <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=6:8}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=3}" />
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=3}">
+                    <TranslateTransform.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="X" Duration="0:0:0.5" />
+                            <DoubleTransition Property="Y" Duration="0:0:0.5" />
+                        </Transitions>
+                    </TranslateTransform.Transitions>
+                </TranslateTransform>
             </Viewbox.RenderTransform>
             <Path Data="M12,3 C12.5,8 13,9 18,12 C13,15 12.5,16 12,21 C11.5,16 11,15 6,12 C11,9 11.5,8 12,3 Z"
                   Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.6"
@@ -253,7 +326,14 @@
                  RenderTransformOrigin="50%,50%">
             <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=1:7}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=4}" />
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=4}">
+                    <TranslateTransform.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="X" Duration="0:0:0.5" />
+                            <DoubleTransition Property="Y" Duration="0:0:0.5" />
+                        </Transitions>
+                    </TranslateTransform.Transitions>
+                </TranslateTransform>
             </Viewbox.RenderTransform>
             <Path Data="M12,3 C12,3 6,11 6,15 A6,6 0 0 0 18,15 C18,11 12,3 12,3 Z"
                   Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.6"
@@ -263,13 +343,13 @@
 
         <!-- Pulsing halo: soft radial glow placed BELOW center so it hugs the hero
              icon, never the clock numbers. Recolours with the palette. -->
-        <Ellipse Width="320" Height="320"
+        <Ellipse Classes="ambient-pulse"
+                 Width="320" Height="320"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  Margin="0,80,0,0"
                  IsHitTestVisible="False"
-                 Fill="{Binding HaloBrush}"
-                 Opacity="{Binding AnimationPhase, Converter={StaticResource AmbientPulse}}">
+                 Fill="{Binding HaloBrush}">
             <Ellipse.Transitions>
                 <Transitions>
                     <BrushTransition Property="Fill" Duration="0:0:1.4" />
@@ -428,13 +508,13 @@
                     </Transitions>
                 </StackPanel.Transitions>
 
-                <Viewbox Width="68" Height="68"
+                <Viewbox Classes="ambient-breathe"
+                         Width="68" Height="68"
                          HorizontalAlignment="Center"
                          Margin="0,8,0,0"
                          RenderTransformOrigin="50%,50%">
                     <Viewbox.RenderTransform>
-                        <ScaleTransform ScaleX="{Binding AnimationPhase, Converter={StaticResource AmbientBreathe}}"
-                                        ScaleY="{Binding AnimationPhase, Converter={StaticResource AmbientBreathe}}" />
+                        <ScaleTransform />
                     </Viewbox.RenderTransform>
                     <Path Data="{Binding HeroIcon, Converter={StaticResource AmbientIcon}}"
                           Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.4"
