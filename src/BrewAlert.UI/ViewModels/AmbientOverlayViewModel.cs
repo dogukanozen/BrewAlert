@@ -60,6 +60,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _mood = "calm";
     [ObservableProperty] private string _tapHint = string.Empty;
     [ObservableProperty] private string _clockTime = string.Empty;
+    [ObservableProperty] private string _clockDate = string.Empty;
     [ObservableProperty] private string _floatIconA = "coffee";
     [ObservableProperty] private string _floatIconB = "tea";
     [ObservableProperty] private string _floatIconC = "steam";
@@ -209,14 +210,23 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         _currentPalette = next;
     }
 
-    public void UpdateClock() =>
-        ClockTime = DateTime.Now.ToString("HH:mm");
+    public void UpdateClock()
+    {
+        var now = DateTime.Now;
+        ClockTime = now.ToString("HH:mm");
+        // Date follows the *app* language, not the OS locale (e.g. Turkish UI on an en-US host
+        // must read "Cuma, 5 Haziran 2026", not "Friday"). TitleCase so tr's lowercase day/month
+        // names render with a leading capital under the clock.
+        var culture = _loc.CurrentCulture;
+        ClockDate = culture.TextInfo.ToTitleCase(now.ToString("dddd, d MMMM yyyy", culture));
+    }
 
     private void OnLanguageChanged(string language)
     {
         RefreshTapHint();
         if (IsVisible)
         {
+            UpdateClock();
             var requestId = ++_showRequestId;
             _ = RefreshScenesAsync(requestId);
         }
