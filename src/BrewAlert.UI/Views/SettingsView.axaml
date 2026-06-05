@@ -42,8 +42,12 @@
                                 CornerRadius="8" Padding="12" Margin="0,0,0,8"
                                 IsVisible="{Binding !IsDeleted}">
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
-                                <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="28"
-                                           VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <Viewbox Grid.Column="0" Width="26" Height="26"
+                                         VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}"
+                                          Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.4"
+                                          StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+                                </Viewbox>
                                 <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="18"
                                            FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <Button Grid.Column="2" Content="-"

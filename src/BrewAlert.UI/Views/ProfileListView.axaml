@@ -42,9 +42,12 @@
                                     <StackPanel VerticalAlignment="Center"
                                                 HorizontalAlignment="Center"
                                                 Spacing="6">
-                                        <TextBlock Text="{Binding Icon}"
-                                                   FontSize="40"
-                                                   HorizontalAlignment="Center" />
+                                        <Viewbox Width="38" Height="38"
+                                                 HorizontalAlignment="Center">
+                                            <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}"
+                                                  Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.4"
+                                                  StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+                                        </Viewbox>
                                         <TextBlock Text="{Binding Name}"
                                                    FontSize="17"
                                                    FontWeight="SemiBold"
@@ -107,10 +110,13 @@
                                 <Border Classes="brew-history-row">
                                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                         <Border Grid.Column="0" Classes="brew-icon-disc">
-                                            <TextBlock Text="{Binding Icon}"
-                                                       FontSize="18"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center" />
+                                            <Viewbox Width="22" Height="22"
+                                                     HorizontalAlignment="Center"
+                                                     VerticalAlignment="Center">
+                                                <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}"
+                                                      Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.4"
+                                                      StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+                                            </Viewbox>
                                         </Border>
 
                                         <StackPanel Grid.Column="1"
