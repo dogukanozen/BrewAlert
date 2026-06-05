@@ -141,19 +141,25 @@ public class AmbientOverlayViewModelTests
     }
 
     [Theory]
-    [InlineData(false, true, 1.0, 0.0)]
-    [InlineData(true, false, 0.0, 0.5)]
-    public void DvdMode_DrivesCardAndBackdropState(bool dvd, bool expectedCardMode, double expectedCardOpacity, double expectedDimOpacity)
+    // mode, IsCardMode, IsDvdMode, IsOrbitMode, CardOpacity, DvdDimOpacity
+    [InlineData(AmbientMode.Card, true, false, false, 1.0, 0.0)]
+    [InlineData(AmbientMode.Dvd, false, true, false, 0.0, 0.5)]
+    [InlineData(AmbientMode.Orbit, false, false, true, 0.0, 0.0)]
+    public void Mode_DrivesLayerAndBackdropState(
+        AmbientMode mode, bool card, bool dvd, bool orbit, double cardOpacity, double dimOpacity)
     {
-        // The view hides particles via IsCardMode, fades the card text via CardOpacity, and
-        // dims the backdrop via DvdDimOpacity — all must track the DVD-bounce flag.
+        // The view shows exactly one layer per mode: particles/rings via IsCardMode, the bounce
+        // via IsDvdMode, the orbit via IsOrbitMode. Card text fades unless card mode (CardOpacity)
+        // and only DVD dims the backdrop (DvdDimOpacity).
         var vm = CreateVm();
 
-        vm.IsDvdMode = dvd;
+        vm.Mode = mode;
 
-        Assert.Equal(expectedCardMode, vm.IsCardMode);
-        Assert.Equal(expectedCardOpacity, vm.CardOpacity);
-        Assert.Equal(expectedDimOpacity, vm.DvdDimOpacity);
+        Assert.Equal(card, vm.IsCardMode);
+        Assert.Equal(dvd, vm.IsDvdMode);
+        Assert.Equal(orbit, vm.IsOrbitMode);
+        Assert.Equal(cardOpacity, vm.CardOpacity);
+        Assert.Equal(dimOpacity, vm.DvdDimOpacity);
     }
 
     [Fact]
