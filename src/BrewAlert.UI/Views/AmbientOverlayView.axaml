@@ -497,6 +497,16 @@
                        HorizontalAlignment="Center"
                        LetterSpacing="2" />
 
+            <!-- Localised date under the clock — always on (every mode), like the clock.
+                 Sits tight beneath the time; negative top margin trims the parent spacing. -->
+            <TextBlock Text="{Binding ClockDate}"
+                       FontSize="18"
+                       Foreground="{StaticResource BrewTextPrimaryBrush}"
+                       Opacity="0.7"
+                       HorizontalAlignment="Center"
+                       LetterSpacing="1"
+                       Margin="0,-8,0,0" />
+
             <!-- Card text fades out in DVD mode. Opacity (not IsVisible) keeps the layout
                  slot, so the clock above never shifts when the mode flips. -->
             <StackPanel Spacing="12"

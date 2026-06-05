@@ -163,6 +163,24 @@ public class AmbientOverlayViewModelTests
     }
 
     [Fact]
+    public void UpdateClock_SetsLocalisedDate_FollowingAppCulture()
+    {
+        // The date under the clock must format with the *app* culture, not the OS locale —
+        // a Turkish UI shows "Haziran", an English one "June". Format carries no time
+        // component, so comparing against a freshly computed "today" is stable except at
+        // the midnight boundary (same assumption the other DateTime-based tests make).
+        var tr = CultureInfo.GetCultureInfo("tr-TR");
+        _loc.CurrentCulture.Returns(tr);
+        var vm = CreateVm();
+
+        vm.UpdateClock();
+
+        var expected = tr.TextInfo.ToTitleCase(DateTime.Now.ToString("dddd, d MMMM yyyy", tr));
+        Assert.Equal(expected, vm.ClockDate);
+        Assert.Matches(@"^\d{2}:\d{2}$", vm.ClockTime);
+    }
+
+    [Fact]
     public void BuildScenes_NullToday_Throws()
     {
         var vm = CreateVm();
