@@ -2,7 +2,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="BrewAlert.UI.App"
              xmlns:local="using:BrewAlert.UI"
+             xmlns:conv="using:BrewAlert.UI.Converters"
              RequestedThemeVariant="Dark">
+
+    <Application.Resources>
+        <!-- Font-independent brew icons: emoji render as tofu on Raspberry Pi OS (no emoji
+             font), so the on-device UI draws vector geometries via this converter instead. -->
+        <conv:BrewIconConverter x:Key="BrewIcon" />
+    </Application.Resources>
 
     <Application.DataTemplates>
         <local:ViewLocator/>

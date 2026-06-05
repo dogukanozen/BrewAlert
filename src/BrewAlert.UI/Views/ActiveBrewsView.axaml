@@ -68,10 +68,13 @@
                                 <Grid Grid.Row="0"
                                       ColumnDefinitions="Auto,*,Auto"
                                       ColumnSpacing="18">
-                                    <TextBlock Grid.Column="0"
-                                               Text="{Binding ProfileIcon}"
-                                               FontSize="52"
-                                               VerticalAlignment="Center" />
+                                    <Viewbox Grid.Column="0"
+                                             Width="46" Height="46"
+                                             VerticalAlignment="Center">
+                                        <Path Data="{Binding ProfileIcon, Converter={StaticResource BrewIcon}}"
+                                              Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.4"
+                                              StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+                                    </Viewbox>
 
                                     <StackPanel Grid.Column="1"
                                                 VerticalAlignment="Center"

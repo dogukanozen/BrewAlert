@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BrewAlert.UI.ViewModels"
              xmlns:views="using:BrewAlert.UI.Views"
+             xmlns:media="using:BrewAlert.UI.Media"
              x:Class="BrewAlert.UI.Views.MainView"
              x:DataType="vm:MainWindowViewModel">
 
@@ -29,9 +30,14 @@
                             Margin="0,0,6,0" />
 
                     <Button Grid.Column="2"
-                            Content="⚙️"
                             Classes="brew-primary brew-nav-btn"
-                            Command="{Binding NavigateToSettingsCommand}" />
+                            Command="{Binding NavigateToSettingsCommand}">
+                        <Viewbox Width="22" Height="22">
+                            <Path Data="{x:Static media:BrewIconGeometry.Gear}"
+                                  Stroke="White" StrokeThickness="1.4"
+                                  StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
+                        </Viewbox>
+                    </Button>
                 </Grid>
             </Border>
 
