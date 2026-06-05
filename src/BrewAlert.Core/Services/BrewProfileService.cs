@@ -45,12 +45,12 @@ public sealed class BrewProfileService(IProfileRepository repository)
             {
                 var migrated = new BrewProfile
                 {
-                    Id           = def.Id,
-                    Name         = legacy.Name,
-                    Type         = legacy.Type,
+                    Id = def.Id,
+                    Name = legacy.Name,
+                    Type = legacy.Type,
                     BrewDuration = legacy.BrewDuration,
-                    Icon         = legacy.Icon,
-                    Description  = legacy.Description,
+                    Icon = legacy.Icon,
+                    Description = legacy.Description,
                     CreatedAtUtc = legacy.CreatedAtUtc,
                 };
                 await repository.SaveAsync(migrated, ct);

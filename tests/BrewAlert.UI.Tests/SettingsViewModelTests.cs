@@ -82,7 +82,10 @@ public class SettingsViewModelTests
         // Arrange
         var graphOptions = CreateMonitor(new TeamsGraphOptions
         {
-            TenantId = "T", ClientId = "C", ClientSecret = "S", ChatId = "CH"
+            TenantId = "T",
+            ClientId = "C",
+            ClientSecret = "S",
+            ChatId = "CH"
         });
         _notificationService.TestConnectionAsync().Returns(true);
         var vm = new SettingsViewModel(
@@ -101,7 +104,10 @@ public class SettingsViewModelTests
     {
         var graphOptions = CreateMonitor(new TeamsGraphOptions
         {
-            TenantId = "T", ClientId = "C", ClientSecret = "S", ChatId = "CH"
+            TenantId = "T",
+            ClientId = "C",
+            ClientSecret = "S",
+            ChatId = "CH"
         });
         var vm = new SettingsViewModel(
             _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,

@@ -38,7 +38,7 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
         _logger = logger;
 
         // Invalidate token cache when credentials change
-        _subscription = options.OnChange(_ => 
+        _subscription = options.OnChange(_ =>
         {
             _cachedToken = null;
             _tokenExpiry = DateTimeOffset.MinValue;

@@ -34,7 +34,7 @@ public sealed class JsonPreferencesService(ILogger<JsonPreferencesService> logge
         try
         {
             var root = await ReadRootAsync() ?? new JsonObject();
-            
+
             var brewAlert = (root["BrewAlert"] as JsonObject) ?? (root["BrewAlert"] = new JsonObject());
             var notifications = (brewAlert["Notifications"] as JsonObject) ?? (brewAlert["Notifications"] = new JsonObject());
             notifications["Provider"] = provider;
@@ -43,7 +43,7 @@ public sealed class JsonPreferencesService(ILogger<JsonPreferencesService> logge
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
             var json = root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-            
+
             // Atomic write: write to temp file first, then move
             var tempPath = _path + ".tmp";
             await File.WriteAllTextAsync(tempPath, json);

@@ -26,31 +26,31 @@ internal static class TeamsCardStrings
 
     private static readonly Dictionary<string, string> English = new()
     {
-        ["HeaderReady"]              = "{0} BrewAlert — Your {1} is Ready!",
-        ["FactProfile"]              = "Profile",
-        ["FactBrewTime"]             = "Brew Time",
-        ["FactCompletedAt"]          = "Completed At",
-        ["FooterDontLetItGetCold"]   = "Don't let it get cold! ☕",
-        ["TestSuccess"]              = "✅ BrewAlert — Connection Test Successful!",
-        ["MinShort"]                 = "min",
-        ["SecShort"]                 = "sec",
-        ["BrewType_Tea"]             = "Tea",
-        ["BrewType_Coffee"]          = "Coffee",
-        ["BrewType_Custom"]          = "Custom",
+        ["HeaderReady"] = "{0} BrewAlert — Your {1} is Ready!",
+        ["FactProfile"] = "Profile",
+        ["FactBrewTime"] = "Brew Time",
+        ["FactCompletedAt"] = "Completed At",
+        ["FooterDontLetItGetCold"] = "Don't let it get cold! ☕",
+        ["TestSuccess"] = "✅ BrewAlert — Connection Test Successful!",
+        ["MinShort"] = "min",
+        ["SecShort"] = "sec",
+        ["BrewType_Tea"] = "Tea",
+        ["BrewType_Coffee"] = "Coffee",
+        ["BrewType_Custom"] = "Custom",
     };
 
     private static readonly Dictionary<string, string> Turkish = new()
     {
-        ["HeaderReady"]              = "{0} BrewAlert — {1} hazır!",
-        ["FactProfile"]              = "Profil",
-        ["FactBrewTime"]             = "Demleme Süresi",
-        ["FactCompletedAt"]          = "Tamamlanma",
-        ["FooterDontLetItGetCold"]   = "Soğutmayın! ☕",
-        ["TestSuccess"]              = "✅ BrewAlert — Bağlantı Testi Başarılı!",
-        ["MinShort"]                 = "dk",
-        ["SecShort"]                 = "sn",
-        ["BrewType_Tea"]             = "Çay",
-        ["BrewType_Coffee"]          = "Kahve",
-        ["BrewType_Custom"]          = "Özel",
+        ["HeaderReady"] = "{0} BrewAlert — {1} hazır!",
+        ["FactProfile"] = "Profil",
+        ["FactBrewTime"] = "Demleme Süresi",
+        ["FactCompletedAt"] = "Tamamlanma",
+        ["FooterDontLetItGetCold"] = "Soğutmayın! ☕",
+        ["TestSuccess"] = "✅ BrewAlert — Bağlantı Testi Başarılı!",
+        ["MinShort"] = "dk",
+        ["SecShort"] = "sn",
+        ["BrewType_Tea"] = "Çay",
+        ["BrewType_Coffee"] = "Kahve",
+        ["BrewType_Custom"] = "Özel",
     };
 }

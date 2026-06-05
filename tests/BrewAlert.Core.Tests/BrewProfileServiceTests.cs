@@ -8,7 +8,7 @@ namespace BrewAlert.Core.Tests;
 
 public class BrewProfileServiceTests
 {
-    private static readonly Guid TeaId    = new("00000000-0000-0000-0000-000000000001");
+    private static readonly Guid TeaId = new("00000000-0000-0000-0000-000000000001");
     private static readonly Guid CoffeeId = new("00000000-0000-0000-0000-000000000002");
 
     private readonly IProfileRepository _repository;
@@ -50,7 +50,7 @@ public class BrewProfileServiceTests
     {
         // Simulates user renaming "Çay" to "Demlik" — stable ID still present.
         var renamed = new BrewProfile { Id = TeaId, Name = "Demlik", Type = BrewType.Tea, BrewDuration = TimeSpan.FromMinutes(15) };
-        var coffee  = BrewProfileService.DefaultProfiles.First(p => p.Id == CoffeeId);
+        var coffee = BrewProfileService.DefaultProfiles.First(p => p.Id == CoffeeId);
         _repository.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<BrewProfile>>([renamed, coffee]));
 
@@ -127,7 +127,7 @@ public class BrewProfileServiceTests
     [Fact]
     public void DefaultProfiles_HaveStableIds()
     {
-        Assert.Equal(TeaId,    BrewProfileService.DefaultProfiles.First(p => p.Type == BrewType.Tea).Id);
+        Assert.Equal(TeaId, BrewProfileService.DefaultProfiles.First(p => p.Type == BrewType.Tea).Id);
         Assert.Equal(CoffeeId, BrewProfileService.DefaultProfiles.First(p => p.Type == BrewType.Coffee).Id);
     }
 
