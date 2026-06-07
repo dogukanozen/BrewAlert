@@ -73,6 +73,10 @@ public sealed class PreferencesService : IPreferencesService
         }
         catch (JsonException)
         {
+            // Corrupted file: back it up so the user's data isn't silently
+            // overwritten, then start from defaults.
+            try { File.Copy(_filePath, _filePath + ".bak", true); }
+            catch { /* ignore backup failure */ }
             return new PreferencesRoot();
         }
     }
@@ -82,7 +86,22 @@ public sealed class PreferencesService : IPreferencesService
         var dir = Path.GetDirectoryName(_filePath)!;
         Directory.CreateDirectory(dir);
         var json = JsonSerializer.Serialize(root, JsonOptions);
-        await File.WriteAllTextAsync(_filePath, json, ct);
+
+        // Atomic write: write to a temp file first, then move it into place so a
+        // crash mid-write cannot corrupt the existing preferences file.
+        var tempPath = _filePath + ".tmp";
+        try
+        {
+            await File.WriteAllTextAsync(tempPath, json, ct);
+            File.Move(tempPath, _filePath, true);
+        }
+        finally
+        {
+            // Clean up the temp file if the write or move failed partway through.
+            // After a successful move it no longer exists, so this is a no-op.
+            try { if (File.Exists(tempPath)) File.Delete(tempPath); }
+            catch { /* ignore cleanup failure; don't mask the original exception */ }
+        }
     }
 
     private sealed class PreferencesRoot

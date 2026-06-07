@@ -18,6 +18,10 @@ public sealed class PreferencesServiceTests : IDisposable
     {
         if (File.Exists(_filePath))
             File.Delete(_filePath);
+
+        var backupPath = _filePath + ".bak";
+        if (File.Exists(backupPath))
+            File.Delete(backupPath);
     }
 
     [Fact]
@@ -79,5 +83,20 @@ public sealed class PreferencesServiceTests : IDisposable
         var json = await File.ReadAllTextAsync(_filePath);
         Assert.Contains("https://new.example.com/hook", json);
         Assert.DoesNotContain("https://old.example.com/hook", json);
+    }
+
+    [Fact]
+    public async Task Save_OnCorruptedFile_BacksUpAndRecovers()
+    {
+        await File.WriteAllTextAsync(_filePath, "{ this is not valid json");
+
+        await _sut.SaveNotificationProviderAsync("Webhook");
+
+        var json = await File.ReadAllTextAsync(_filePath);
+        Assert.Contains("Webhook", json);
+
+        var backupPath = _filePath + ".bak";
+        Assert.True(File.Exists(backupPath));
+        Assert.Contains("this is not valid json", await File.ReadAllTextAsync(backupPath));
     }
 }
