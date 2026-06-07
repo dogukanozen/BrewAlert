@@ -18,6 +18,10 @@ public sealed class PreferencesServiceTests : IDisposable
     {
         if (File.Exists(_filePath))
             File.Delete(_filePath);
+
+        var backupPath = _filePath + ".bak";
+        if (File.Exists(backupPath))
+            File.Delete(backupPath);
     }
 
     [Fact]
@@ -94,6 +98,5 @@ public sealed class PreferencesServiceTests : IDisposable
         var backupPath = _filePath + ".bak";
         Assert.True(File.Exists(backupPath));
         Assert.Contains("this is not valid json", await File.ReadAllTextAsync(backupPath));
-        File.Delete(backupPath);
     }
 }

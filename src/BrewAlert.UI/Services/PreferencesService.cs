@@ -90,8 +90,18 @@ public sealed class PreferencesService : IPreferencesService
         // Atomic write: write to a temp file first, then move it into place so a
         // crash mid-write cannot corrupt the existing preferences file.
         var tempPath = _filePath + ".tmp";
-        await File.WriteAllTextAsync(tempPath, json, ct);
-        File.Move(tempPath, _filePath, true);
+        try
+        {
+            await File.WriteAllTextAsync(tempPath, json, ct);
+            File.Move(tempPath, _filePath, true);
+        }
+        finally
+        {
+            // Clean up the temp file if the write or move failed partway through.
+            // After a successful move it no longer exists, so this is a no-op.
+            try { if (File.Exists(tempPath)) File.Delete(tempPath); }
+            catch { /* ignore cleanup failure; don't mask the original exception */ }
+        }
     }
 
     private sealed class PreferencesRoot
