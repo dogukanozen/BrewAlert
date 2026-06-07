@@ -6,7 +6,6 @@
              x:DataType="vm:AmbientOverlayViewModel">
 
     <UserControl.Resources>
-        <conv:AmbientFloatConverter x:Key="AmbientFloat" />
         <conv:AmbientDriftConverter x:Key="AmbientDrift" />
         <conv:AmbientIconConverter x:Key="AmbientIcon" />
     </UserControl.Resources>
@@ -238,7 +237,7 @@
                  RenderTransformOrigin="50%,50%">
             <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=4:10}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=0}">
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=0:14}">
                     <TranslateTransform.Transitions>
                         <Transitions>
                             <DoubleTransition Property="X" Duration="0:0:0.5" />
@@ -260,7 +259,7 @@
                  RenderTransformOrigin="50%,50%">
             <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=2:9}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=1}">
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=1:14}">
                     <TranslateTransform.Transitions>
                         <Transitions>
                             <DoubleTransition Property="X" Duration="0:0:0.5" />
@@ -282,7 +281,7 @@
                  RenderTransformOrigin="50%,50%">
             <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=5:11}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=2}">
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=2:14}">
                     <TranslateTransform.Transitions>
                         <Transitions>
                             <DoubleTransition Property="X" Duration="0:0:0.5" />
@@ -304,7 +303,7 @@
                  RenderTransformOrigin="50%,50%">
             <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=6:8}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=3}">
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=3:14}">
                     <TranslateTransform.Transitions>
                         <Transitions>
                             <DoubleTransition Property="X" Duration="0:0:0.5" />
@@ -326,7 +325,7 @@
                  RenderTransformOrigin="50%,50%">
             <Viewbox.RenderTransform>
                 <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=1:7}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientFloat}, ConverterParameter=4}">
+                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=4:14}">
                     <TranslateTransform.Transitions>
                         <Transitions>
                             <DoubleTransition Property="X" Duration="0:0:0.5" />
