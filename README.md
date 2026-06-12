@@ -8,7 +8,7 @@ Built with [Avalonia UI](https://avaloniaui.net/) for cross-platform support —
 
 - Pre-configured brew profiles (Turkish Tea, Filter Coffee) — editable durations, add/delete custom profiles
 - Visual countdown timer with pause / resume / cancel
-- Ambient idle screen — drifting clock & date, brew freshness warnings, and gentle motion (info card, retro DVD-logo bounce, orbiting icons)
+- Ambient idle screen — activates when idle and rotates between three motions (info card, retro DVD-logo bounce, orbiting icons), each with a drifting clock & date and brew freshness warnings
 - Microsoft Teams Adaptive Card notifications (Power Automate webhook or Graph API)
 - TR / EN language toggle in Settings (no restart required)
 - Dark theme optimised for small screens
