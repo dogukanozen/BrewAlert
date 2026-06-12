@@ -7,7 +7,7 @@ Built with [Avalonia UI](https://avaloniaui.net/) for cross-platform support —
 ## Features
 
 - Pre-configured brew profiles (Turkish Tea, Filter Coffee) — editable durations, add/delete custom profiles
-- Visual countdown timer with pause / resume / cancel
+- Visual countdown timer with pause / resume / cancel — run several brews at once, each tracked on its own row
 - Ambient idle screen — drifting clock & date, brew freshness warnings, and gentle motion (info card, retro DVD-logo bounce, orbiting icons)
 - Microsoft Teams Adaptive Card notifications (Power Automate webhook or Graph API)
 - TR / EN language toggle in Settings (no restart required)
