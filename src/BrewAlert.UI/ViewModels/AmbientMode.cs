@@ -28,5 +28,17 @@ public enum AmbientMode
     Meteor,
 
     /// <summary>Deep liquid bands and bubbles rolling beneath the clock.</summary>
-    Liquid
+    Liquid,
+
+    /// <summary>Radial light streaks accelerating through a star tunnel.</summary>
+    Hyperspace,
+
+    /// <summary>Expanding scan rings and rotating targeting sweeps.</summary>
+    Radar,
+
+    /// <summary>Warm luminous particles wandering across the backdrop.</summary>
+    Fireflies,
+
+    /// <summary>Counter-rotating triangular prisms with neon echoes.</summary>
+    Prism
 }

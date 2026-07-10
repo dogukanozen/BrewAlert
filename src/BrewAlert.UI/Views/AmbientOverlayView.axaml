@@ -337,9 +337,215 @@
                 </Animation>
             </Style.Animations>
         </Style>
+
+        <!-- Hyperspace: short center streaks stretch rapidly into a luminous star tunnel. -->
+        <Style Selector="Border.warp-streak-a">
+            <Style.Animations>
+                <Animation Duration="0:0:3.2" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="0.05" /></KeyFrame>
+                    <KeyFrame Cue="20%"><Setter Property="Opacity" Value="0.8" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="4.5" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.warp-streak-b">
+            <Style.Animations>
+                <Animation Duration="0:0:4.4" Delay="0:0:1.1" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="0.04" /></KeyFrame>
+                    <KeyFrame Cue="18%"><Setter Property="Opacity" Value="0.62" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="5.2" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.warp-streak-c">
+            <Style.Animations>
+                <Animation Duration="0:0:2.6" Delay="0:0:0.6" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="0.08" /></KeyFrame>
+                    <KeyFrame Cue="22%"><Setter Property="Opacity" Value="0.92" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="3.8" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <!-- Radar: scan rings expand from the clock while a targeting line sweeps around it. -->
+        <Style Selector="Ellipse.radar-ring-a">
+            <Style.Animations>
+                <Animation Duration="0:0:5" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.72" /><Setter Property="ScaleTransform.ScaleX" Value="0.18" /><Setter Property="ScaleTransform.ScaleY" Value="0.18" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="2.8" /><Setter Property="ScaleTransform.ScaleY" Value="2.8" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Ellipse.radar-ring-b">
+            <Style.Animations>
+                <Animation Duration="0:0:5" Delay="0:0:1.7" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.62" /><Setter Property="ScaleTransform.ScaleX" Value="0.18" /><Setter Property="ScaleTransform.ScaleY" Value="0.18" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="2.8" /><Setter Property="ScaleTransform.ScaleY" Value="2.8" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Ellipse.radar-ring-c">
+            <Style.Animations>
+                <Animation Duration="0:0:5" Delay="0:0:3.4" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.52" /><Setter Property="ScaleTransform.ScaleX" Value="0.18" /><Setter Property="ScaleTransform.ScaleY" Value="0.18" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="2.8" /><Setter Property="ScaleTransform.ScaleY" Value="2.8" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Grid.radar-sweep">
+            <Style.Animations>
+                <Animation Duration="0:0:8" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <!-- Fireflies: independent warm particles wander and breathe across wide arcs. -->
+        <Style Selector="Ellipse.firefly-a">
+            <Style.Animations>
+                <Animation Duration="0:0:9" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.12" /><Setter Property="TranslateTransform.X" Value="-80" /><Setter Property="TranslateTransform.Y" Value="40" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.9" /><Setter Property="TranslateTransform.X" Value="70" /><Setter Property="TranslateTransform.Y" Value="-90" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.12" /><Setter Property="TranslateTransform.X" Value="-80" /><Setter Property="TranslateTransform.Y" Value="40" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Ellipse.firefly-b">
+            <Style.Animations>
+                <Animation Duration="0:0:13" Delay="0:0:2" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.08" /><Setter Property="TranslateTransform.X" Value="70" /><Setter Property="TranslateTransform.Y" Value="-50" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.72" /><Setter Property="TranslateTransform.X" Value="-100" /><Setter Property="TranslateTransform.Y" Value="100" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.08" /><Setter Property="TranslateTransform.X" Value="70" /><Setter Property="TranslateTransform.Y" Value="-50" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Ellipse.firefly-c">
+            <Style.Animations>
+                <Animation Duration="0:0:7" Delay="0:0:1" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.1" /><Setter Property="TranslateTransform.X" Value="-30" /><Setter Property="TranslateTransform.Y" Value="-80" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1" /><Setter Property="TranslateTransform.X" Value="95" /><Setter Property="TranslateTransform.Y" Value="70" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.1" /><Setter Property="TranslateTransform.X" Value="-30" /><Setter Property="TranslateTransform.Y" Value="-80" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <!-- Prism: triangular outlines counter-rotate while a central spectral glow pulses. -->
+        <Style Selector="Polygon.prism-a">
+            <Style.Animations>
+                <Animation Duration="0:0:18" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Polygon.prism-b">
+            <Style.Animations>
+                <Animation Duration="0:0:12" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="30" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="-330" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Ellipse.prism-glow">
+            <Style.Animations>
+                <Animation Duration="0:0:4" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.16" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.58" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.16" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <!-- The base backdrop has three motion families. Mode changes now alter the silhouette
+             of the whole screen instead of leaving the same corner blobs underneath every mode. -->
+        <Style Selector="Ellipse.backdrop-organic-a">
+            <Style.Animations>
+                <Animation Duration="0:0:11" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.28" /><Setter Property="ScaleTransform.ScaleX" Value="0.82" /><Setter Property="ScaleTransform.ScaleY" Value="1.08" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.58" /><Setter Property="ScaleTransform.ScaleX" Value="1.14" /><Setter Property="ScaleTransform.ScaleY" Value="0.86" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.28" /><Setter Property="ScaleTransform.ScaleX" Value="0.82" /><Setter Property="ScaleTransform.ScaleY" Value="1.08" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Ellipse.backdrop-organic-b">
+            <Style.Animations>
+                <Animation Duration="0:0:15" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.5" /><Setter Property="ScaleTransform.ScaleX" Value="1.12" /><Setter Property="ScaleTransform.ScaleY" Value="0.84" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.25" /><Setter Property="ScaleTransform.ScaleX" Value="0.86" /><Setter Property="ScaleTransform.ScaleY" Value="1.16" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.5" /><Setter Property="ScaleTransform.ScaleX" Value="1.12" /><Setter Property="ScaleTransform.ScaleY" Value="0.84" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Ellipse.backdrop-organic-c">
+            <Style.Animations>
+                <Animation Duration="0:0:8" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.18" /><Setter Property="ScaleTransform.ScaleX" Value="0.72" /><Setter Property="ScaleTransform.ScaleY" Value="0.72" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.46" /><Setter Property="ScaleTransform.ScaleX" Value="1.18" /><Setter Property="ScaleTransform.ScaleY" Value="1.18" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.18" /><Setter Property="ScaleTransform.ScaleX" Value="0.72" /><Setter Property="ScaleTransform.ScaleY" Value="0.72" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Grid.backdrop-cosmic-a">
+            <Style.Animations>
+                <Animation Duration="0:0:30" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Grid.backdrop-cosmic-b">
+            <Style.Animations>
+                <Animation Duration="0:0:43" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Ellipse.backdrop-cosmic-core">
+            <Style.Animations>
+                <Animation Duration="0:0:7" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.14" /><Setter Property="ScaleTransform.ScaleX" Value="0.76" /><Setter Property="ScaleTransform.ScaleY" Value="0.76" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.42" /><Setter Property="ScaleTransform.ScaleX" Value="1.22" /><Setter Property="ScaleTransform.ScaleY" Value="1.22" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.14" /><Setter Property="ScaleTransform.ScaleX" Value="0.76" /><Setter Property="ScaleTransform.ScaleY" Value="0.76" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.backdrop-prism-a">
+            <Style.Animations>
+                <Animation Duration="0:0:14" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.16" /><Setter Property="TranslateTransform.X" Value="-260" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.52" /><Setter Property="TranslateTransform.X" Value="260" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.16" /><Setter Property="TranslateTransform.X" Value="-260" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.backdrop-prism-b">
+            <Style.Animations>
+                <Animation Duration="0:0:19" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.46" /><Setter Property="TranslateTransform.X" Value="300" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.14" /><Setter Property="TranslateTransform.X" Value="-300" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.46" /><Setter Property="TranslateTransform.X" Value="300" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.backdrop-prism-c">
+            <Style.Animations>
+                <Animation Duration="0:0:9" IterationCount="INFINITE" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.08" /><Setter Property="TranslateTransform.X" Value="-160" /></KeyFrame>
+                    <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.38" /><Setter Property="TranslateTransform.X" Value="160" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.08" /><Setter Property="TranslateTransform.X" Value="-160" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
     </UserControl.Styles>
 
-    <Panel ClipToBounds="True">
+    <Panel ClipToBounds="True" Opacity="{Binding ModeTransitionOpacity}">
+        <Panel.Transitions>
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.45" />
+            </Transitions>
+        </Panel.Transitions>
         <!-- Layer 1: vertical gradient base. Bound to the rotating palette so the whole
              backdrop recolours per scene; BrushTransition crossfades the swap. -->
         <Border Background="{Binding BackgroundBrush}">
@@ -350,85 +556,88 @@
             </Border.Transitions>
         </Border>
 
-        <!-- Layer 2: large slow-drifting palette blobs — give the backdrop life without
-             per-pixel work (transform + opacity only). Fill recolours with the palette. -->
-        <Ellipse Width="640" Height="640"
-                 HorizontalAlignment="Left"
-                 VerticalAlignment="Top"
-                 Margin="-220,-260,0,0"
-                 Opacity="0.5"
-                 IsHitTestVisible="False"
-                 Fill="{Binding HaloBrush}">
-            <Ellipse.Transitions>
-                <Transitions>
-                    <BrushTransition Property="Fill" Duration="0:0:1.4" />
-                </Transitions>
-            </Ellipse.Transitions>
-            <Ellipse.RenderTransform>
-                <!-- The drift offset is resampled every 500ms VM tick; a 0.5s transition (matched
-                     to the tick) interpolates between samples so the blob glides instead of
-                     snapping in 8 steps per cycle. -->
-                <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=1:34}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=0:40}">
-                    <TranslateTransform.Transitions>
-                        <Transitions>
-                            <DoubleTransition Property="X" Duration="0:0:0.5" />
-                            <DoubleTransition Property="Y" Duration="0:0:0.5" />
-                        </Transitions>
-                    </TranslateTransform.Transitions>
-                </TranslateTransform>
-            </Ellipse.RenderTransform>
-        </Ellipse>
-        <Ellipse Width="580" Height="580"
-                 HorizontalAlignment="Right"
-                 VerticalAlignment="Bottom"
-                 Margin="0,0,-200,-200"
-                 Opacity="0.55"
-                 IsHitTestVisible="False"
-                 Fill="{Binding GlowBottomBrush}">
-            <Ellipse.Transitions>
-                <Transitions>
-                    <BrushTransition Property="Fill" Duration="0:0:1.4" />
-                </Transitions>
-            </Ellipse.Transitions>
-            <Ellipse.RenderTransform>
-                <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=3:30}"
-                                    Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=2:36}">
-                    <TranslateTransform.Transitions>
-                        <Transitions>
-                            <DoubleTransition Property="X" Duration="0:0:0.5" />
-                            <DoubleTransition Property="Y" Duration="0:0:0.5" />
-                        </Transitions>
-                    </TranslateTransform.Transitions>
-                </TranslateTransform>
-            </Ellipse.RenderTransform>
-        </Ellipse>
+        <!-- Organic backdrop: metaballs breathe, squash, and wander independently. -->
+        <Panel IsVisible="{Binding IsOrganicBackdrop}" IsHitTestVisible="False">
+            <Grid Width="670" Height="610" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-210,-230,0,0">
+                <Grid.RenderTransform>
+                    <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=1:58}"
+                                        Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=0:72}">
+                        <TranslateTransform.Transitions><Transitions><DoubleTransition Property="X" Duration="0:0:0.5" /><DoubleTransition Property="Y" Duration="0:0:0.5" /></Transitions></TranslateTransform.Transitions>
+                    </TranslateTransform>
+                </Grid.RenderTransform>
+                <Ellipse Classes="backdrop-organic-a" Fill="{Binding HaloBrush}" RenderTransformOrigin="50%,50%">
+                    <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
+                    <Ellipse.Transitions><Transitions><BrushTransition Property="Fill" Duration="0:0:1.4" /></Transitions></Ellipse.Transitions>
+                </Ellipse>
+            </Grid>
+            <Grid Width="620" Height="560" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-190,-190">
+                <Grid.RenderTransform>
+                    <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=3:52}"
+                                        Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=2:64}">
+                        <TranslateTransform.Transitions><Transitions><DoubleTransition Property="X" Duration="0:0:0.5" /><DoubleTransition Property="Y" Duration="0:0:0.5" /></Transitions></TranslateTransform.Transitions>
+                    </TranslateTransform>
+                </Grid.RenderTransform>
+                <Ellipse Classes="backdrop-organic-b" Fill="{Binding GlowBottomBrush}" RenderTransformOrigin="50%,50%">
+                    <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
+                    <Ellipse.Transitions><Transitions><BrushTransition Property="Fill" Duration="0:0:1.4" /></Transitions></Ellipse.Transitions>
+                </Ellipse>
+            </Grid>
+            <Grid Width="360" Height="330" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,110,90,0">
+                <Grid.RenderTransform>
+                    <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=6:46}"
+                                        Y="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=4:54}">
+                        <TranslateTransform.Transitions><Transitions><DoubleTransition Property="X" Duration="0:0:0.5" /><DoubleTransition Property="Y" Duration="0:0:0.5" /></Transitions></TranslateTransform.Transitions>
+                    </TranslateTransform>
+                </Grid.RenderTransform>
+                <Ellipse Classes="backdrop-organic-c" Fill="{Binding GlowTopBrush}" RenderTransformOrigin="50%,50%">
+                    <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
+                    <Ellipse.Transitions><Transitions><BrushTransition Property="Fill" Duration="0:0:1.4" /></Transitions></Ellipse.Transitions>
+                </Ellipse>
+            </Grid>
+        </Panel>
 
-        <!-- Layer 3: feathered corner glows, also palette-driven. -->
-        <Ellipse Width="520" Height="520"
-                 HorizontalAlignment="Left"
-                 VerticalAlignment="Top"
-                 Margin="-160,-200,0,0"
-                 IsHitTestVisible="False"
-                 Fill="{Binding GlowTopBrush}">
-            <Ellipse.Transitions>
-                <Transitions>
-                    <BrushTransition Property="Fill" Duration="0:0:1.4" />
-                </Transitions>
-            </Ellipse.Transitions>
-        </Ellipse>
-        <Ellipse Width="460" Height="460"
-                 HorizontalAlignment="Right"
-                 VerticalAlignment="Bottom"
-                 Margin="0,0,-140,-140"
-                 IsHitTestVisible="False"
-                 Fill="{Binding GlowBottomBrush}">
-            <Ellipse.Transitions>
-                <Transitions>
-                    <BrushTransition Property="Fill" Duration="0:0:1.4" />
-                </Transitions>
-            </Ellipse.Transitions>
-        </Ellipse>
+        <!-- Cosmic backdrop: rotating elliptical light tracks orbit a breathing core. -->
+        <Panel IsVisible="{Binding IsCosmicBackdrop}" IsHitTestVisible="False">
+            <Ellipse Classes="backdrop-cosmic-core" Width="560" Height="560" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Fill="{Binding HaloBrush}" RenderTransformOrigin="50%,50%">
+                <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
+                <Ellipse.Transitions><Transitions><BrushTransition Property="Fill" Duration="0:0:1.4" /></Transitions></Ellipse.Transitions>
+            </Ellipse>
+            <Grid Classes="backdrop-cosmic-a" Width="980" Height="980" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="50%,50%">
+                <Grid.RenderTransform><RotateTransform /></Grid.RenderTransform>
+                <Ellipse Width="920" Height="280" HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Stroke="{Binding GlowTopBrush}" StrokeThickness="82" Opacity="0.34" />
+                <Ellipse Width="760" Height="210" HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Stroke="{Binding GlowBottomBrush}" StrokeThickness="28" Opacity="0.42" />
+            </Grid>
+            <Grid Classes="backdrop-cosmic-b" Width="900" Height="900" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="50%,50%">
+                <Grid.RenderTransform><RotateTransform /></Grid.RenderTransform>
+                <Ellipse Width="820" Height="360" HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Stroke="{Binding HaloBrush}" StrokeThickness="34" StrokeDashArray="1,7" Opacity="0.4" />
+            </Grid>
+        </Panel>
+
+        <!-- Prismatic backdrop: diagonal light planes slide in opposing directions. -->
+        <Panel IsVisible="{Binding IsPrismaticBackdrop}" IsHitTestVisible="False">
+            <Grid Width="1400" Height="260" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(-22deg)">
+                <Border Classes="backdrop-prism-a" Width="1150" Height="190" CornerRadius="999" Background="{Binding GlowTopBrush}">
+                    <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+                    <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="0:0:1.4" /></Transitions></Border.Transitions>
+                </Border>
+            </Grid>
+            <Grid Width="1400" Height="240" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(18deg)">
+                <Border Classes="backdrop-prism-b" Width="1220" Height="150" CornerRadius="999" Background="{Binding GlowBottomBrush}">
+                    <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+                    <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="0:0:1.4" /></Transitions></Border.Transitions>
+                </Border>
+            </Grid>
+            <Grid Width="1200" Height="170" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(64deg)">
+                <Border Classes="backdrop-prism-c" Width="980" Height="92" CornerRadius="999" Background="{Binding HaloBrush}">
+                    <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+                    <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="0:0:1.4" /></Transitions></Border.Transitions>
+                </Border>
+            </Grid>
+        </Panel>
 
         <!-- Floating brew icons & particles — font-independent vector line art (orbit-like
              drift, transform-only). Grouped so they vanish cleanly when the DVD bounce takes
@@ -762,6 +971,142 @@
                      Margin="0,0,160,10" Stroke="#66ffffff" StrokeThickness="2" Fill="#11ffffff">
                 <Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform>
             </Ellipse>
+        </Panel>
+
+        <!-- Hyperspace: radial streaks accelerate away from the clock in layered colours. -->
+        <Panel IsVisible="{Binding IsHyperspaceMode}" IsHitTestVisible="False">
+            <Ellipse Width="600" Height="600" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5">
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop Offset="0" Color="#cc050510" />
+                        <GradientStop Offset="0.28" Color="#88102244" />
+                        <GradientStop Offset="1" Color="#00102244" />
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+            <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(0deg)">
+                <Border Classes="warp-streak-a" Width="160" Height="3" CornerRadius="99" Background="#dd4aa8ff"
+                        RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
+            </Grid>
+            <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(30deg)">
+                <Border Classes="warp-streak-b" Width="135" Height="2" CornerRadius="99" Background="#cc3ddc84"
+                        RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
+            </Grid>
+            <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(60deg)">
+                <Border Classes="warp-streak-c" Width="175" Height="3" CornerRadius="99" Background="#eeff6b9d"
+                        RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
+            </Grid>
+            <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(90deg)">
+                <Border Classes="warp-streak-b" Width="150" Height="2" CornerRadius="99" Background="#ccffd166"
+                        RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
+            </Grid>
+            <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(120deg)">
+                <Border Classes="warp-streak-a" Width="170" Height="3" CornerRadius="99" Background="#ddb06bff"
+                        RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
+            </Grid>
+            <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(150deg)">
+                <Border Classes="warp-streak-c" Width="125" Height="2.5" CornerRadius="99" Background="#eef0a500"
+                        RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
+            </Grid>
+            <Ellipse Width="26" Height="26" HorizontalAlignment="Center" VerticalAlignment="Center" Fill="#ccffffff" />
+        </Panel>
+
+        <!-- Radar pulse: expanding rings, crosshairs, and a rotating spectral scan arm. -->
+        <Panel IsVisible="{Binding IsRadarMode}" IsHitTestVisible="False">
+            <Ellipse Width="520" Height="520" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Stroke="#223ddc84" StrokeThickness="1" StrokeDashArray="3,8" />
+            <Ellipse Width="360" Height="360" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Stroke="#333ddc84" StrokeThickness="1" StrokeDashArray="2,6" />
+            <Ellipse Width="200" Height="200" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Stroke="#443ddc84" StrokeThickness="1" StrokeDashArray="1,5" />
+            <Border Width="620" Height="1" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#223ddc84" />
+            <Border Width="1" Height="620" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#223ddc84" />
+            <Ellipse Classes="radar-ring-a" Width="190" Height="190" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Stroke="#aa3ddc84" StrokeThickness="3" Fill="{x:Null}" RenderTransformOrigin="50%,50%">
+                <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse Classes="radar-ring-b" Width="190" Height="190" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Stroke="#884aa8ff" StrokeThickness="2.5" Fill="{x:Null}" RenderTransformOrigin="50%,50%">
+                <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse Classes="radar-ring-c" Width="190" Height="190" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Stroke="#88ffd166" StrokeThickness="2" Fill="{x:Null}" RenderTransformOrigin="50%,50%">
+                <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
+            </Ellipse>
+            <Grid Classes="radar-sweep" Width="520" Height="520" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  RenderTransformOrigin="50%,50%">
+                <Grid.RenderTransform><RotateTransform /></Grid.RenderTransform>
+                <Border Width="250" Height="3" HorizontalAlignment="Right" VerticalAlignment="Center" CornerRadius="99">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+                            <GradientStop Offset="0" Color="#003ddc84" />
+                            <GradientStop Offset="0.55" Color="#773ddc84" />
+                            <GradientStop Offset="1" Color="#ffb8ffd2" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+            </Grid>
+        </Panel>
+
+        <!-- Fireflies: warm particles drift on different paths and pulse independently. -->
+        <Panel IsVisible="{Binding IsFirefliesMode}" IsHitTestVisible="False">
+            <Ellipse Classes="firefly-a" Width="12" Height="12" HorizontalAlignment="Left" VerticalAlignment="Top"
+                     Margin="100,100,0,0" Fill="#ffffd166"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+            <Ellipse Classes="firefly-b" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Center"
+                     Margin="180,0,0,80" Fill="#fff0a500"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+            <Ellipse Classes="firefly-c" Width="15" Height="15" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                     Margin="85,0,0,120" Fill="#fffff0a8"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+            <Ellipse Classes="firefly-b" Width="11" Height="11" HorizontalAlignment="Center" VerticalAlignment="Top"
+                     Margin="-150,75,0,0" Fill="#ff3ddc84"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+            <Ellipse Classes="firefly-a" Width="7" Height="7" HorizontalAlignment="Center" VerticalAlignment="Top"
+                     Margin="120,145,0,0" Fill="#ffffd166"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+            <Ellipse Classes="firefly-c" Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                     Margin="-80,0,0,90" Fill="#ffff9e7a"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+            <Ellipse Classes="firefly-a" Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Top"
+                     Margin="0,115,130,0" Fill="#ffffd166"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+            <Ellipse Classes="firefly-c" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Center"
+                     Margin="0,70,210,0" Fill="#ff4aa8ff"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+            <Ellipse Classes="firefly-b" Width="13" Height="13" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                     Margin="0,0,90,135" Fill="#fff0a500"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+            <Ellipse Width="520" Height="520" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.28">
+                <Ellipse.Fill>
+                    <RadialGradientBrush><GradientStop Offset="0" Color="#44ffd166" /><GradientStop Offset="1" Color="#00ffd166" /></RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+        </Panel>
+
+        <!-- Prism: spectral triangular echoes counter-rotate around a pulsing core. -->
+        <Panel IsVisible="{Binding IsPrismMode}" IsHitTestVisible="False">
+            <Ellipse Classes="prism-glow" Width="500" Height="500" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop Offset="0" Color="#77ffffff" />
+                        <GradientStop Offset="0.3" Color="#554aa8ff" />
+                        <GradientStop Offset="0.62" Color="#33ff6b9d" />
+                        <GradientStop Offset="1" Color="#00ff6b9d" />
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+            <Polygon Classes="prism-a" Points="260,8 512,470 8,470" Width="520" Height="480" Stretch="Fill"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="#884aa8ff" StrokeThickness="3"
+                     Fill="{x:Null}" RenderTransformOrigin="50%,50%">
+                <Polygon.RenderTransform><RotateTransform /></Polygon.RenderTransform>
+            </Polygon>
+            <Polygon Classes="prism-b" Points="230,8 452,410 8,410" Width="460" Height="420" Stretch="Fill"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="#99ff6b9d" StrokeThickness="3"
+                     Fill="{x:Null}" RenderTransformOrigin="50%,50%">
+                <Polygon.RenderTransform><RotateTransform /></Polygon.RenderTransform>
+            </Polygon>
+            <Polygon Classes="prism-a" Points="180,8 352,320 8,320" Width="360" Height="330" Stretch="Fill"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="#aaf0a500" StrokeThickness="2.5"
+                     Fill="{x:Null}" RenderTransformOrigin="50%,50%">
+                <Polygon.RenderTransform><RotateTransform /></Polygon.RenderTransform>
+            </Polygon>
+            <Polygon Classes="prism-b" Points="125,8 242,220 8,220" Width="250" Height="230" Stretch="Fill"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="#aa3ddc84" StrokeThickness="2"
+                     Fill="{x:Null}" RenderTransformOrigin="50%,50%">
+                <Polygon.RenderTransform><RotateTransform /></Polygon.RenderTransform>
+            </Polygon>
         </Panel>
 
         <!-- Pulsing halo: soft radial glow placed BELOW center so it hugs the hero
