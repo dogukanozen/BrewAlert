@@ -22,10 +22,11 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     private static readonly TimeSpan SceneRotationInterval = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan AnimationTickInterval = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan SceneRefreshInterval = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan ModeFadeOutDuration = TimeSpan.FromMilliseconds(450);
     // Animation "modes" swap every period so the screen isn't one look all day: a random
-    // mode (info card, retro DVD-logo bounce, or orbiting icons — see PickNextMode) holds the
-    // screen for its dwell time. The view owns the bounce geometry (needs layout bounds); this
-    // VM owns the timing. Backgrounds within a mode are picked at random (PickNextPalette).
+    // mode from AmbientMode holds the screen for its dwell time. The view owns geometry that
+    // depends on live layout bounds; this VM owns the timing. Backgrounds within a mode are
+    // picked at random (PickNextPalette).
     private static readonly TimeSpan ModePeriod = TimeSpan.FromMinutes(3);
     // The DVD bounce is the most "watchable" mode, so it lingers a bit longer than the rest.
     private static readonly TimeSpan DvdModePeriod = TimeSpan.FromMinutes(5);
@@ -51,6 +52,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty] private bool _isVisible;
     [ObservableProperty] private int _animationPhase;
+    [ObservableProperty] private double _modeTransitionOpacity = 1.0;
     [ObservableProperty] private string _headline = string.Empty;
     [ObservableProperty] private string _subheadline = string.Empty;
     // Icons are semantic *keys* ("coffee"/"tea"/"teapot"/"steam"/…), not emoji — the view
@@ -75,12 +77,24 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
     // The animation mode currently on screen. Each ModePeriod a *random* different mode is
     // picked (PickNextMode) so the idle screen doesn't just recolour — it switches between
-    // distinct motions: the info card, the retro DVD bounce, and the orbiting brew icons.
-    // The derived flags drive which layer the view shows; the clock is always on top.
+    // distinct motions ranging from the info card and retro bounce to full-screen atmospheric
+    // effects. The derived flags drive which layer the view shows; the clock is always on top.
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCardMode))]
     [NotifyPropertyChangedFor(nameof(IsDvdMode))]
     [NotifyPropertyChangedFor(nameof(IsOrbitMode))]
+    [NotifyPropertyChangedFor(nameof(IsAuroraMode))]
+    [NotifyPropertyChangedFor(nameof(IsBrewRainMode))]
+    [NotifyPropertyChangedFor(nameof(IsKaleidoscopeMode))]
+    [NotifyPropertyChangedFor(nameof(IsMeteorMode))]
+    [NotifyPropertyChangedFor(nameof(IsLiquidMode))]
+    [NotifyPropertyChangedFor(nameof(IsHyperspaceMode))]
+    [NotifyPropertyChangedFor(nameof(IsRadarMode))]
+    [NotifyPropertyChangedFor(nameof(IsFirefliesMode))]
+    [NotifyPropertyChangedFor(nameof(IsPrismMode))]
+    [NotifyPropertyChangedFor(nameof(IsOrganicBackdrop))]
+    [NotifyPropertyChangedFor(nameof(IsCosmicBackdrop))]
+    [NotifyPropertyChangedFor(nameof(IsPrismaticBackdrop))]
     [NotifyPropertyChangedFor(nameof(CardOpacity))]
     [NotifyPropertyChangedFor(nameof(DvdDimOpacity))]
     private AmbientMode _mode = AmbientMode.Card;
@@ -88,6 +102,27 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     public bool IsCardMode => Mode == AmbientMode.Card;
     public bool IsDvdMode => Mode == AmbientMode.Dvd;
     public bool IsOrbitMode => Mode == AmbientMode.Orbit;
+    public bool IsAuroraMode => Mode == AmbientMode.Aurora;
+    public bool IsBrewRainMode => Mode == AmbientMode.BrewRain;
+    public bool IsKaleidoscopeMode => Mode == AmbientMode.Kaleidoscope;
+    public bool IsMeteorMode => Mode == AmbientMode.Meteor;
+    public bool IsLiquidMode => Mode == AmbientMode.Liquid;
+    public bool IsHyperspaceMode => Mode == AmbientMode.Hyperspace;
+    public bool IsRadarMode => Mode == AmbientMode.Radar;
+    public bool IsFirefliesMode => Mode == AmbientMode.Fireflies;
+    public bool IsPrismMode => Mode == AmbientMode.Prism;
+    public bool IsOrganicBackdrop => Mode is AmbientMode.Card
+        or AmbientMode.Dvd
+        or AmbientMode.BrewRain
+        or AmbientMode.Liquid
+        or AmbientMode.Fireflies;
+    public bool IsCosmicBackdrop => Mode is AmbientMode.Orbit
+        or AmbientMode.Meteor
+        or AmbientMode.Hyperspace
+        or AmbientMode.Radar;
+    public bool IsPrismaticBackdrop => Mode is AmbientMode.Aurora
+        or AmbientMode.Kaleidoscope
+        or AmbientMode.Prism;
 
     /// <summary>Card text is only shown in card mode; other modes fade it out (Opacity, not
     /// IsVisible) so the always-on clock above never shifts when the mode flips.</summary>
@@ -141,6 +176,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         if (_disposed || requestId != _showRequestId) return;
 
         IsVisible = true;
+        ModeTransitionOpacity = 1.0;
         Mode = AmbientMode.Card;
         _animationTimer.Start();
         _sceneTimer.Start();
@@ -158,6 +194,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         if (!IsVisible && !_showPending) return;
 
         _showRequestId++;
+        ModeTransitionOpacity = 1.0;
         IsVisible = false;
         Mode = AmbientMode.Card;
         _animationTimer.Stop();
@@ -169,13 +206,35 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     // next stretch always looks different in both motion and colour. The next mode sets its own
     // dwell time (DVD lingers longer); Stop/Start guarantees the new interval takes effect from
     // now rather than after another full old-interval tick.
-    private void OnModeTick(object? sender, EventArgs e)
+    private async void OnModeTick(object? sender, EventArgs e)
     {
-        Mode = PickNextMode();
+        if (_disposed || !IsVisible) return;
+
+        var requestId = _showRequestId;
         _modeTimer.Stop();
+        ModeTransitionOpacity = 0.08;
+
+        try
+        {
+            await Task.Delay(ModeFadeOutDuration, _disposeCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (_disposed || !IsVisible || requestId != _showRequestId)
+        {
+            if (!_disposed)
+                ModeTransitionOpacity = 1.0;
+            return;
+        }
+
+        Mode = PickNextMode();
         _modeTimer.Interval = PeriodFor(Mode);
         _modeTimer.Start();
         PickNextPalette();
+        ModeTransitionOpacity = 1.0;
     }
 
     private static TimeSpan PeriodFor(AmbientMode mode) =>

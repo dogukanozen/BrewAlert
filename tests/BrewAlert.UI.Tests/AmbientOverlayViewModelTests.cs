@@ -35,6 +35,14 @@ public class AmbientOverlayViewModelTests
     private AmbientOverlayViewModel CreateVm() => new(_history, _loc);
 
     [Fact]
+    public void ModeTransitionOpacity_StartsFullyVisible()
+    {
+        var vm = CreateVm();
+
+        Assert.Equal(1.0, vm.ModeTransitionOpacity);
+    }
+
+    [Fact]
     public void BuildScenes_KeepsOnlyLatestEntryPerBrewType()
     {
         // Arrange — two teas and one coffee today; older tea must not surface as a scene.
@@ -141,16 +149,38 @@ public class AmbientOverlayViewModelTests
     }
 
     [Theory]
-    // mode, IsCardMode, IsDvdMode, IsOrbitMode, CardOpacity, DvdDimOpacity
-    [InlineData(AmbientMode.Card, true, false, false, 1.0, 0.0)]
-    [InlineData(AmbientMode.Dvd, false, true, false, 0.0, 0.5)]
-    [InlineData(AmbientMode.Orbit, false, false, true, 0.0, 0.0)]
+    // mode, dedicated layer flags, card opacity, DVD dim opacity
+    [InlineData(AmbientMode.Card,         true,  false, false, false, false, false, false, false, false, false, false, false, 1.0, 0.0)]
+    [InlineData(AmbientMode.Dvd,          false, true,  false, false, false, false, false, false, false, false, false, false, 0.0, 0.5)]
+    [InlineData(AmbientMode.Orbit,        false, false, true,  false, false, false, false, false, false, false, false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Aurora,       false, false, false, true,  false, false, false, false, false, false, false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.BrewRain,     false, false, false, false, true,  false, false, false, false, false, false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Kaleidoscope, false, false, false, false, false, true,  false, false, false, false, false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Meteor,       false, false, false, false, false, false, true,  false, false, false, false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Liquid,       false, false, false, false, false, false, false, true,  false, false, false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Hyperspace,   false, false, false, false, false, false, false, false, true,  false, false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Radar,        false, false, false, false, false, false, false, false, false, true,  false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Fireflies,    false, false, false, false, false, false, false, false, false, false, true,  false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Prism,        false, false, false, false, false, false, false, false, false, false, false, true,  0.0, 0.0)]
     public void Mode_DrivesLayerAndBackdropState(
-        AmbientMode mode, bool card, bool dvd, bool orbit, double cardOpacity, double dimOpacity)
+        AmbientMode mode,
+        bool card,
+        bool dvd,
+        bool orbit,
+        bool aurora,
+        bool rain,
+        bool kaleidoscope,
+        bool meteor,
+        bool liquid,
+        bool hyperspace,
+        bool radar,
+        bool fireflies,
+        bool prism,
+        double cardOpacity,
+        double dimOpacity)
     {
-        // The view shows exactly one layer per mode: particles/rings via IsCardMode, the bounce
-        // via IsDvdMode, the orbit via IsOrbitMode. Card text fades unless card mode (CardOpacity)
-        // and only DVD dims the backdrop (DvdDimOpacity).
+        // The view shows exactly one dedicated layer per mode. Card text fades unless card mode
+        // (CardOpacity), and only DVD dims the backdrop (DvdDimOpacity).
         var vm = CreateVm();
 
         vm.Mode = mode;
@@ -158,8 +188,43 @@ public class AmbientOverlayViewModelTests
         Assert.Equal(card, vm.IsCardMode);
         Assert.Equal(dvd, vm.IsDvdMode);
         Assert.Equal(orbit, vm.IsOrbitMode);
+        Assert.Equal(aurora, vm.IsAuroraMode);
+        Assert.Equal(rain, vm.IsBrewRainMode);
+        Assert.Equal(kaleidoscope, vm.IsKaleidoscopeMode);
+        Assert.Equal(meteor, vm.IsMeteorMode);
+        Assert.Equal(liquid, vm.IsLiquidMode);
+        Assert.Equal(hyperspace, vm.IsHyperspaceMode);
+        Assert.Equal(radar, vm.IsRadarMode);
+        Assert.Equal(fireflies, vm.IsFirefliesMode);
+        Assert.Equal(prism, vm.IsPrismMode);
         Assert.Equal(cardOpacity, vm.CardOpacity);
         Assert.Equal(dimOpacity, vm.DvdDimOpacity);
+    }
+
+    [Theory]
+    [InlineData(AmbientMode.Card,         true,  false, false)]
+    [InlineData(AmbientMode.Dvd,          true,  false, false)]
+    [InlineData(AmbientMode.BrewRain,     true,  false, false)]
+    [InlineData(AmbientMode.Liquid,       true,  false, false)]
+    [InlineData(AmbientMode.Fireflies,    true,  false, false)]
+    [InlineData(AmbientMode.Orbit,        false, true,  false)]
+    [InlineData(AmbientMode.Meteor,       false, true,  false)]
+    [InlineData(AmbientMode.Hyperspace,   false, true,  false)]
+    [InlineData(AmbientMode.Radar,        false, true,  false)]
+    [InlineData(AmbientMode.Aurora,       false, false, true)]
+    [InlineData(AmbientMode.Kaleidoscope, false, false, true)]
+    [InlineData(AmbientMode.Prism,        false, false, true)]
+    public void Mode_SelectsExactlyOneBackdropFamily(
+        AmbientMode mode, bool organic, bool cosmic, bool prismatic)
+    {
+        var vm = CreateVm();
+
+        vm.Mode = mode;
+
+        Assert.Equal(organic, vm.IsOrganicBackdrop);
+        Assert.Equal(cosmic, vm.IsCosmicBackdrop);
+        Assert.Equal(prismatic, vm.IsPrismaticBackdrop);
+        Assert.Equal(1, new[] { organic, cosmic, prismatic }.Count(value => value));
     }
 
     [Fact]
