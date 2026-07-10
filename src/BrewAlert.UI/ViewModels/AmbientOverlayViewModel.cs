@@ -23,9 +23,9 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     private static readonly TimeSpan AnimationTickInterval = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan SceneRefreshInterval = TimeSpan.FromMinutes(5);
     // Animation "modes" swap every period so the screen isn't one look all day: a random
-    // mode (info card, retro DVD-logo bounce, or orbiting icons — see PickNextMode) holds the
-    // screen for its dwell time. The view owns the bounce geometry (needs layout bounds); this
-    // VM owns the timing. Backgrounds within a mode are picked at random (PickNextPalette).
+    // mode from AmbientMode holds the screen for its dwell time. The view owns geometry that
+    // depends on live layout bounds; this VM owns the timing. Backgrounds within a mode are
+    // picked at random (PickNextPalette).
     private static readonly TimeSpan ModePeriod = TimeSpan.FromMinutes(3);
     // The DVD bounce is the most "watchable" mode, so it lingers a bit longer than the rest.
     private static readonly TimeSpan DvdModePeriod = TimeSpan.FromMinutes(5);
@@ -75,12 +75,17 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
     // The animation mode currently on screen. Each ModePeriod a *random* different mode is
     // picked (PickNextMode) so the idle screen doesn't just recolour — it switches between
-    // distinct motions: the info card, the retro DVD bounce, and the orbiting brew icons.
-    // The derived flags drive which layer the view shows; the clock is always on top.
+    // distinct motions ranging from the info card and retro bounce to full-screen atmospheric
+    // effects. The derived flags drive which layer the view shows; the clock is always on top.
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCardMode))]
     [NotifyPropertyChangedFor(nameof(IsDvdMode))]
     [NotifyPropertyChangedFor(nameof(IsOrbitMode))]
+    [NotifyPropertyChangedFor(nameof(IsAuroraMode))]
+    [NotifyPropertyChangedFor(nameof(IsBrewRainMode))]
+    [NotifyPropertyChangedFor(nameof(IsKaleidoscopeMode))]
+    [NotifyPropertyChangedFor(nameof(IsMeteorMode))]
+    [NotifyPropertyChangedFor(nameof(IsLiquidMode))]
     [NotifyPropertyChangedFor(nameof(CardOpacity))]
     [NotifyPropertyChangedFor(nameof(DvdDimOpacity))]
     private AmbientMode _mode = AmbientMode.Card;
@@ -88,6 +93,11 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     public bool IsCardMode => Mode == AmbientMode.Card;
     public bool IsDvdMode => Mode == AmbientMode.Dvd;
     public bool IsOrbitMode => Mode == AmbientMode.Orbit;
+    public bool IsAuroraMode => Mode == AmbientMode.Aurora;
+    public bool IsBrewRainMode => Mode == AmbientMode.BrewRain;
+    public bool IsKaleidoscopeMode => Mode == AmbientMode.Kaleidoscope;
+    public bool IsMeteorMode => Mode == AmbientMode.Meteor;
+    public bool IsLiquidMode => Mode == AmbientMode.Liquid;
 
     /// <summary>Card text is only shown in card mode; other modes fade it out (Opacity, not
     /// IsVisible) so the always-on clock above never shifts when the mode flips.</summary>

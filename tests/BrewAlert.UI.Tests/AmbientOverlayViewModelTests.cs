@@ -141,16 +141,30 @@ public class AmbientOverlayViewModelTests
     }
 
     [Theory]
-    // mode, IsCardMode, IsDvdMode, IsOrbitMode, CardOpacity, DvdDimOpacity
-    [InlineData(AmbientMode.Card, true, false, false, 1.0, 0.0)]
-    [InlineData(AmbientMode.Dvd, false, true, false, 0.0, 0.5)]
-    [InlineData(AmbientMode.Orbit, false, false, true, 0.0, 0.0)]
+    // mode, card, dvd, orbit, aurora, rain, kaleidoscope, meteor, liquid, cardOpacity, dimOpacity
+    [InlineData(AmbientMode.Card,         true,  false, false, false, false, false, false, false, 1.0, 0.0)]
+    [InlineData(AmbientMode.Dvd,          false, true,  false, false, false, false, false, false, 0.0, 0.5)]
+    [InlineData(AmbientMode.Orbit,        false, false, true,  false, false, false, false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Aurora,       false, false, false, true,  false, false, false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.BrewRain,     false, false, false, false, true,  false, false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Kaleidoscope, false, false, false, false, false, true,  false, false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Meteor,       false, false, false, false, false, false, true,  false, 0.0, 0.0)]
+    [InlineData(AmbientMode.Liquid,       false, false, false, false, false, false, false, true,  0.0, 0.0)]
     public void Mode_DrivesLayerAndBackdropState(
-        AmbientMode mode, bool card, bool dvd, bool orbit, double cardOpacity, double dimOpacity)
+        AmbientMode mode,
+        bool card,
+        bool dvd,
+        bool orbit,
+        bool aurora,
+        bool rain,
+        bool kaleidoscope,
+        bool meteor,
+        bool liquid,
+        double cardOpacity,
+        double dimOpacity)
     {
-        // The view shows exactly one layer per mode: particles/rings via IsCardMode, the bounce
-        // via IsDvdMode, the orbit via IsOrbitMode. Card text fades unless card mode (CardOpacity)
-        // and only DVD dims the backdrop (DvdDimOpacity).
+        // The view shows exactly one dedicated layer per mode. Card text fades unless card mode
+        // (CardOpacity), and only DVD dims the backdrop (DvdDimOpacity).
         var vm = CreateVm();
 
         vm.Mode = mode;
@@ -158,6 +172,11 @@ public class AmbientOverlayViewModelTests
         Assert.Equal(card, vm.IsCardMode);
         Assert.Equal(dvd, vm.IsDvdMode);
         Assert.Equal(orbit, vm.IsOrbitMode);
+        Assert.Equal(aurora, vm.IsAuroraMode);
+        Assert.Equal(rain, vm.IsBrewRainMode);
+        Assert.Equal(kaleidoscope, vm.IsKaleidoscopeMode);
+        Assert.Equal(meteor, vm.IsMeteorMode);
+        Assert.Equal(liquid, vm.IsLiquidMode);
         Assert.Equal(cardOpacity, vm.CardOpacity);
         Assert.Equal(dimOpacity, vm.DvdDimOpacity);
     }

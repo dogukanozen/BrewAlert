@@ -13,5 +13,20 @@ public enum AmbientMode
     Dvd,
 
     /// <summary>Brew icons orbiting the clock.</summary>
-    Orbit
+    Orbit,
+
+    /// <summary>Layered luminous ribbons drifting behind the clock.</summary>
+    Aurora,
+
+    /// <summary>Coffee, tea, and steam glyphs falling at different depths.</summary>
+    BrewRain,
+
+    /// <summary>Counter-rotating neon geometry folding around the clock.</summary>
+    Kaleidoscope,
+
+    /// <summary>Bright brew-coloured streaks crossing the backdrop.</summary>
+    Meteor,
+
+    /// <summary>Deep liquid bands and bubbles rolling beneath the clock.</summary>
+    Liquid
 }
