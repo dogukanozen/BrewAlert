@@ -43,6 +43,6 @@ $env:BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl = 'https://<bot-host
 $env:BREWALERT__BrewAlert__Notifications__Teams__ApiKey = '<random-secret>'
 ```
 
-When the bot has been installed in more than one conversation, set `BrewAlertBot__ConversationId` on the bot host to select the notification target.
+When the bot has been installed in more than one conversation, set `BrewAlertBot__ConversationId` on the bot host to select the notification target. Group-chat notifications also use `BrewAlertBot__ConversationType=groupChat` and the regional `BrewAlertBot__ServiceUrl` received from Teams (for example, `https://smba.trafficmanager.net/emea/`).
 
 Never commit bot credentials, the endpoint key, or environment-specific appsettings files.

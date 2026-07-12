@@ -3,6 +3,8 @@ namespace BrewAlert.TeamsBot;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 
+public sealed record ConversationTarget(string Id, string ServiceUrl, string ConversationType);
+
 public sealed class ConversationStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
@@ -17,17 +19,29 @@ public sealed class ConversationStore
             : Path.Combine(environment.ContentRootPath, configuredPath);
     }
 
-    public async Task AddAsync(string conversationId, CancellationToken cancellationToken = default)
+    public Task AddAsync(string conversationId, CancellationToken cancellationToken = default) =>
+        AddAsync(new ConversationTarget(conversationId, string.Empty, string.Empty), cancellationToken);
+
+    public async Task AddAsync(ConversationTarget target, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(conversationId))
-            throw new ArgumentException("Conversation ID is required.", nameof(conversationId));
+        if (string.IsNullOrWhiteSpace(target.Id))
+            throw new ArgumentException("Conversation ID is required.", nameof(target));
 
         await gate.WaitAsync(cancellationToken);
         try
         {
-            var ids = await ReadUnsafeAsync(cancellationToken);
-            if (!ids.Add(conversationId))
+            var targets = await ReadUnsafeAsync(cancellationToken);
+            var existing = targets.FirstOrDefault(value => string.Equals(value.Id, target.Id, StringComparison.Ordinal));
+            var merged = new ConversationTarget(
+                target.Id,
+                FirstNotEmpty(target.ServiceUrl, existing?.ServiceUrl),
+                FirstNotEmpty(target.ConversationType, existing?.ConversationType));
+
+            if (existing == merged)
                 return;
+
+            targets.RemoveAll(value => string.Equals(value.Id, target.Id, StringComparison.Ordinal));
+            targets.Add(merged);
 
             var directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(directory))
@@ -36,7 +50,7 @@ public sealed class ConversationStore
             var temporaryPath = $"{path}.{Guid.NewGuid():N}.tmp";
             await File.WriteAllTextAsync(
                 temporaryPath,
-                JsonSerializer.Serialize(ids.Order(StringComparer.Ordinal), JsonOptions),
+                JsonSerializer.Serialize(targets.OrderBy(value => value.Id, StringComparer.Ordinal), JsonOptions),
                 cancellationToken);
             File.Move(temporaryPath, path, overwrite: true);
         }
@@ -46,7 +60,8 @@ public sealed class ConversationStore
         }
     }
 
-    public async Task<IReadOnlyCollection<string>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<ConversationTarget>> GetAllAsync(
+        CancellationToken cancellationToken = default)
     {
         await gate.WaitAsync(cancellationToken);
         try
@@ -59,13 +74,25 @@ public sealed class ConversationStore
         }
     }
 
-    private async Task<HashSet<string>> ReadUnsafeAsync(CancellationToken cancellationToken)
+    private async Task<List<ConversationTarget>> ReadUnsafeAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(path))
-            return new HashSet<string>(StringComparer.Ordinal);
+            return [];
 
         var json = await File.ReadAllTextAsync(path, cancellationToken);
-        var values = JsonSerializer.Deserialize<string[]>(json) ?? [];
-        return new HashSet<string>(values.Where(value => !string.IsNullOrWhiteSpace(value)), StringComparer.Ordinal);
+        using var document = JsonDocument.Parse(json);
+        if (document.RootElement.ValueKind != JsonValueKind.Array)
+            return [];
+
+        return document.RootElement.EnumerateArray()
+            .Select(element => element.ValueKind == JsonValueKind.String
+                ? new ConversationTarget(element.GetString() ?? string.Empty, string.Empty, string.Empty)
+                : element.Deserialize<ConversationTarget>(JsonOptions))
+            .Where(target => target is not null && !string.IsNullOrWhiteSpace(target.Id))
+            .Cast<ConversationTarget>()
+            .ToList();
     }
+
+    private static string FirstNotEmpty(string? preferred, string? fallback) =>
+        !string.IsNullOrWhiteSpace(preferred) ? preferred : fallback ?? string.Empty;
 }

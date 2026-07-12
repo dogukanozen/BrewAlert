@@ -20,8 +20,26 @@ public sealed class ConversationStoreTests : IDisposable
         await store.AddAsync("conversation-2");
 
         var reloaded = CreateStore();
-        var ids = await reloaded.GetAllAsync();
-        Assert.Equal(["conversation-1", "conversation-2"], ids.Order(StringComparer.Ordinal));
+        var targets = await reloaded.GetAllAsync();
+        Assert.Equal(
+            ["conversation-1", "conversation-2"],
+            targets.Select(target => target.Id).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task AddAsync_WhenCoordinatesArriveLater_UpdatesExistingTarget()
+    {
+        var store = CreateStore();
+        await store.AddAsync("conversation-1");
+
+        await store.AddAsync(new ConversationTarget(
+            "conversation-1",
+            "https://smba.trafficmanager.net/emea/",
+            "groupChat"));
+
+        var target = Assert.Single(await store.GetAllAsync());
+        Assert.Equal("https://smba.trafficmanager.net/emea/", target.ServiceUrl);
+        Assert.Equal("groupChat", target.ConversationType);
     }
 
     public void Dispose()
