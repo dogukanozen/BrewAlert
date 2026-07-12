@@ -29,7 +29,8 @@ public class TeamsWebhookNotifierTests
     };
 
     private static (TeamsWebhookNotifier sut, FakeHttpMessageHandler handler) CreateSut(
-        string webhookUrl = ValidWebhookUrl)
+        string webhookUrl = ValidWebhookUrl,
+        string apiKey = "")
     {
         var handler = new FakeHttpMessageHandler();
         var httpClient = new HttpClient(handler);
@@ -41,6 +42,7 @@ public class TeamsWebhookNotifierTests
         options.CurrentValue.Returns(new TeamsNotificationOptions
         {
             WebhookUrl = webhookUrl,
+            ApiKey = apiKey,
             TimeoutSeconds = 30
         });
 
@@ -100,6 +102,28 @@ public class TeamsWebhookNotifierTests
 
         Assert.NotNull(handler.LastRequest);
         Assert.Equal("application/json", handler.LastRequest!.Content?.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task SendBrewCompletedAsync_WhenApiKeyConfigured_SendsBotHeader()
+    {
+        var (sut, handler) = CreateSut(apiKey: "secret-key");
+
+        await sut.SendBrewCompletedAsync(CreateSession());
+
+        Assert.NotNull(handler.LastRequest);
+        Assert.Equal("secret-key", handler.LastRequest!.Headers.GetValues("X-BrewAlert-Key").Single());
+    }
+
+    [Fact]
+    public async Task SendBrewCompletedAsync_WhenApiKeyEmpty_OmitsBotHeader()
+    {
+        var (sut, handler) = CreateSut();
+
+        await sut.SendBrewCompletedAsync(CreateSession());
+
+        Assert.NotNull(handler.LastRequest);
+        Assert.False(handler.LastRequest!.Headers.Contains("X-BrewAlert-Key"));
     }
 
     [Fact]

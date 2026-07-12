@@ -10,6 +10,12 @@ public sealed class TeamsNotificationOptions
 
     public string WebhookUrl { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Optional key sent as <c>X-BrewAlert-Key</c>. Leave empty for Power Automate
+    /// webhook URLs; configure it when posting to BrewAlert.TeamsBot.
+    /// </summary>
+    public string ApiKey { get; set; } = string.Empty;
+
     /// <summary>Timeout in seconds for the HTTP request to Teams.</summary>
     public int TimeoutSeconds { get; set; } = 30;
 }

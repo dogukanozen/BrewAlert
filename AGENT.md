@@ -17,7 +17,7 @@ Everything else is opened on-demand from §3.
 
 ## 2. Project in one paragraph
 
-BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams Adaptive Card when the brew completes. Runs on Windows x64 and Raspberry Pi linux-arm64. Three layers: **Core** (pure domain, zero deps) ← **Infrastructure** (Teams, JSON) ← **UI** (Avalonia + `CommunityToolkit.Mvvm`). Dependency direction is one-way; never reverse it. The recommended notification path is **Power Automate webhook** (`TeamsWebhookNotifier`); Graph API (`TeamsGraphNotifier`) is available but requires RSC on the target chat.
+BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams Adaptive Card when the brew completes. Runs on Windows x64 and Raspberry Pi linux-arm64. Three layers: **Core** (pure domain, zero deps) ← **Infrastructure** (Teams, JSON) ← **UI** (Avalonia + `CommunityToolkit.Mvvm`). Dependency direction is one-way; never reverse it. `TeamsWebhookNotifier` can target either Power Automate or the branded `BrewAlert.TeamsBot` endpoint; Graph API (`TeamsGraphNotifier`) is also available but requires RSC on the target chat.
 
 ## 3. Request → files (low-token lookup)
 
@@ -28,7 +28,7 @@ BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams A
 | session state | `src/BrewAlert.Core/Models/BrewSession.cs` |
 | ambient, idle screen, screensaver, DVD bounce, orbit mode, animation mode, freshness, bayat, stale, cooling | `src/BrewAlert.Core/Services/BrewFreshnessEvaluator.cs`, `Models/BrewFreshnessLevel.cs`, `src/BrewAlert.UI/ViewModels/AmbientOverlayViewModel.cs`, `AmbientSceneItem.cs`, `AmbientMode.cs`, `AmbientPalette.cs`, `Views/AmbientOverlayView.axaml(.cs)`, `Converters/Ambient*.cs` |
 | load/save profile, JSON file | `src/BrewAlert.Infrastructure/Persistence/JsonProfileRepository.cs` |
-| teams, webhook, adaptive card, power automate | `src/BrewAlert.Infrastructure/Notifications/TeamsWebhookNotifier.cs`, `TeamsMessageBuilder.cs`, `Configuration/TeamsNotificationOptions.cs` |
+| teams, webhook, adaptive card, power automate, notification bot | `src/BrewAlert.Infrastructure/Notifications/TeamsWebhookNotifier.cs`, `TeamsMessageBuilder.cs`, `Configuration/TeamsNotificationOptions.cs`, `src/BrewAlert.TeamsBot/` |
 | teams graph api, graph notifier | `src/BrewAlert.Infrastructure/Notifications/TeamsGraphNotifier.cs`, `TeamsGraphMessageBuilder.cs`, `Configuration/TeamsGraphOptions.cs` |
 | notification routing, provider selection | `src/BrewAlert.Infrastructure/Notifications/RoutingNotificationService.cs`, `Configuration/NotificationProviderOptions.cs` |
 | console notifier / fallback | `src/BrewAlert.Infrastructure/Notifications/ConsoleNotifier.cs` |
@@ -56,7 +56,7 @@ All of the following are verified against the current code. If you see a change 
    - **Singleton**: `MainWindowViewModel`, `INavigationService`, `IBrewTimerService`, `BrewProfileService`, `IProfileRepository`, `INotificationService`, `IPreferencesService`, `ILocalizationService`.
    - **Transient**: `ActiveBrewsViewModel`, `ProfileListViewModel`, `SettingsViewModel` — fresh instance per navigation so state never goes stale.
 5. **Dependency direction** UI → Infrastructure → Core. Never add a reverse reference.
-6. **No secrets in repo.** Webhook URL via env var `BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl` (provider via `BREWALERT__BrewAlert__Notifications__Provider=Webhook`) or gitignored `appsettings.Development.json`. `git diff --cached` before committing. `preferences.json` is gitignored.
+6. **No secrets in repo.** Webhook URL via env var `BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl` (provider via `BREWALERT__BrewAlert__Notifications__Provider=Webhook`) or gitignored `appsettings.Development.json`. Bot endpoint keys use `BREWALERT__BrewAlert__Notifications__Teams__ApiKey` in the desktop app and `BrewAlertBot__ApiKey` on the bot host. `git diff --cached` before committing. `preferences.json` is gitignored.
 7. **No new CI artifact uploads** without user approval — repo is on free-tier GitHub. `ci.yml` currently uploads only on `v*` tags.
 8. **No direct pushes to `main`.** Everything goes through a feature branch + PR.
 

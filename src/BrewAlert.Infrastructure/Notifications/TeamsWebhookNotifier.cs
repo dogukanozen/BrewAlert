@@ -29,11 +29,9 @@ public sealed class TeamsWebhookNotifier(
         try
         {
             var payload = TeamsMessageBuilder.BuildBrewCompletedPayload(session, languageOptions.CurrentValue.Language);
-            var content = new StringContent(payload, Encoding.UTF8);
-            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
             var client = CreateClient(opts);
-            var response = await client.PostAsync(opts.WebhookUrl, content, ct);
+            using var request = CreateRequest(opts, payload);
+            using var response = await client.SendAsync(request, ct);
 
             if (response.IsSuccessStatusCode)
             {
@@ -61,11 +59,9 @@ public sealed class TeamsWebhookNotifier(
         try
         {
             var payload = TeamsMessageBuilder.BuildTestPayload(languageOptions.CurrentValue.Language);
-            var content = new StringContent(payload, Encoding.UTF8);
-            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
             var client = CreateClient(opts);
-            var response = await client.PostAsync(opts.WebhookUrl, content, ct);
+            using var request = CreateRequest(opts, payload);
+            using var response = await client.SendAsync(request, ct);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -83,5 +79,23 @@ public sealed class TeamsWebhookNotifier(
             client.Timeout = TimeSpan.FromSeconds(opts.TimeoutSeconds);
         }
         return client;
+    }
+
+    private static HttpRequestMessage CreateRequest(TeamsNotificationOptions opts, string payload)
+    {
+        var content = new StringContent(payload, Encoding.UTF8);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+        var request = new HttpRequestMessage(HttpMethod.Post, opts.WebhookUrl)
+        {
+            Content = content,
+        };
+
+        if (!string.IsNullOrWhiteSpace(opts.ApiKey))
+        {
+            request.Headers.Add("X-BrewAlert-Key", opts.ApiKey);
+        }
+
+        return request;
     }
 }

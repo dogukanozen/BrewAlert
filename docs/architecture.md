@@ -77,7 +77,7 @@ Available providers:
 | `Provider` value | Notifier used |
 |---|---|
 | `"Graph"` | `TeamsGraphNotifier` — OAuth2 client credentials, posts to Graph `chats/{id}/messages` |
-| `"Webhook"` | `TeamsWebhookNotifier` — HTTP POST to Teams Incoming Webhook URL |
+| `"Webhook"` | `TeamsWebhookNotifier` — HTTP POST to Power Automate or `BrewAlert.TeamsBot` |
 | `"Console"` (default) | `ConsoleNotifier` — logs to stdout; useful for development |
 
 Set the active provider in `%AppData%\BrewAlert\preferences.json`:
@@ -110,6 +110,7 @@ Environment variables prefixed BREWALERT__
 |---|---|
 | `BrewAlert:Notifications:Provider` | `BREWALERT__BrewAlert__Notifications__Provider` |
 | `BrewAlert:Notifications:Teams:WebhookUrl` | `BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl` |
+| `BrewAlert:Notifications:Teams:ApiKey` | `BREWALERT__BrewAlert__Notifications__Teams__ApiKey` |
 | `BrewAlert:Notifications:TeamsGraph:TenantId` | `BREWALERT__BrewAlert__Notifications__TeamsGraph__TenantId` |
 | `BrewAlert:Notifications:TeamsGraph:ClientId` | `BREWALERT__BrewAlert__Notifications__TeamsGraph__ClientId` |
 | `BrewAlert:Notifications:TeamsGraph:ClientSecret` | `BREWALERT__BrewAlert__Notifications__TeamsGraph__ClientSecret` |
@@ -118,6 +119,7 @@ Environment variables prefixed BREWALERT__
 ### 2.7 Security posture
 - No secrets in source.
 - Webhook URLs and Client Secrets supplied via env vars (or gitignored env-specific `appsettings`).
+- The branded bot endpoint requires matching `X-BrewAlert-Key` credentials on the desktop and bot hosts.
 - `git diff --cached` is the last line of defence — use it.
 
 ## 3. Data flow — happy path
@@ -145,7 +147,7 @@ Per-session PeriodicTimer loop (1 s)
   └─ BrewCompleted               →   BrewCompletionNotificationService dedupes & sends one notification
                                                               │
                                                               ▼
-                                                   [Teams Graph | Teams Webhook | Console]
+                                                   [Teams Graph | Teams Webhook/Bot | Console]
                                                    (Notification sent to chosen provider)
 ```
 
