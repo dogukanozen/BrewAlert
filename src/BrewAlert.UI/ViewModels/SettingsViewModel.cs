@@ -67,6 +67,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     public bool IsWebhookConfigured { get; private set; }
 
     public bool IsGraphSelected => SelectedProvider == NotificationProvider.Graph;
+    public bool IsTurkishLanguage => CurrentLanguage == AppLanguage.Turkish;
+    public bool IsConsoleSelected => SelectedProvider == NotificationProvider.Console;
+
     public bool IsWebhookSelected => SelectedProvider == NotificationProvider.Webhook;
 
     public bool IsConfigured => SelectedProvider switch
@@ -83,6 +86,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private BrewType _newProfileType = BrewType.Tea;
 
     public ObservableCollection<EditableProfileViewModel> Profiles { get; } = new();
+    public AppearanceSettingsViewModel Appearance { get; }
 
     public SettingsViewModel(
         INotificationService notificationService,
@@ -93,7 +97,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         IPreferencesService preferencesService,
         ILocalizationService loc,
         IUpdateService updateService,
-        IConfigurationRoot configuration)
+        IConfigurationRoot configuration,
+        IAppearanceService appearance)
     {
         _notificationService = notificationService;
         _graphOptions = graphOptions;
@@ -103,6 +108,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _loc = loc;
         _updateService = updateService;
         _configuration = configuration;
+        Appearance = new AppearanceSettingsViewModel(appearance, loc);
 
         _selectedProvider = providerOptions.CurrentValue.Provider;
         _currentLanguage = loc.CurrentLanguage;
@@ -188,11 +194,13 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private void OnLanguageChanged(string lang)
     {
         CurrentLanguage = lang;
+        OnPropertyChanged(nameof(IsTurkishLanguage));
         RefreshLocalizedStrings();
     }
 
     partial void OnSelectedProviderChanged(string value)
     {
+        OnPropertyChanged(nameof(IsConsoleSelected));
         OnPropertyChanged(nameof(IsGraphSelected));
         OnPropertyChanged(nameof(IsWebhookSelected));
         OnPropertyChanged(nameof(IsConfigured));
@@ -421,6 +429,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         _loc.LanguageChanged -= OnLanguageChanged;
+        Appearance.Dispose();
     }
 }
 

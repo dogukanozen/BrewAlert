@@ -1,149 +1,58 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:BrewAlert.UI.ViewModels"
-             x:Class="BrewAlert.UI.Views.ProfileListView"
-             x:DataType="vm:ProfileListViewModel">
-
-    <!-- Two-column home: profiles (primary action) on the left, recent activity on the right. -->
-    <Grid ColumnDefinitions="*,Auto,280" ColumnSpacing="0">
-
-        <!-- LEFT: Profiles -->
-        <Grid Grid.Column="0" RowDefinitions="Auto,Auto,*">
-            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="4,0,4,2">
-                <TextBlock Grid.Column="0"
-                           Text="{Binding PageTitle}"
-                           Classes="brew-title" />
-                <TextBlock Grid.Column="1"
-                           Text="{Binding LoadingText}"
-                           Classes="brew-subtitle"
-                           VerticalAlignment="Center"
-                           IsVisible="{Binding IsLoading}" />
-            </Grid>
-
-            <ScrollViewer Grid.Row="2" Margin="0,12,0,0" HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl ItemsSource="{Binding Profiles}"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Button Command="{Binding $parent[ItemsControl].((vm:ProfileListViewModel)DataContext).SelectProfileCommand}"
-                                    CommandParameter="{Binding}"
-                                    Margin="6"
-                                    Padding="0"
-                                    Background="Transparent"
-                                    CornerRadius="16">
-                                <Border Classes="brew-card"
-                                        Width="180" Height="160">
-                                    <StackPanel VerticalAlignment="Center"
-                                                HorizontalAlignment="Center"
-                                                Spacing="6">
-                                        <Viewbox Width="38" Height="38"
-                                                 HorizontalAlignment="Center">
-                                            <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}"
-                                                  Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.4"
-                                                  StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
-                                        </Viewbox>
-                                        <TextBlock Text="{Binding Name}"
-                                                   FontSize="17"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{StaticResource BrewTextPrimaryBrush}"
-                                                   HorizontalAlignment="Center"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   MaxWidth="160" />
-                                        <TextBlock Text="{Binding Description}"
-                                                   FontSize="12"
-                                                   Foreground="{StaticResource BrewTextSecondaryBrush}"
-                                                   HorizontalAlignment="Center"
-                                                   TextWrapping="Wrap"
-                                                   TextAlignment="Center"
-                                                   MaxWidth="160" />
-                                    </StackPanel>
-                                </Border>
-                            </Button>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Grid>
-
-        <!-- Divider between columns -->
-        <Border Grid.Column="1"
-                Width="1"
-                Margin="12,4,12,4"
-                Background="#22ffffff"
-                IsVisible="{Binding HasRecentBrews}" />
-
-        <!-- RIGHT: Recent activity timeline -->
-        <Border Grid.Column="2"
-                Classes="brew-panel"
-                IsVisible="{Binding HasRecentBrews}">
-            <Grid RowDefinitions="Auto,*">
-                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,0,2,8">
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding RecentBrewsLabel}"
-                               Classes="brew-section"
-                               VerticalAlignment="Center" />
-                    <Border Grid.Column="1" Classes="brew-pill">
-                        <TextBlock Text="{Binding RecentBrewsCount}"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource BrewTextSecondaryBrush}" />
-                    </Border>
-                </Grid>
-
-                <ScrollViewer Grid.Row="1"
-                              HorizontalScrollBarVisibility="Disabled"
-                              VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding RecentBrews}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Spacing="2" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BrewAlert.UI.ViewModels" xmlns:media="using:BrewAlert.UI.Media"
+             xmlns:conv="using:BrewAlert.UI.Converters" x:Class="BrewAlert.UI.Views.ProfileListView"
+             x:DataType="vm:ProfileListViewModel" Classes="profile-page">
+    <UserControl.Resources><conv:TimeSpanToStringConverter x:Key="Duration" /></UserControl.Resources>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <Grid Classes="home-layout" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="24,18,12,10">
+            <StackPanel Classes="home-intro" Spacing="8" Margin="0,0,12,0">
+                <TextBlock Text="{Binding HomeEyebrow}" Classes="brew-eyebrow" />
+                <TextBlock Text="{Binding HomeTitle}" Classes="home-title" />
+                <TextBlock Text="{Binding HomeSubtitle}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding LoadingText}" Classes="brew-subtitle" IsVisible="{Binding IsLoading}" />
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding Profiles}" Classes="home-choices">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Classes="profile-grid" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Classes="profile-choice" Command="{Binding $parent[ItemsControl].((vm:ProfileListViewModel)DataContext).SelectProfileCommand}"
+                                CommandParameter="{Binding}">
+                            <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,Auto" RowSpacing="10">
+                                <TextBlock Text="{Binding Description}" Classes="brew-subtitle" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                <Viewbox Grid.Column="1" Width="22" Height="22" Margin="10,0,0,0">
+                                    <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}" Classes="brew-icon" />
+                                </Viewbox>
+                                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Name}" FontSize="26"
+                                           LetterSpacing="-0.5" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                <TextBlock Grid.Row="2" Text="{Binding BrewDuration, Converter={StaticResource Duration}}" Classes="brew-subtitle" />
+                                <Viewbox Grid.Row="2" Grid.Column="1" Width="17" Height="17">
+                                    <Path Data="{x:Static media:BrewIconGeometry.Arrow}" Classes="brew-icon" />
+                                </Viewbox>
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border Classes="home-history" IsVisible="{Binding HasRecentBrews}" Margin="0,0,12,0">
+                <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding RecentBrewsLabel}" Classes="brew-eyebrow" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="{Binding HistoryToggleText}" Classes="brew-nav-btn"
+                                Command="{Binding ToggleHistoryCommand}" IsVisible="{Binding CanExpandHistory}" />
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding DisplayedRecentBrews}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Classes="brew-history-row">
-                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                        <Border Grid.Column="0" Classes="brew-icon-disc">
-                                            <Viewbox Width="22" Height="22"
-                                                     HorizontalAlignment="Center"
-                                                     VerticalAlignment="Center">
-                                                <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}"
-                                                      Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.4"
-                                                      StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
-                                            </Viewbox>
-                                        </Border>
-
-                                        <StackPanel Grid.Column="1"
-                                                    VerticalAlignment="Center"
-                                                    Spacing="1">
-                                            <TextBlock Text="{Binding Name}"
-                                                       FontSize="14"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="{StaticResource BrewTextPrimaryBrush}"
-                                                       TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{Binding DurationText}"
-                                                       FontSize="11"
-                                                       Foreground="{StaticResource BrewTextSecondaryBrush}" />
-                                        </StackPanel>
-
-                                        <TextBlock Grid.Column="2"
-                                                   Text="{Binding RelativeTime}"
-                                                   FontSize="11"
-                                                   Foreground="{StaticResource BrewTextSecondaryBrush}"
-                                                   VerticalAlignment="Center" />
-                                    </Grid>
-                                </Border>
+                            <DataTemplate x:DataType="vm:RecentBrewItem">
+                                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,22,10">
+                                    <TextBlock Text="{Binding Name}" FontSize="12" MaxWidth="150" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding RelativeTime}" Classes="brew-subtitle" FontSize="11" />
+                                </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                </ScrollViewer>
-            </Grid>
-        </Border>
-    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
 </UserControl>

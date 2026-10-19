@@ -33,7 +33,7 @@ public class LocalizationServiceTests
     {
         using var sut = new LocalizationService(BuildMonitor(AppLanguage.English));
 
-        Assert.Equal("⏸ Pause", sut.Get("PauseButton"));
+        Assert.Equal("Pause", sut.Get("PauseButton"));
         Assert.Equal("Brewing...", sut.Get("Brewing"));
     }
 
@@ -42,7 +42,7 @@ public class LocalizationServiceTests
     {
         using var sut = new LocalizationService(BuildMonitor(AppLanguage.Turkish));
 
-        Assert.Equal("⏸ Duraklat", sut.Get("PauseButton"));
+        Assert.Equal("Duraklat", sut.Get("PauseButton"));
         Assert.Equal("Demliyor...", sut.Get("Brewing"));
     }
 

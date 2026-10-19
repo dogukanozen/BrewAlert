@@ -6,4 +6,5 @@ public interface IPreferencesService
     Task SaveNotificationProviderAsync(string provider, CancellationToken ct = default);
     Task SaveLanguageAsync(string language, CancellationToken ct = default);
     Task SaveWebhookUrlAsync(string url, CancellationToken ct = default);
+    Task SaveAppearanceAsync(AppearanceOptions appearance, CancellationToken ct = default);
 }

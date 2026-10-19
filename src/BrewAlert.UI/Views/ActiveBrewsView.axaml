@@ -1,155 +1,43 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:BrewAlert.UI.ViewModels"
-             xmlns:conv="using:BrewAlert.UI.Converters"
-             x:Class="BrewAlert.UI.Views.ActiveBrewsView"
-             x:DataType="vm:ActiveBrewsViewModel">
-
-    <UserControl.Resources>
-        <conv:TimeSpanToStringConverter x:Key="TimeSpanConverter" />
-    </UserControl.Resources>
-
-    <UserControl.Styles>
-        <!-- Prominent action button used inside brew rows -->
-        <Style Selector="Button.brew-row-action">
-            <Setter Property="FontSize" Value="15" />
-            <Setter Property="Padding" Value="18,10" />
-            <Setter Property="MinHeight" Value="42" />
-            <Setter Property="MinWidth" Value="110" />
-            <Setter Property="CornerRadius" Value="10" />
-        </Style>
-        <!-- The "+ New Brew" CTA in the header -->
-        <Style Selector="Button.brew-new-cta">
-            <Setter Property="FontSize" Value="16" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Padding" Value="22,12" />
-            <Setter Property="MinHeight" Value="48" />
-            <Setter Property="MinWidth" Value="170" />
-            <Setter Property="CornerRadius" Value="12" />
-        </Style>
-    </UserControl.Styles>
-
-    <DockPanel Margin="8,4" LastChildFill="True">
-
-        <!-- Header -->
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="4,0,4,12">
-            <TextBlock Grid.Column="0"
-                       Text="{Binding Title}"
-                       Classes="brew-title"
-                       VerticalAlignment="Center" />
-            <Button Grid.Column="1"
-                    Content="{Binding NewBrewButtonText}"
-                    Classes="brew-primary brew-new-cta"
-                    Command="{Binding NewBrewCommand}" />
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BrewAlert.UI.ViewModels" xmlns:conv="using:BrewAlert.UI.Converters"
+             xmlns:media="using:BrewAlert.UI.Media" x:Class="BrewAlert.UI.Views.ActiveBrewsView"
+             x:DataType="vm:ActiveBrewsViewModel" Classes="active-page">
+    <UserControl.Resources><conv:TimeSpanToStringConverter x:Key="Duration" /></UserControl.Resources>
+    <DockPanel Margin="24,20,12,12">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,0,12,18">
+            <TextBlock Text="{Binding Title}" Classes="brew-title" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <Button Grid.Column="1" Content="{Binding NewBrewButtonText}" Command="{Binding NewBrewCommand}" Classes="brew-secondary" />
         </Grid>
-
-        <!-- Empty state (defensive — list normally navigates home when emptied) -->
-        <TextBlock DockPanel.Dock="Top"
-                   Text="{Binding EmptyStateText}"
-                   Classes="brew-subtitle"
-                   HorizontalAlignment="Center"
-                   Margin="0,40,0,0"
-                   IsVisible="{Binding !HasItems}" />
-
-        <!-- Brews list -->
+        <TextBlock DockPanel.Dock="Top" Text="{Binding EmptyStateText}" Classes="brew-subtitle" IsVisible="{Binding !HasItems}" />
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasItems}">
             <ItemsControl ItemsSource="{Binding Items}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Spacing="14" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Classes="sessions-grid" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="vm:BrewItemViewModel">
-                        <Border Classes="brew-panel" Padding="22,18">
-                            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="14">
-
-                                <!-- Row 0: icon + name/status + big countdown -->
-                                <Grid Grid.Row="0"
-                                      ColumnDefinitions="Auto,*,Auto"
-                                      ColumnSpacing="18">
-                                    <Viewbox Grid.Column="0"
-                                             Width="46" Height="46"
-                                             VerticalAlignment="Center">
-                                        <Path Data="{Binding ProfileIcon, Converter={StaticResource BrewIcon}}"
-                                              Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.4"
-                                              StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
-                                    </Viewbox>
-
-                                    <StackPanel Grid.Column="1"
-                                                VerticalAlignment="Center"
-                                                Spacing="4">
-                                        <TextBlock Text="{Binding ProfileName}"
-                                                   FontSize="22"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{StaticResource BrewTextPrimaryBrush}"
-                                                   TextTrimming="CharacterEllipsis" />
-                                        <StackPanel Orientation="Horizontal" Spacing="10">
-                                            <TextBlock Text="{Binding StatusText}"
-                                                       Classes="brew-subtitle"
-                                                       FontSize="13" />
-                                            <TextBlock Text="{Binding NotificationStatus}"
-                                                       Classes="brew-subtitle"
-                                                       FontSize="13"
-                                                       IsVisible="{Binding NotificationStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                        </StackPanel>
-                                    </StackPanel>
-
-                                    <TextBlock Grid.Column="2"
-                                               Text="{Binding Remaining, Converter={StaticResource TimeSpanConverter}}"
-                                               FontSize="52"
-                                               FontWeight="Bold"
-                                               Foreground="{StaticResource BrewAccentBrush}"
-                                               VerticalAlignment="Center" />
+                    <DataTemplate x:DataType="vm:BrewItemViewModel">
+                        <Border Classes="brew-panel session-panel" Margin="0,0,12,12" Padding="20">
+                            <StackPanel Spacing="13">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
+                                    <Viewbox Width="19" Height="19"><Path Data="{Binding ProfileIcon, Converter={StaticResource BrewIcon}}" Classes="brew-icon" /></Viewbox>
+                                    <TextBlock Grid.Column="1" Text="{Binding ProfileName}" FontSize="14" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" Text="{Binding StatusText}" Classes="brew-subtitle" FontSize="11" />
                                 </Grid>
-
-                                <!-- Row 1: thick progress bar -->
-                                <ProgressBar Grid.Row="1"
-                                             Value="{Binding Progress}"
-                                             Maximum="1"
-                                             Height="10"
-                                             CornerRadius="5"
-                                             Foreground="{StaticResource BrewAccentBrush}"
-                                             Background="{StaticResource BrewCardBrush}" />
-
-                                <!-- Row 2: action buttons (right-aligned, large) -->
-                                <StackPanel Grid.Row="2"
-                                            Orientation="Horizontal"
-                                            HorizontalAlignment="Right"
-                                            Spacing="10">
-                                    <Button Content="{Binding PauseButtonText}"
-                                            Classes="brew-primary brew-row-action"
-                                            Command="{Binding PauseCommand}">
-                                        <Button.IsVisible>
-                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                <Binding Path="IsRunning" />
-                                                <Binding Path="!IsPaused" />
-                                            </MultiBinding>
-                                        </Button.IsVisible>
+                                <TextBlock Text="{Binding Remaining, Converter={StaticResource Duration}}" FontSize="68"
+                                           FontWeight="Light" LetterSpacing="-3" HorizontalAlignment="Center" />
+                                <ProgressBar Value="{Binding Progress}" Maximum="1" Height="3" CornerRadius="0"
+                                             Foreground="{DynamicResource BrewTextPrimaryBrush}" Background="{DynamicResource BrewLineBrush}" />
+                                <WrapPanel HorizontalAlignment="Center">
+                                    <Button Content="{Binding PauseButtonText}" Command="{Binding PauseCommand}" Classes="brew-primary" Margin="0,0,8,0">
+                                        <Button.IsVisible><MultiBinding Converter="{x:Static BoolConverters.And}"><Binding Path="IsRunning" /><Binding Path="!IsPaused" /></MultiBinding></Button.IsVisible>
                                     </Button>
-
-                                    <Button Content="{Binding ResumeButtonText}"
-                                            Classes="brew-primary brew-row-action"
-                                            Command="{Binding ResumeCommand}">
-                                        <Button.IsVisible>
-                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                <Binding Path="IsRunning" />
-                                                <Binding Path="IsPaused" />
-                                            </MultiBinding>
-                                        </Button.IsVisible>
+                                    <Button Content="{Binding ResumeButtonText}" Command="{Binding ResumeCommand}" Classes="brew-primary" Margin="0,0,8,0">
+                                        <Button.IsVisible><MultiBinding Converter="{x:Static BoolConverters.And}"><Binding Path="IsRunning" /><Binding Path="IsPaused" /></MultiBinding></Button.IsVisible>
                                     </Button>
-
-                                    <Button Content="{Binding CancelButtonText}"
-                                            Classes="brew-danger brew-row-action"
-                                            Command="{Binding CancelCommand}"
-                                            IsVisible="{Binding IsRunning}" />
-
-                                    <Button Content="{Binding DismissButtonText}"
-                                            Classes="brew-primary brew-row-action"
-                                            Command="{Binding DismissCommand}"
-                                            IsVisible="{Binding IsCompleted}" />
-                                </StackPanel>
-                            </Grid>
+                                    <Button Content="{Binding CancelButtonText}" Command="{Binding CancelCommand}" Classes="brew-secondary" IsVisible="{Binding IsRunning}" />
+                                    <Button Content="{Binding DismissButtonText}" Command="{Binding DismissCommand}" Classes="brew-primary" IsVisible="{Binding IsCompleted}" />
+                                </WrapPanel>
+                                <TextBlock Text="{Binding NotificationStatus}" Classes="brew-subtitle" FontSize="12" TextWrapping="Wrap"
+                                           IsVisible="{Binding NotificationStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            </StackPanel>
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

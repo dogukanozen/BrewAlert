@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BrewAlert.UI.ViewModels" x:Class="BrewAlert.UI.Views.AppearanceSettingsView"
+             x:DataType="vm:AppearanceSettingsViewModel">
+    <StackPanel Spacing="14" IsEnabled="{Binding !IsSaving}">
+        <TextBlock Text="{Binding Title}" Classes="brew-section" />
+        <WrapPanel>
+            <Button Content="{Binding ObsidianText}" Classes="theme-option" Classes.selected="{Binding IsObsidian}"
+                    Command="{Binding SetModeCommand}" CommandParameter="Obsidian" Margin="0,0,8,8" />
+            <Button Content="{Binding PorcelainText}" Classes="theme-option" Classes.selected="{Binding IsPorcelain}"
+                    Command="{Binding SetModeCommand}" CommandParameter="Porcelain" Margin="0,0,8,8" />
+            <Button Content="{Binding WeeklyText}" Classes="theme-option" Classes.selected="{Binding IsWeekly}"
+                    Command="{Binding SetModeCommand}" CommandParameter="Weekly" Margin="0,0,0,8" />
+        </WrapPanel>
+        <TextBlock Text="{Binding ActiveText}" Classes="brew-subtitle" />
+        <TextBlock Text="{Binding Hint}" Classes="brew-subtitle" TextWrapping="Wrap" />
+        <ItemsControl ItemsSource="{Binding Days}" IsVisible="{Binding IsWeekly}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:DayThemeViewModel">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,8">
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="14" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="1" Content="{Binding ObsidianText}" Classes="theme-option" Classes.selected="{Binding IsObsidian}"
+                                Command="{Binding SetThemeCommand}" CommandParameter="Obsidian" />
+                        <Button Grid.Column="2" Content="{Binding PorcelainText}" Classes="theme-option" Classes.selected="{Binding IsPorcelain}"
+                                Command="{Binding SetThemeCommand}" CommandParameter="Porcelain" />
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Text="{Binding Error}" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+</UserControl>

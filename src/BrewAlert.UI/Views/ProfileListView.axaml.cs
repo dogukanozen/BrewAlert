@@ -7,5 +7,6 @@ public partial class ProfileListView : UserControl
     public ProfileListView()
     {
         InitializeComponent();
+        SizeChanged += (_, e) => Classes.Set("compact", e.NewSize.Width < 640);
     }
 }

@@ -10,6 +10,7 @@ public partial class MainView : UserControl
     public MainView()
     {
         InitializeComponent();
+        SizeChanged += (_, e) => Classes.Set("compact", e.NewSize.Width < 640);
         AddHandler(PointerPressedEvent, OnUserInput, RoutingStrategies.Tunnel);
         AddHandler(KeyDownEvent, OnUserInput, RoutingStrategies.Tunnel);
     }
@@ -17,7 +18,11 @@ public partial class MainView : UserControl
     private void OnUserInput(object? sender, RoutedEventArgs e)
     {
         if (DataContext is MainWindowViewModel vm)
+        {
+            var dismissingAmbient = vm.Ambient.IsVisible || vm.Ambient.ShowPending;
             vm.RecordUserActivity();
+            if (dismissingAmbient) e.Handled = true;
+        }
     }
 
     private void OnAmbientPointerPressed(object? sender, PointerPressedEventArgs e)

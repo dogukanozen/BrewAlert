@@ -1,271 +1,98 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:BrewAlert.UI.ViewModels"
-             x:Class="BrewAlert.UI.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel">
-
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BrewAlert.UI.ViewModels" xmlns:views="using:BrewAlert.UI.Views"
+             xmlns:media="using:BrewAlert.UI.Media" x:Class="BrewAlert.UI.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel" Classes="settings-page">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="20" Margin="12" HorizontalAlignment="Stretch">
-
-            <!-- ══════════════════ Language ══════════════════ -->
-            <TextBlock Text="{Binding LanguageLabel}"
-                       Classes="brew-title"
-                       Margin="0,0,0,4" />
-
-            <Border Background="{StaticResource BrewSurfaceBrush}"
-                    CornerRadius="8" Padding="12">
-                <!-- Language picker buttons intentionally show each option in its own language. -->
-                <WrapPanel Orientation="Horizontal">
-                    <Button Content="🇬🇧  English"
-                            Command="{Binding SetLanguageCommand}"
-                            CommandParameter="English"
-                            IsEnabled="{Binding !IsBusy}"
-                            Classes="brew-primary"
-                            Margin="0,0,8,0" />
-                    <Button Content="🇹🇷  Türkçe"
-                            Command="{Binding SetLanguageCommand}"
-                            CommandParameter="Turkish"
-                            IsEnabled="{Binding !IsBusy}"
-                            Classes="brew-primary" />
-                </WrapPanel>
+        <Grid x:Name="SettingsLayout" Classes="settings-layout" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="30"
+              RowSpacing="28" Margin="24" MaxWidth="1000" HorizontalAlignment="Stretch">
+            <Border Classes="settings-section settings-appearance">
+                <views:AppearanceSettingsView DataContext="{Binding Appearance}" />
             </Border>
-
-            <!-- ══════════════════ Duration Settings ══════════════════ -->
-            <TextBlock Text="{Binding DurationSettingsTitle}"
-                       Classes="brew-title"
-                       Margin="0,4,0,4" />
-
-            <ItemsControl ItemsSource="{Binding Profiles}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:EditableProfileViewModel">
-                        <Border Background="{StaticResource BrewSurfaceBrush}"
-                                CornerRadius="8" Padding="12" Margin="0,0,0,8"
-                                IsVisible="{Binding !IsDeleted}">
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
-                                <Viewbox Grid.Column="0" Width="26" Height="26"
-                                         VerticalAlignment="Center" Margin="0,0,12,0">
-                                    <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}"
-                                          Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.4"
-                                          StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
-                                </Viewbox>
-                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="18"
-                                           FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <Button Grid.Column="2" Content="-"
-                                        Command="{Binding DecreaseTimeCommand}"
-                                        Width="44" MinHeight="44" Padding="0"
-                                        HorizontalContentAlignment="Center"
-                                        Margin="0,0,8,0" Classes="brew-primary"/>
-                                <TextBlock Grid.Column="3"
-                                           Text="{Binding DurationText}"
-                                           VerticalAlignment="Center" FontWeight="Bold" FontSize="18"
-                                           Width="65" TextAlignment="Center" Margin="0,0,8,0" />
-                                <Button Grid.Column="4" Content="+"
-                                        Command="{Binding IncreaseTimeCommand}"
-                                        Width="44" MinHeight="44" Padding="0"
-                                        HorizontalContentAlignment="Center"
-                                        Margin="0,0,8,0" Classes="brew-primary"/>
-                                <Button Grid.Column="5"
-                                        Content="{Binding DeleteButtonText}"
-                                        Command="{Binding DeleteCommand}"
-                                        MinHeight="44" Padding="8,0"
-                                        Classes="brew-danger"/>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <!-- Add Profile Form -->
-            <Border Background="{StaticResource BrewSurfaceBrush}"
-                    CornerRadius="8" Padding="12">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="{Binding AddProfileText}"
-                               FontWeight="SemiBold" FontSize="14"
-                               Foreground="{StaticResource BrewTextSecondaryBrush}" />
-                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
-                        <TextBox Grid.Column="0"
-                                 Text="{Binding NewProfileName}"
-                                 Watermark="{Binding ProfileNameWatermark}"
-                                 MinHeight="44"
-                                 Margin="0,0,8,0" />
-                        <Button Grid.Column="1" Content="-"
-                                Command="{Binding DecreaseDurationCommand}"
-                                Width="44" MinHeight="44" Padding="0"
-                                HorizontalContentAlignment="Center"
-                                Classes="brew-primary"
-                                Margin="0,0,4,0" />
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding NewProfileDuration}"
-                                   VerticalAlignment="Center"
-                                   FontWeight="Bold" FontSize="18"
-                                   Width="36" TextAlignment="Center"
-                                   Margin="0,0,4,0" />
-                        <Button Grid.Column="3" Content="+"
-                                Command="{Binding IncreaseDurationCommand}"
-                                Width="44" MinHeight="44" Padding="0"
-                                HorizontalContentAlignment="Center"
-                                Classes="brew-primary"
-                                Margin="0,0,8,0" />
-                        <Button Grid.Column="4"
-                                Content="{Binding AddProfileText}"
-                                Command="{Binding AddProfileCommand}"
-                                IsEnabled="{Binding !IsBusy}"
-                                Classes="brew-primary"
-                                MinHeight="44" />
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <Button Content="{Binding ResetButtonText}"
-                    Command="{Binding ResetProfilesCommand}"
-                    IsEnabled="{Binding !IsBusy}"
-                    Classes="brew-danger"
-                    HorizontalAlignment="Right" />
-
-            <!-- ══════════════════ Notification Settings ══════════════════ -->
-            <TextBlock Text="{Binding NotificationSettingsTitle}"
-                       Classes="brew-title"
-                       Margin="0,8,0,4" />
-
-            <!-- Provider selection -->
-            <Border Background="{StaticResource BrewSurfaceBrush}"
-                    CornerRadius="8" Padding="12">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="{Binding NotificationChannelLabel}"
-                               FontWeight="SemiBold" FontSize="13"
-                               Foreground="{StaticResource BrewTextSecondaryBrush}" />
-                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <Button Content="🔗  Webhook"
-                                Command="{Binding SetProviderCommand}"
-                                CommandParameter="Webhook"
-                                IsEnabled="{Binding !IsBusy}"
-                                Classes="brew-primary"
-                                Margin="0,0,8,0" />
-                        <Button Content="🔷  Graph API"
-                                Command="{Binding SetProviderCommand}"
-                                CommandParameter="Graph"
-                                IsEnabled="{Binding !IsBusy}"
-                                Classes="brew-primary" />
+            <Border Classes="settings-section settings-profiles">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="{Binding DurationSettingsTitle}" Classes="brew-section" />
+                    <ItemsControl ItemsSource="{Binding Profiles}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:EditableProfileViewModel">
+                                <StackPanel Spacing="6" Margin="0,0,0,16" IsVisible="{Binding !IsDeleted}">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <TextBlock Text="{Binding Name}" FontSize="15" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <Button Grid.Column="1" Content="{Binding DeleteButtonText}" Command="{Binding DeleteCommand}"
+                                                Classes="brew-nav-btn" FontSize="12" />
+                                    </Grid>
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <Button Content="-" Command="{Binding DecreaseTimeCommand}" Classes="brew-secondary" Width="44" Padding="0" />
+                                        <TextBlock Text="{Binding DurationText}" Width="75" TextAlignment="Center" VerticalAlignment="Center" FontSize="15" />
+                                        <Button Content="+" Command="{Binding IncreaseTimeCommand}" Classes="brew-secondary" Width="44" Padding="0" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding DeleteErrorText}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding AddProfileText}" Classes="brew-subtitle" />
+                    <TextBox Text="{Binding NewProfileName}" Watermark="{Binding ProfileNameWatermark}" />
+                    <WrapPanel>
+                        <Button Content="-" Command="{Binding DecreaseDurationCommand}" Width="44" Padding="0" Classes="brew-secondary" Margin="0,0,8,8" />
+                        <TextBlock Text="{Binding NewProfileDuration}" Width="32" VerticalAlignment="Center" TextAlignment="Center" Margin="0,0,8,8" />
+                        <Button Content="+" Command="{Binding IncreaseDurationCommand}" Width="44" Padding="0" Classes="brew-secondary" Margin="0,0,8,8" />
+                        <Button Content="{Binding AddProfileText}" Command="{Binding AddProfileCommand}" IsEnabled="{Binding !IsBusy}"
+                                Classes="brew-primary" Margin="0,0,0,8" />
                     </WrapPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="{Binding ActiveChannelLabel}"
-                                   Foreground="{StaticResource BrewTextSecondaryBrush}"
-                                   FontSize="12" />
-                        <TextBlock Text="{Binding SelectedProvider}"
-                                   FontWeight="SemiBold" FontSize="12" />
+                    <Button Content="{Binding ResetButtonText}" Command="{Binding ResetProfilesCommand}" IsEnabled="{Binding !IsBusy}"
+                            Classes="brew-secondary" HorizontalAlignment="Left" />
+                    <TextBlock Text="{Binding LanguageLabel}" Classes="brew-section" Margin="0,8,0,0" />
+                    <WrapPanel>
+                        <Button Content="Türkçe" Command="{Binding SetLanguageCommand}" CommandParameter="Turkish"
+                                Classes="theme-option" Classes.selected="{Binding IsTurkishLanguage}" IsEnabled="{Binding !IsBusy}" Margin="0,0,8,0" />
+                        <Button Content="English" Command="{Binding SetLanguageCommand}" CommandParameter="English"
+                                Classes="theme-option" Classes.selected="{Binding !IsTurkishLanguage}" IsEnabled="{Binding !IsBusy}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+            <Border Classes="settings-section settings-notifications">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="{Binding NotificationSettingsTitle}" Classes="brew-section" />
+                    <WrapPanel>
+                        <Button Content="Webhook" Command="{Binding SetProviderCommand}" CommandParameter="Webhook"
+                                Classes="theme-option" Classes.selected="{Binding IsWebhookSelected}" IsEnabled="{Binding !IsBusy}" Margin="0,0,8,8" />
+                        <Button Content="Graph" Command="{Binding SetProviderCommand}" CommandParameter="Graph"
+                                Classes="theme-option" Classes.selected="{Binding IsGraphSelected}" IsEnabled="{Binding !IsBusy}" Margin="0,0,8,8" />
+                        <Button Content="Console" Command="{Binding SetProviderCommand}" CommandParameter="Console"
+                                Classes="theme-option" Classes.selected="{Binding IsConsoleSelected}" IsEnabled="{Binding !IsBusy}" Margin="0,0,0,8" />
+                    </WrapPanel>
+                    <StackPanel Spacing="10" IsVisible="{Binding IsWebhookSelected}">
+                        <TextBlock Text="{Binding WebhookUrlLabel}" Classes="brew-subtitle" />
+                        <TextBox Text="{Binding WebhookUrlInput}" Watermark="https://..." />
+                        <Button Content="{Binding SaveWebhookUrlText}" Command="{Binding SaveWebhookUrlCommand}" Classes="brew-primary"
+                                IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Left" />
+                        <TextBlock Text="{Binding WebhookHintText}" Classes="brew-subtitle" TextWrapping="Wrap" />
                     </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <!-- Webhook panel -->
-            <Border Background="{StaticResource BrewSurfaceBrush}"
-                    CornerRadius="8" Padding="12"
-                    IsVisible="{Binding IsWebhookSelected}">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="{Binding WebhookStatusText}"
-                               FontWeight="SemiBold" FontSize="14" />
-                    <TextBlock Text="{Binding WebhookHintText}"
-                               Foreground="{StaticResource BrewTextSecondaryBrush}"
-                               FontSize="11" TextWrapping="Wrap" />
-                    <Grid ColumnDefinitions="*,Auto">
-                        <TextBox Grid.Column="0"
-                                 Text="{Binding WebhookUrlInput}"
-                                 Watermark="{Binding WebhookUrlLabel}"
-                                 FontFamily="Consolas,Menlo,monospace"
-                                 FontSize="12"
-                                 MinHeight="44"
-                                 Margin="0,0,8,0" />
-                        <Button Grid.Column="1"
-                                Content="{Binding SaveWebhookUrlText}"
-                                Command="{Binding SaveWebhookUrlCommand}"
-                                IsEnabled="{Binding !IsBusy}"
-                                Classes="brew-primary"
-                                MinHeight="44" />
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- Graph API panel -->
-            <Border Background="{StaticResource BrewSurfaceBrush}"
-                    CornerRadius="8" Padding="12"
-                    IsVisible="{Binding IsGraphSelected}">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="{Binding GraphStatusText}"
-                               FontWeight="SemiBold" FontSize="14" />
-                    <StackPanel Spacing="6">
-                        <Grid ColumnDefinitions="90,*">
-                            <TextBlock Grid.Column="0" Text="Tenant ID"
-                                       Foreground="{StaticResource BrewTextSecondaryBrush}"
-                                       FontSize="12" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding TenantId}"
-                                       FontFamily="Consolas,Menlo,monospace"
-                                       FontSize="12" TextTrimming="CharacterEllipsis" />
-                        </Grid>
-                        <Grid ColumnDefinitions="90,*">
-                            <TextBlock Grid.Column="0" Text="Client ID"
-                                       Foreground="{StaticResource BrewTextSecondaryBrush}"
-                                       FontSize="12" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding ClientId}"
-                                       FontFamily="Consolas,Menlo,monospace"
-                                       FontSize="12" TextTrimming="CharacterEllipsis" />
-                        </Grid>
-                        <Grid ColumnDefinitions="90,*">
-                            <TextBlock Grid.Column="0" Text="Chat ID"
-                                       Foreground="{StaticResource BrewTextSecondaryBrush}"
-                                       FontSize="12" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding ChatId}"
-                                       FontFamily="Consolas,Menlo,monospace"
-                                       FontSize="11" TextWrapping="Wrap" />
-                        </Grid>
+                    <StackPanel Spacing="8" IsVisible="{Binding IsGraphSelected}">
+                        <TextBlock Text="{Binding GraphStatusText}" Classes="brew-subtitle" />
+                        <TextBlock Text="{Binding TenantId, StringFormat='Tenant ID: {0}'}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ClientId, StringFormat='Client ID: {0}'}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ChatId, StringFormat='Chat ID: {0}'}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding GraphHintText}" Classes="brew-subtitle" TextWrapping="Wrap" />
                     </StackPanel>
-                    <TextBlock Text="{Binding GraphHintText}"
-                               Foreground="{StaticResource BrewTextSecondaryBrush}"
-                               FontSize="11" TextWrapping="Wrap" />
+                    <WrapPanel>
+                        <Button Content="{Binding TestConnectionText}" Command="{Binding TestConnectionCommand}" Classes="brew-secondary"
+                                IsEnabled="{Binding !IsBusy}" Margin="0,0,8,8" />
+                        <Button Content="{Binding SendTestNotificationText}" Command="{Binding SendTestNotificationCommand}"
+                                Classes="brew-secondary" IsEnabled="{Binding !IsBusy}" Margin="0,0,0,8" />
+                    </WrapPanel>
+                    <TextBlock Text="{Binding TestResult}" TextWrapping="Wrap" FontSize="13" />
                 </StackPanel>
             </Border>
-
-            <!-- Test section -->
-            <StackPanel Spacing="10">
-                <TextBlock Text="{Binding TestTitle}" Classes="brew-subtitle" />
-                <WrapPanel Orientation="Horizontal">
-                    <Button Content="{Binding TestConnectionText}"
-                            Classes="brew-primary"
-                            Command="{Binding TestConnectionCommand}"
-                            IsEnabled="{Binding !IsBusy}"
-                            Margin="0,0,8,8" />
-                    <Button Content="{Binding SendTestNotificationText}"
-                            Command="{Binding SendTestNotificationCommand}"
-                            IsEnabled="{Binding !IsBusy}"
-                            Margin="0,0,0,8" />
-                </WrapPanel>
-                <TextBlock Text="{Binding TestResult}"
-                           FontSize="14" TextWrapping="Wrap"
-                           IsVisible="{Binding TestResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-            </StackPanel>
-
-            <!-- ══════════════════ Updates ══════════════════ -->
-            <TextBlock Text="{Binding UpdateSettingsTitle}"
-                       Classes="brew-title"
-                       Margin="0,8,0,4" />
-
-            <Border Background="{StaticResource BrewSurfaceBrush}"
-                    CornerRadius="8" Padding="12">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="{Binding VersionText}"
-                               FontSize="12"
-                               Foreground="{StaticResource BrewTextSecondaryBrush}" />
-                    
-                    <Button Content="{Binding CheckUpdatesButtonText}"
-                            Command="{Binding CheckForUpdatesCommand}"
-                            IsEnabled="{Binding !IsBusy}"
-                            Classes="brew-primary" />
-                    
-                    <TextBlock Text="{Binding UpdateStatusText}"
-                               FontSize="14" FontWeight="SemiBold"
-                               IsVisible="{Binding UpdateStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <Border Classes="settings-section settings-updates">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="{Binding UpdateSettingsTitle}" Classes="brew-section" />
+                    <TextBlock Text="{Binding VersionText}" Classes="brew-subtitle" />
+                    <Button Content="{Binding CheckUpdatesButtonText}" Command="{Binding CheckForUpdatesCommand}"
+                            IsEnabled="{Binding !IsBusy}" Classes="brew-secondary" HorizontalAlignment="Left" />
+                    <TextBlock Text="{Binding UpdateStatusText}" Classes="brew-subtitle" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
-
-        </StackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>

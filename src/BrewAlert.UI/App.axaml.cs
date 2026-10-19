@@ -16,12 +16,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Avalonia.Styling;
+using System.ComponentModel;
 
 namespace BrewAlert.UI;
 
 public partial class App : Application
 {
     private IServiceProvider? _services;
+    private IAppearanceService? _appearance;
 
     public override void Initialize()
     {
@@ -32,6 +35,9 @@ public partial class App : Application
     {
         DisableAvaloniaDataAnnotationValidation();
         _services = ConfigureServices();
+        _appearance = _services.GetRequiredService<IAppearanceService>();
+        _appearance.PropertyChanged += OnAppearanceChanged;
+        ApplyAppearance();
 
         var mainVm = _services.GetRequiredService<MainWindowViewModel>();
 
@@ -42,6 +48,7 @@ public partial class App : Application
         {
             desktop.ShutdownRequested += (_, _) =>
             {
+                if (_appearance is not null) _appearance.PropertyChanged -= OnAppearanceChanged;
                 if (_services is IDisposable d) d.Dispose();
             };
 
@@ -85,6 +92,7 @@ public partial class App : Application
             configuration.GetSection(NotificationProviderOptions.SectionPath));
         services.Configure<LanguageOptions>(
             configuration.GetSection(LanguageOptions.SectionPath));
+        services.Configure<AppearanceOptions>(configuration.GetSection(AppearanceOptions.SectionPath));
 
         // Core services
         services.AddSingleton<IBrewTimerService, BrewTimerService>();
@@ -121,6 +129,8 @@ public partial class App : Application
 
         // Preferences & localization
         services.AddSingleton<UIPreferencesService, PreferencesService>();
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<IAppearanceService, AppearanceService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
 
         // Navigation
@@ -141,6 +151,14 @@ public partial class App : Application
 
         return services.BuildServiceProvider();
     }
+
+    private void OnAppearanceChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(IAppearanceService.CurrentTheme)) ApplyAppearance();
+    }
+
+    private void ApplyAppearance() => RequestedThemeVariant = _appearance?.IsPorcelain == true
+        ? ThemeVariant.Light : ThemeVariant.Dark;
 
     private static void DisableAvaloniaDataAnnotationValidation()
     {

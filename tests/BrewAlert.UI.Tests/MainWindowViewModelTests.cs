@@ -33,7 +33,7 @@ public class MainWindowViewModelTests
     }
 
     private MainWindowViewModel CreateVm() =>
-        new(_navigation, _timerService, _loc, _updateService, _ambient);
+        new(_navigation, _timerService, _loc, _updateService, _ambient, Substitute.For<IAppearanceService>());
 
     [Fact]
     public void Constructor_NavigatesToProfileList()
@@ -396,7 +396,7 @@ public class MainWindowViewModelTests
         loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
         loc.CurrentLanguage.Returns("English");
         var ambient = new AmbientOverlayViewModel(_history, loc);
-        var vm = new MainWindowViewModel(_navigation, _timerService, loc, _updateService, ambient);
+        var vm = new MainWindowViewModel(_navigation, _timerService, loc, _updateService, ambient, Substitute.For<IAppearanceService>());
 
         vm.Dispose();
 

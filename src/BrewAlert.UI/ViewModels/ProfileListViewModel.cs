@@ -42,6 +42,20 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<BrewProfile> Profiles { get; } = [];
     public ObservableCollection<RecentBrewItem> RecentBrews { get; } = [];
+    public string HomeTitle => _loc.Get("HomeTitle");
+    public string HomeEyebrow => _loc.Get("HomeEyebrow");
+    public string HomeSubtitle => _loc.Get("HomeSubtitle");
+    public string StartText => _loc.Get("BrewStart");
+    public string HistoryToggleText => _loc.Get(ShowAllHistory ? "ShowLessHistory" : "ShowMoreHistory");
+    public bool CanExpandHistory => RecentBrews.Count > 3;
+    public IEnumerable<RecentBrewItem> DisplayedRecentBrews => ShowAllHistory ? RecentBrews : RecentBrews.Take(3);
+    [ObservableProperty] private bool _showAllHistory;
+    partial void OnShowAllHistoryChanged(bool value)
+    {
+        OnPropertyChanged(nameof(DisplayedRecentBrews));
+        OnPropertyChanged(nameof(HistoryToggleText));
+    }
+    [RelayCommand] private void ToggleHistory() => ShowAllHistory = !ShowAllHistory;
 
     public ProfileListViewModel(
         BrewProfileService profileService,
@@ -72,6 +86,8 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
 
     private void RefreshLocalizedStrings()
     {
+        foreach (var name in new[] { nameof(HomeTitle), nameof(HomeEyebrow), nameof(HomeSubtitle), nameof(StartText), nameof(HistoryToggleText) })
+            OnPropertyChanged(name);
         PageTitle = _loc.Get("SelectYourBrew");
         LoadingText = _loc.Get("Loading");
         RecentBrewsLabel = _loc.Get("RecentBrews");
@@ -149,6 +165,8 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
                 }
                 RecentBrewsCount = RecentBrews.Count;
                 HasRecentBrews = RecentBrews.Count > 0;
+                OnPropertyChanged(nameof(DisplayedRecentBrews));
+                OnPropertyChanged(nameof(CanExpandHistory));
             }
             while (_reloadRecentBrewsRequested && !_disposed);
         }

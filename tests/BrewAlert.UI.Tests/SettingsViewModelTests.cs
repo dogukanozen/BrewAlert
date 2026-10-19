@@ -37,7 +37,15 @@ public class SettingsViewModelTests
         var loc = Substitute.For<ILocalizationService>();
         loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
         loc.CurrentLanguage.Returns("English");
+        loc.CurrentCulture.Returns(System.Globalization.CultureInfo.GetCultureInfo("en-US"));
         return loc;
+    }
+
+    private static IAppearanceService CreateAppearance()
+    {
+        var appearance = Substitute.For<IAppearanceService>();
+        appearance.Options.Returns(new AppearanceOptions());
+        return appearance;
     }
 
     private readonly IOptionsMonitor<TeamsNotificationOptions> DefaultWebhookOptions =
@@ -66,7 +74,7 @@ public class SettingsViewModelTests
         // Act
         var vm = new SettingsViewModel(
             _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance());
 
         // Assert
         Assert.StartsWith("12345678", vm.TenantId);
@@ -90,7 +98,7 @@ public class SettingsViewModelTests
         _notificationService.TestConnectionAsync().Returns(true);
         var vm = new SettingsViewModel(
             _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance());
 
         // Act
         await vm.TestConnectionCommand.ExecuteAsync(null);
@@ -111,7 +119,7 @@ public class SettingsViewModelTests
         });
         var vm = new SettingsViewModel(
             _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance());
 
         Assert.True(vm.IsGraphConfigured);
     }
@@ -126,7 +134,7 @@ public class SettingsViewModelTests
         var providerOptions = CreateMonitor(new NotificationProviderOptions { Provider = NotificationProvider.Webhook });
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, providerOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance());
 
         Assert.True(vm.IsWebhookConfigured);
         Assert.True(vm.IsConfigured);
@@ -140,7 +148,7 @@ public class SettingsViewModelTests
 
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance());
 
         Assert.Equal(url, vm.WebhookUrlInput);
     }
@@ -150,7 +158,7 @@ public class SettingsViewModelTests
     {
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance());
 
         vm.WebhookUrlInput = "https://example.com/hook";
         await vm.SaveWebhookUrlCommand.ExecuteAsync(null);
@@ -167,7 +175,7 @@ public class SettingsViewModelTests
         // moment LanguageChanged fires (e.g. Teams notifiers).
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance());
 
         // Act
         await vm.SetLanguageCommand.ExecuteAsync("Turkish");
@@ -183,7 +191,7 @@ public class SettingsViewModelTests
     {
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance());
 
         // Mock returns key as value, so the watermark is the key itself.
         Assert.Equal("ProfileNameLabel", vm.ProfileNameWatermark);
@@ -226,7 +234,7 @@ public class SettingsViewModelTests
         _updateService.CheckForUpdatesAsync().Returns(true);
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance());
 
         await vm.CheckForUpdatesCommand.ExecuteAsync(null);
 
@@ -240,7 +248,7 @@ public class SettingsViewModelTests
         _updateService.CheckForUpdatesAsync().Returns(false);
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance());
 
         await vm.CheckForUpdatesCommand.ExecuteAsync(null);
 
@@ -257,13 +265,15 @@ public class SettingsViewModelTests
         var loc = Substitute.For<ILocalizationService>();
         loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
         loc.CurrentLanguage.Returns("English");
+        loc.CurrentCulture.Returns(System.Globalization.CultureInfo.GetCultureInfo("en-US"));
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, loc, _updateService, _configurationRoot, CreateAppearance());
 
         vm.Dispose();
 
-        loc.Received(1).LanguageChanged -= Arg.Any<Action<string>>();
+        // Both settings and its appearance child release their language subscriptions.
+        loc.Received(2).LanguageChanged -= Arg.Any<Action<string>>();
     }
 
     [Fact]
@@ -275,7 +285,7 @@ public class SettingsViewModelTests
 
         var vm = new SettingsViewModel(
             _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot);
+            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance());
 
         await vm.SaveWebhookUrlCommand.ExecuteAsync(null);
 
