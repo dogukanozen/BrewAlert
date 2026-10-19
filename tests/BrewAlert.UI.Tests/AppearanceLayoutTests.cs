@@ -26,6 +26,46 @@ namespace BrewAlert.UI.Tests;
 public sealed class AppearanceLayoutTests
 {
     [AvaloniaFact]
+    public void ButtonText_InheritsButtonForegroundAcrossThemeChanges()
+    {
+        var label = new TextBlock { Text = "Default shell text" };
+        var panel = new StackPanel { Spacing = 8, Children = { label } };
+        var shell = new UserControl { Classes = { "brew-shell" }, Content = panel };
+        foreach (var classes in new[] { new[] { "brew-primary" }, new[] { "theme-option", "selected" }, new[] { "brew-nav-btn" } })
+        foreach (var explicitText in new[] { false, true })
+        {
+            var button = new Button { Content = explicitText ? new TextBlock { Text = "Continue" } : "Continue" };
+            foreach (var name in classes) button.Classes.Add(name);
+            panel.Children.Add(button);
+        }
+        var window = new Window { Width = 800, Height = 480, Content = shell };
+        var previousTheme = Application.Current!.RequestedThemeVariant;
+        try
+        {
+            window.Show();
+            foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light, ThemeVariant.Dark })
+            {
+                Application.Current.RequestedThemeVariant = theme;
+                Layout(window);
+                Assert.Equal(Assert.IsAssignableFrom<ISolidColorBrush>(shell.Foreground).Color,
+                    Assert.IsAssignableFrom<ISolidColorBrush>(label.Foreground).Color);
+                foreach (var button in panel.Children.OfType<Button>())
+                {
+                    var text = Assert.Single(button.GetVisualDescendants().OfType<TextBlock>());
+                    Assert.Equal(Assert.IsAssignableFrom<ISolidColorBrush>(button.Foreground).Color,
+                        Assert.IsAssignableFrom<ISolidColorBrush>(text.Foreground).Color);
+                }
+                Capture(window, "button-foreground-" + theme);
+            }
+        }
+        finally
+        {
+            window.Close();
+            Application.Current.RequestedThemeVariant = previousTheme;
+        }
+    }
+
+    [AvaloniaFact]
     public async Task BothAppearances_RenderRealViewsAtPiAndNarrowSizes()
     {
         foreach (var width in new[] { 800, 320 })
