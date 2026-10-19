@@ -2,6 +2,9 @@ using System;
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
+using Avalonia.Styling;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -25,6 +28,7 @@ public partial class AmbientOverlayView : UserControl
     private double _velocityY = 2.0;
     private int _toneIndex;
     private readonly Viewbox[] _orbitIcons;
+    private CancellationTokenSource? _dateTransition;
 
     public AmbientOverlayView()
     {
@@ -54,6 +58,7 @@ public partial class AmbientOverlayView : UserControl
     {
         base.OnDetachedFromVisualTree(e);
         _dvdTimer.Stop();
+        CancelDateTransition();
         if (_vm is not null)
             _vm.PropertyChanged -= OnViewModelPropertyChanged;
         _vm = null;
@@ -92,6 +97,7 @@ public partial class AmbientOverlayView : UserControl
                 _vm.PropertyChanged += OnViewModelPropertyChanged;
         }
         SyncDvdTimer();
+        ReplayClockEntrance();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -99,6 +105,68 @@ public partial class AmbientOverlayView : UserControl
         if (e.PropertyName is nameof(AmbientOverlayViewModel.IsDvdMode)
             or nameof(AmbientOverlayViewModel.IsVisible))
             SyncDvdTimer();
+
+        if (e.PropertyName is nameof(AmbientOverlayViewModel.IsVisible)
+            or nameof(AmbientOverlayViewModel.Mode))
+            ReplayClockEntrance();
+        else if (e.PropertyName == nameof(AmbientOverlayViewModel.ClockDate))
+            AnimateDate();
+    }
+
+    private void ReplayClockEntrance()
+    {
+        if (_vm is not { IsVisible: true })
+        {
+            CancelDateTransition();
+            return;
+        }
+        AmbientClock.ReplayEntrance();
+        AnimateDate();
+    }
+
+    private void CancelDateTransition()
+    {
+        var source = _dateTransition;
+        _dateTransition = null;
+        source?.Cancel();
+    }
+
+    private async void AnimateDate()
+    {
+        CancelDateTransition();
+        if (_vm is not { IsVisible: true } || this.GetVisualRoot() is null) return;
+        var source = new CancellationTokenSource();
+        _dateTransition = source;
+        try
+        {
+            var animation = new Animation
+            {
+                Duration = TimeSpan.FromMilliseconds(650),
+                Delay = TimeSpan.FromMilliseconds(230),
+                FillMode = FillMode.Backward,
+                Easing = new CubicEaseOut(),
+                Children =
+                {
+                    new KeyFrame
+                    {
+                        Cue = new Cue(0),
+                        Setters = { new Setter(OpacityProperty, 0.0), new Setter(TranslateTransform.YProperty, 5.0) }
+                    },
+                    new KeyFrame
+                    {
+                        Cue = new Cue(1),
+                        Setters = { new Setter(OpacityProperty, 0.7), new Setter(TranslateTransform.YProperty, 0.0) }
+                    }
+                }
+            };
+            await animation.RunAsync(AmbientDate, cancellationToken: source.Token);
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            if (ReferenceEquals(_dateTransition, source)) _dateTransition = null;
+            source.Dispose();
+        }
     }
 
     // The bounce timer runs only while the DVD mode is actually on screen.

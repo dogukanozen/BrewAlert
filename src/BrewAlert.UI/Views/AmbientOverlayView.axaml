@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BrewAlert.UI.ViewModels"
              xmlns:conv="using:BrewAlert.UI.Converters"
+             xmlns:views="using:BrewAlert.UI.Views"
              x:Class="BrewAlert.UI.Views.AmbientOverlayView"
              x:DataType="vm:AmbientOverlayViewModel">
 
@@ -551,6 +552,13 @@
         <Border Background="{Binding BackgroundBrush}">
 
         </Border>
+
+        <!-- Silk has no additional glow/backdrop. Its timer is gated by mode and visibility. -->
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsSilkMode}" IsHitTestVisible="False">
+            <views:SilkBackdrop x:Name="SilkBackdrop"
+                                IsActive="{Binding IsSilkAnimationActive}"
+                                Stroke="{DynamicResource BrewTextSecondaryBrush}" />
+        </Panel>
 
         <!-- Organic backdrop: metaballs breathe, squash, and wander independently. -->
         <Panel Classes="ambient-layer" IsVisible="{Binding IsOrganicBackdrop}" IsHitTestVisible="False">
@@ -1250,7 +1258,8 @@
                     Margin="24,0"
                     MaxWidth="640">
 
-            <TextBlock x:Name="AmbientClock" Text="{Binding ClockTime}"
+            <views:AnimatedClock x:Name="AmbientClock" Text="{Binding ClockTime}"
+                       IsActive="{Binding IsVisible}"
                        FontSize="88"
                        FontWeight="Light"
                        Foreground="{DynamicResource BrewTextPrimaryBrush}"
@@ -1265,7 +1274,9 @@
                        Opacity="0.7"
                        HorizontalAlignment="Center"
                        LetterSpacing="1"
-                       Margin="0,-8,0,0" />
+                       Margin="0,-8,0,0">
+                <TextBlock.RenderTransform><TranslateTransform /></TextBlock.RenderTransform>
+            </TextBlock>
 
             <!-- The whole layer fades during mode changes. Reclaim this slot outside card
                  mode so the clock is centered inside the orbit instead of meeting its icons. -->

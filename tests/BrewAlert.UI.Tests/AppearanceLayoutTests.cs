@@ -184,7 +184,7 @@ public sealed class AppearanceLayoutTests
                     await Task.Delay(650);
                 Layout(fixture.Window);
                 Assert.True(fixture.Main.Ambient.IsVisible);
-                var clock = fixture.View.GetVisualDescendants().OfType<TextBlock>()
+                var clock = fixture.View.GetVisualDescendants().OfType<AnimatedClock>()
                     .Single(text => text.Text == fixture.Main.Ambient.ClockTime);
                 var position = clock.TranslatePoint(new Point(0, 0), fixture.Window)!.Value;
                 Assert.InRange(position.X, 0, fixture.Window.Width - clock.Bounds.Width);
@@ -207,7 +207,7 @@ public sealed class AppearanceLayoutTests
             var center = stage.TranslatePoint(new Point(stage.Width / 2, stage.Height / 2), fixture.Window)!.Value;
             var iconSize = stage.Children.OfType<Viewbox>().Max(icon => icon.Width);
             var innerRadius = stage.Width / 2 - iconSize / 2 - iconSize / Math.Sqrt(2);
-            foreach (var text in fixture.View.GetVisualDescendants().OfType<TextBlock>()
+            foreach (var text in fixture.View.GetVisualDescendants().OfType<Control>()
                 .Where(x => x.Name is "AmbientClock" or "AmbientDate"))
             {
                 var origin = text.TranslatePoint(new Point(0, 0), fixture.Window)!.Value;

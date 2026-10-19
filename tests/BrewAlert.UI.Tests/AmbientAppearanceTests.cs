@@ -11,7 +11,9 @@ namespace BrewAlert.UI.Tests;
 
 public sealed class AmbientAppearanceTests
 {
-    [Fact]
+    // The palettes cache Avalonia brushes; reading them off the UI thread throws once another
+    // headless test has created them there, so this must run on the UI thread too.
+    [AvaloniaFact]
     public void PaletteFamilies_AreNeutralAndCached()
     {
         foreach (var theme in Enum.GetValues<BrewTheme>())

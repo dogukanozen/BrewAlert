@@ -51,7 +51,9 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
     public bool ShowPending => _showPending;
 
-    [ObservableProperty] private bool _isVisible;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSilkAnimationActive))]
+    private bool _isVisible;
     [ObservableProperty] private int _animationPhase;
     [ObservableProperty] private double _modeTransitionOpacity = 1.0;
     [ObservableProperty] private string _headline = string.Empty;
@@ -93,6 +95,8 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(IsRadarMode))]
     [NotifyPropertyChangedFor(nameof(IsFirefliesMode))]
     [NotifyPropertyChangedFor(nameof(IsPrismMode))]
+    [NotifyPropertyChangedFor(nameof(IsSilkMode))]
+    [NotifyPropertyChangedFor(nameof(IsSilkAnimationActive))]
     [NotifyPropertyChangedFor(nameof(IsOrganicBackdrop))]
     [NotifyPropertyChangedFor(nameof(IsCosmicBackdrop))]
     [NotifyPropertyChangedFor(nameof(IsPrismaticBackdrop))]
@@ -112,6 +116,8 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     public bool IsRadarMode => Mode == AmbientMode.Radar;
     public bool IsFirefliesMode => Mode == AmbientMode.Fireflies;
     public bool IsPrismMode => Mode == AmbientMode.Prism;
+    public bool IsSilkMode => Mode == AmbientMode.Silk;
+    public bool IsSilkAnimationActive => IsVisible && IsSilkMode;
     public bool IsOrganicBackdrop => Mode is AmbientMode.Card
         or AmbientMode.Dvd
         or AmbientMode.BrewRain
@@ -498,6 +504,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     private void OnAnimationTick(object? sender, EventArgs e)
     {
         AnimationPhase = (AnimationPhase + 1) & 7;
+        UpdateClock();
         // Keep the relative-time label and freshness mood of the card currently on
         // screen advancing live, not just when the 10s rotation re-applies it.
         // ObservableProperty dedups unchanged values, so this only repaints when a

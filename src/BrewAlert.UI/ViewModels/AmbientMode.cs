@@ -40,5 +40,8 @@ public enum AmbientMode
     Fireflies,
 
     /// <summary>Counter-rotating triangular prisms with neon echoes.</summary>
-    Prism
+    Prism,
+
+    /// <summary>Six fine, continuous silk-like lines moving beneath the clock.</summary>
+    Silk
 }
