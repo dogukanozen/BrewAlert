@@ -547,13 +547,9 @@
             </Transitions>
         </Panel.Transitions>
         <!-- Layer 1: vertical gradient base. Bound to the rotating palette so the whole
-             backdrop recolours per scene; BrushTransition crossfades the swap. -->
+             backdrop uses cached neutral tones from the active appearance. -->
         <Border Background="{Binding BackgroundBrush}">
-            <Border.Transitions>
-                <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:1.4" />
-                </Transitions>
-            </Border.Transitions>
+
         </Border>
 
         <!-- Organic backdrop: metaballs breathe, squash, and wander independently. -->
@@ -567,7 +563,7 @@
                 </Grid.RenderTransform>
                 <Ellipse Classes="backdrop-organic-a" Fill="{Binding HaloBrush}" RenderTransformOrigin="50%,50%">
                     <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
-                    <Ellipse.Transitions><Transitions><BrushTransition Property="Fill" Duration="0:0:1.4" /></Transitions></Ellipse.Transitions>
+
                 </Ellipse>
             </Grid>
             <Grid Width="620" Height="560" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-190,-190">
@@ -579,7 +575,7 @@
                 </Grid.RenderTransform>
                 <Ellipse Classes="backdrop-organic-b" Fill="{Binding GlowBottomBrush}" RenderTransformOrigin="50%,50%">
                     <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
-                    <Ellipse.Transitions><Transitions><BrushTransition Property="Fill" Duration="0:0:1.4" /></Transitions></Ellipse.Transitions>
+
                 </Ellipse>
             </Grid>
             <Grid Width="360" Height="330" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,110,90,0">
@@ -591,7 +587,7 @@
                 </Grid.RenderTransform>
                 <Ellipse Classes="backdrop-organic-c" Fill="{Binding GlowTopBrush}" RenderTransformOrigin="50%,50%">
                     <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
-                    <Ellipse.Transitions><Transitions><BrushTransition Property="Fill" Duration="0:0:1.4" /></Transitions></Ellipse.Transitions>
+
                 </Ellipse>
             </Grid>
         </Panel>
@@ -601,7 +597,7 @@
             <Ellipse Classes="backdrop-cosmic-core" Width="560" Height="560" HorizontalAlignment="Center" VerticalAlignment="Center"
                      Fill="{Binding HaloBrush}" RenderTransformOrigin="50%,50%">
                 <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
-                <Ellipse.Transitions><Transitions><BrushTransition Property="Fill" Duration="0:0:1.4" /></Transitions></Ellipse.Transitions>
+
             </Ellipse>
             <Grid Classes="backdrop-cosmic-a" Width="980" Height="980" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="50%,50%">
                 <Grid.RenderTransform><RotateTransform /></Grid.RenderTransform>
@@ -622,19 +618,19 @@
             <Grid Width="1400" Height="260" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(-22deg)">
                 <Border Classes="backdrop-prism-a" Width="1150" Height="190" CornerRadius="999" Background="{Binding GlowTopBrush}">
                     <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
-                    <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="0:0:1.4" /></Transitions></Border.Transitions>
+
                 </Border>
             </Grid>
             <Grid Width="1400" Height="240" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(18deg)">
                 <Border Classes="backdrop-prism-b" Width="1220" Height="150" CornerRadius="999" Background="{Binding GlowBottomBrush}">
                     <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
-                    <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="0:0:1.4" /></Transitions></Border.Transitions>
+
                 </Border>
             </Grid>
             <Grid Width="1200" Height="170" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(64deg)">
                 <Border Classes="backdrop-prism-c" Width="980" Height="92" CornerRadius="999" Background="{Binding HaloBrush}">
                     <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
-                    <Border.Transitions><Transitions><BrushTransition Property="Background" Duration="0:0:1.4" /></Transitions></Border.Transitions>
+
                 </Border>
             </Grid>
         </Panel>
@@ -661,7 +657,7 @@
                 </TranslateTransform>
             </Viewbox.RenderTransform>
             <Path Data="{Binding FloatIconA, Converter={StaticResource AmbientIcon}}"
-                  Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
+                  Stroke="{DynamicResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
                   StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
         </Viewbox>
 
@@ -683,7 +679,7 @@
                 </TranslateTransform>
             </Viewbox.RenderTransform>
             <Path Data="{Binding FloatIconB, Converter={StaticResource AmbientIcon}}"
-                  Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
+                  Stroke="{DynamicResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
                   StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
         </Viewbox>
 
@@ -705,7 +701,7 @@
                 </TranslateTransform>
             </Viewbox.RenderTransform>
             <Path Data="{Binding FloatIconC, Converter={StaticResource AmbientIcon}}"
-                  Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
+                  Stroke="{DynamicResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
                   StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
         </Viewbox>
 
@@ -727,7 +723,7 @@
                 </TranslateTransform>
             </Viewbox.RenderTransform>
             <Path Data="M12,3 C12.5,8 13,9 18,12 C13,15 12.5,16 12,21 C11.5,16 11,15 6,12 C11,9 11.5,8 12,3 Z"
-                  Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.6"
+                  Stroke="{DynamicResource BrewAccentBrush}" StrokeThickness="1.6"
                   StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
         </Viewbox>
 
@@ -749,7 +745,7 @@
                 </TranslateTransform>
             </Viewbox.RenderTransform>
             <Path Data="M12,3 C12,3 6,11 6,15 A6,6 0 0 0 18,15 C18,11 12,3 12,3 Z"
-                  Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.6"
+                  Stroke="{DynamicResource BrewTextPrimaryBrush}" StrokeThickness="1.6"
                   StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
         </Viewbox>
         </Panel>
@@ -762,10 +758,10 @@
                      Opacity="0.6" RenderTransformOrigin="50%,50%">
                 <Ellipse.Fill>
                     <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
-                        <GradientStop Offset="0" Color="#003ddc84" />
-                        <GradientStop Offset="0.28" Color="#993ddc84" />
-                        <GradientStop Offset="0.62" Color="#884aa8ff" />
-                        <GradientStop Offset="1" Color="#004aa8ff" />
+                        <GradientStop Offset="0" Color="{DynamicResource AmbientColor00B4}" />
+                        <GradientStop Offset="0.28" Color="{DynamicResource AmbientColor99B4}" />
+                        <GradientStop Offset="0.62" Color="{DynamicResource AmbientColor889A}" />
+                        <GradientStop Offset="1" Color="{DynamicResource AmbientColor009A}" />
                     </LinearGradientBrush>
                 </Ellipse.Fill>
                 <Ellipse.RenderTransform><RotateTransform /></Ellipse.RenderTransform>
@@ -776,10 +772,10 @@
                      Opacity="0.52" RenderTransformOrigin="50%,50%">
                 <Ellipse.Fill>
                     <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
-                        <GradientStop Offset="0" Color="#00b06bff" />
-                        <GradientStop Offset="0.32" Color="#88b06bff" />
-                        <GradientStop Offset="0.68" Color="#99ff6b9d" />
-                        <GradientStop Offset="1" Color="#00ff6b9d" />
+                        <GradientStop Offset="0" Color="{DynamicResource AmbientColor0084}" />
+                        <GradientStop Offset="0.32" Color="{DynamicResource AmbientColor8884}" />
+                        <GradientStop Offset="0.68" Color="{DynamicResource AmbientColor998E}" />
+                        <GradientStop Offset="1" Color="{DynamicResource AmbientColor008E}" />
                     </LinearGradientBrush>
                 </Ellipse.Fill>
                 <Ellipse.RenderTransform><RotateTransform /></Ellipse.RenderTransform>
@@ -789,9 +785,9 @@
                      HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
-                        <GradientStop Offset="0" Color="#88ffd166" />
-                        <GradientStop Offset="0.4" Color="#333ddc84" />
-                        <GradientStop Offset="1" Color="#003ddc84" />
+                        <GradientStop Offset="0" Color="{DynamicResource AmbientColor88D3}" />
+                        <GradientStop Offset="0.4" Color="{DynamicResource AmbientColor33B4}" />
+                        <GradientStop Offset="1" Color="{DynamicResource AmbientColor00B4}" />
                     </RadialGradientBrush>
                 </Ellipse.Fill>
             </Ellipse>
@@ -799,17 +795,17 @@
             <Viewbox Width="26" Height="26" HorizontalAlignment="Left" VerticalAlignment="Top"
                      Margin="90,86,0,0" Opacity="0.7">
                 <Path Data="M12,2 L14.5,9.5 L22,12 L14.5,14.5 L12,22 L9.5,14.5 L2,12 L9.5,9.5 Z"
-                      Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.4" Fill="{x:Null}" />
+                      Stroke="{DynamicResource BrewAccentBrush}" StrokeThickness="1.4" Fill="{x:Null}" />
             </Viewbox>
             <Viewbox Width="18" Height="18" HorizontalAlignment="Right" VerticalAlignment="Top"
                      Margin="0,145,110,0" Opacity="0.65">
                 <Path Data="M12,2 L14.5,9.5 L22,12 L14.5,14.5 L12,22 L9.5,14.5 L2,12 L9.5,9.5 Z"
-                      Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.4" Fill="{x:Null}" />
+                      Stroke="{DynamicResource BrewTextPrimaryBrush}" StrokeThickness="1.4" Fill="{x:Null}" />
             </Viewbox>
             <Viewbox Width="22" Height="22" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                      Margin="0,0,170,100" Opacity="0.55">
                 <Path Data="M12,2 L14.5,9.5 L22,12 L14.5,14.5 L12,22 L9.5,14.5 L2,12 L9.5,9.5 Z"
-                      Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.4" Fill="{x:Null}" />
+                      Stroke="{DynamicResource BrewAccentBrush}" StrokeThickness="1.4" Fill="{x:Null}" />
             </Viewbox>
         </Panel>
 
@@ -817,68 +813,68 @@
         <Panel IsVisible="{Binding IsBrewRainMode}" IsHitTestVisible="False">
             <Viewbox Classes="brew-rain-a" Width="48" Height="48" HorizontalAlignment="Left" VerticalAlignment="Top"
                      Margin="70,0,0,0"><Viewbox.RenderTransform><TranslateTransform /></Viewbox.RenderTransform>
-                <Path Data="{Binding FloatIconA, Converter={StaticResource AmbientIcon}}" Stroke="{StaticResource BrewTextPrimaryBrush}"
+                <Path Data="{Binding FloatIconA, Converter={StaticResource AmbientIcon}}" Stroke="{DynamicResource BrewTextPrimaryBrush}"
                       StrokeThickness="1.3" StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
             <Viewbox Classes="brew-rain-b" Width="30" Height="30" HorizontalAlignment="Left" VerticalAlignment="Top"
                      Margin="190,0,0,0"><Viewbox.RenderTransform><TranslateTransform /></Viewbox.RenderTransform>
-                <Path Data="{Binding FloatIconB, Converter={StaticResource AmbientIcon}}" Stroke="{StaticResource BrewAccentBrush}"
+                <Path Data="{Binding FloatIconB, Converter={StaticResource AmbientIcon}}" Stroke="{DynamicResource BrewAccentBrush}"
                       StrokeThickness="1.3" StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
             <Viewbox Classes="brew-rain-c" Width="58" Height="58" HorizontalAlignment="Left" VerticalAlignment="Top"
                      Margin="310,0,0,0"><Viewbox.RenderTransform><TranslateTransform /></Viewbox.RenderTransform>
-                <Path Data="{Binding FloatIconC, Converter={StaticResource AmbientIcon}}" Stroke="{StaticResource BrewTextPrimaryBrush}"
+                <Path Data="{Binding FloatIconC, Converter={StaticResource AmbientIcon}}" Stroke="{DynamicResource BrewTextPrimaryBrush}"
                       StrokeThickness="1.2" StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
             <Viewbox Classes="brew-rain-b" Width="38" Height="38" HorizontalAlignment="Center" VerticalAlignment="Top"
                      Margin="-80,0,0,0"><Viewbox.RenderTransform><TranslateTransform /></Viewbox.RenderTransform>
-                <Path Data="{Binding OrbitIconA, Converter={StaticResource AmbientIcon}}" Stroke="{StaticResource BrewAccentBrush}"
+                <Path Data="{Binding OrbitIconA, Converter={StaticResource AmbientIcon}}" Stroke="{DynamicResource BrewAccentBrush}"
                       StrokeThickness="1.3" StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
             <Viewbox Classes="brew-rain-a" Width="34" Height="34" HorizontalAlignment="Center" VerticalAlignment="Top"
                      Margin="150,0,0,0"><Viewbox.RenderTransform><TranslateTransform /></Viewbox.RenderTransform>
-                <Path Data="{Binding OrbitIconB, Converter={StaticResource AmbientIcon}}" Stroke="{StaticResource BrewTextPrimaryBrush}"
+                <Path Data="{Binding OrbitIconB, Converter={StaticResource AmbientIcon}}" Stroke="{DynamicResource BrewTextPrimaryBrush}"
                       StrokeThickness="1.3" StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
             <Viewbox Classes="brew-rain-c" Width="44" Height="44" HorizontalAlignment="Right" VerticalAlignment="Top"
                      Margin="0,0,245,0"><Viewbox.RenderTransform><TranslateTransform /></Viewbox.RenderTransform>
-                <Path Data="{Binding OrbitIconC, Converter={StaticResource AmbientIcon}}" Stroke="{StaticResource BrewAccentBrush}"
+                <Path Data="{Binding OrbitIconC, Converter={StaticResource AmbientIcon}}" Stroke="{DynamicResource BrewAccentBrush}"
                       StrokeThickness="1.3" StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
             <Viewbox Classes="brew-rain-b" Width="54" Height="54" HorizontalAlignment="Right" VerticalAlignment="Top"
                      Margin="0,0,110,0"><Viewbox.RenderTransform><TranslateTransform /></Viewbox.RenderTransform>
-                <Path Data="{Binding OrbitIconD, Converter={StaticResource AmbientIcon}}" Stroke="{StaticResource BrewTextPrimaryBrush}"
+                <Path Data="{Binding OrbitIconD, Converter={StaticResource AmbientIcon}}" Stroke="{DynamicResource BrewTextPrimaryBrush}"
                       StrokeThickness="1.2" StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
         </Panel>
 
         <!-- Kaleidoscope: a neon geometric tunnel folds behind the fixed clock. -->
         <Panel IsVisible="{Binding IsKaleidoscopeMode}" IsHitTestVisible="False">
-            <Border Classes="kaleido-a" Width="560" Height="560" BorderBrush="#443ddc84" BorderThickness="3"
+            <Border Classes="kaleido-a" Width="560" Height="560" BorderBrush="{DynamicResource AmbientBrush44B4}" BorderThickness="3"
                     CornerRadius="90" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="50%,50%">
                 <Border.RenderTransform><RotateTransform /></Border.RenderTransform>
             </Border>
-            <Border Classes="kaleido-b" Width="450" Height="450" BorderBrush="#55ff6b9d" BorderThickness="3"
+            <Border Classes="kaleido-b" Width="450" Height="450" BorderBrush="{DynamicResource AmbientBrush558E}" BorderThickness="3"
                     CornerRadius="72" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="50%,50%">
                 <Border.RenderTransform><RotateTransform /></Border.RenderTransform>
             </Border>
-            <Border Classes="kaleido-a" Width="340" Height="340" BorderBrush="#664aa8ff" BorderThickness="2.5"
+            <Border Classes="kaleido-a" Width="340" Height="340" BorderBrush="{DynamicResource AmbientBrush669A}" BorderThickness="2.5"
                     CornerRadius="56" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="50%,50%">
                 <Border.RenderTransform><RotateTransform /></Border.RenderTransform>
             </Border>
-            <Border Classes="kaleido-b" Width="240" Height="240" BorderBrush="#77ffd166" BorderThickness="2"
+            <Border Classes="kaleido-b" Width="240" Height="240" BorderBrush="{DynamicResource AmbientBrush77D3}" BorderThickness="2"
                     CornerRadius="42" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="50%,50%">
                 <Border.RenderTransform><RotateTransform /></Border.RenderTransform>
             </Border>
-            <Border Classes="kaleido-c" Width="640" Height="640" BorderBrush="#44b06bff" BorderThickness="6"
+            <Border Classes="kaleido-c" Width="640" Height="640" BorderBrush="{DynamicResource AmbientBrush4484}" BorderThickness="6"
                     CornerRadius="110" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="50%,50%">
                 <Border.RenderTransform><RotateTransform Angle="45" /></Border.RenderTransform>
             </Border>
             <Ellipse Width="210" Height="210" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.32">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
-                        <GradientStop Offset="0" Color="#77f0a500" />
-                        <GradientStop Offset="1" Color="#00f0a500" />
+                        <GradientStop Offset="0" Color="{DynamicResource AmbientColor77A9}" />
+                        <GradientStop Offset="1" Color="{DynamicResource AmbientColor00A9}" />
                     </RadialGradientBrush>
                 </Ellipse.Fill>
             </Ellipse>
@@ -891,8 +887,8 @@
                 <Grid RenderTransform="rotate(24deg)">
                     <Border Height="3" CornerRadius="99">
                         <Border.Background><LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
-                            <GradientStop Offset="0" Color="#00f0a500" /><GradientStop Offset="0.72" Color="#aaf0a500" />
-                            <GradientStop Offset="1" Color="#fff7df9a" />
+                            <GradientStop Offset="0" Color="{DynamicResource AmbientColor00A9}" /><GradientStop Offset="0.72" Color="{DynamicResource AmbientColorAAA9}" />
+                            <GradientStop Offset="1" Color="{DynamicResource AmbientColorFFDF}" />
                         </LinearGradientBrush></Border.Background>
                     </Border>
                 </Grid>
@@ -902,8 +898,8 @@
                 <Grid RenderTransform="rotate(24deg)">
                     <Border Height="2.5" CornerRadius="99">
                         <Border.Background><LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
-                            <GradientStop Offset="0" Color="#004aa8ff" /><GradientStop Offset="0.7" Color="#aa4aa8ff" />
-                            <GradientStop Offset="1" Color="#ffffffff" />
+                            <GradientStop Offset="0" Color="{DynamicResource AmbientColor009A}" /><GradientStop Offset="0.7" Color="{DynamicResource AmbientColorAA9A}" />
+                            <GradientStop Offset="1" Color="{DynamicResource AmbientColorFFFF}" />
                         </LinearGradientBrush></Border.Background>
                     </Border>
                 </Grid>
@@ -913,8 +909,8 @@
                 <Grid RenderTransform="rotate(24deg)">
                     <Border Height="3.5" CornerRadius="99">
                         <Border.Background><LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
-                            <GradientStop Offset="0" Color="#00ff6b9d" /><GradientStop Offset="0.68" Color="#bbff6b9d" />
-                            <GradientStop Offset="1" Color="#ffffffff" />
+                            <GradientStop Offset="0" Color="{DynamicResource AmbientColor008E}" /><GradientStop Offset="0.68" Color="{DynamicResource AmbientColorBB8E}" />
+                            <GradientStop Offset="1" Color="{DynamicResource AmbientColorFFFF}" />
                         </LinearGradientBrush></Border.Background>
                     </Border>
                 </Grid>
@@ -922,7 +918,7 @@
             <Grid Classes="meteor-b" Width="240" Height="20" HorizontalAlignment="Left" VerticalAlignment="Top"
                   Margin="0,520,0,0"><Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
                 <Grid RenderTransform="rotate(24deg)">
-                    <Border Height="2" Background="#cc3ddc84" CornerRadius="99" />
+                    <Border Height="2" Background="{DynamicResource AmbientBrushCCB4}" CornerRadius="99" />
                 </Grid>
             </Grid>
         </Panel>
@@ -934,9 +930,9 @@
                 <Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform>
                 <Ellipse.Fill>
                     <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                        <GradientStop Offset="0" Color="#bb0f3460" />
-                        <GradientStop Offset="0.5" Color="#aa4aa8ff" />
-                        <GradientStop Offset="1" Color="#883ddc84" />
+                        <GradientStop Offset="0" Color="{DynamicResource AmbientColorBB2F}" />
+                        <GradientStop Offset="0.5" Color="{DynamicResource AmbientColorAA9A}" />
+                        <GradientStop Offset="1" Color="{DynamicResource AmbientColor88B4}" />
                     </LinearGradientBrush>
                 </Ellipse.Fill>
             </Ellipse>
@@ -945,30 +941,30 @@
                 <Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform>
                 <Ellipse.Fill>
                     <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                        <GradientStop Offset="0" Color="#cc331b14" />
-                        <GradientStop Offset="0.45" Color="#ccf0a500" />
-                        <GradientStop Offset="1" Color="#aaff6b9d" />
+                        <GradientStop Offset="0" Color="{DynamicResource AmbientColorCC20}" />
+                        <GradientStop Offset="0.45" Color="{DynamicResource AmbientColorCCA9}" />
+                        <GradientStop Offset="1" Color="{DynamicResource AmbientColorAA8E}" />
                     </LinearGradientBrush>
                 </Ellipse.Fill>
             </Ellipse>
             <Ellipse Classes="liquid-bubble-a" Width="22" Height="22" HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                     Margin="95,0,0,70" Stroke="#99ffffff" StrokeThickness="2" Fill="#11ffffff">
+                     Margin="95,0,0,70" Stroke="{DynamicResource AmbientBrush99FF}" StrokeThickness="2" Fill="{DynamicResource AmbientBrush11FF}">
                 <Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform>
             </Ellipse>
             <Ellipse Classes="liquid-bubble-b" Width="38" Height="38" HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                     Margin="220,0,0,30" Stroke="#77ffffff" StrokeThickness="2" Fill="#11ffffff">
+                     Margin="220,0,0,30" Stroke="{DynamicResource AmbientBrush77FF}" StrokeThickness="2" Fill="{DynamicResource AmbientBrush11FF}">
                 <Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform>
             </Ellipse>
             <Ellipse Classes="liquid-bubble-a" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                     Margin="-90,0,0,50" Stroke="#88ffffff" StrokeThickness="1.5" Fill="#11ffffff">
+                     Margin="-90,0,0,50" Stroke="{DynamicResource AmbientBrush88FF}" StrokeThickness="1.5" Fill="{DynamicResource AmbientBrush11FF}">
                 <Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform>
             </Ellipse>
             <Ellipse Classes="liquid-bubble-b" Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                     Margin="140,0,0,20" Stroke="#77ffffff" StrokeThickness="2" Fill="#11ffffff">
+                     Margin="140,0,0,20" Stroke="{DynamicResource AmbientBrush77FF}" StrokeThickness="2" Fill="{DynamicResource AmbientBrush11FF}">
                 <Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform>
             </Ellipse>
             <Ellipse Classes="liquid-bubble-a" Width="46" Height="46" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                     Margin="0,0,160,10" Stroke="#66ffffff" StrokeThickness="2" Fill="#11ffffff">
+                     Margin="0,0,160,10" Stroke="{DynamicResource AmbientBrush66FF}" StrokeThickness="2" Fill="{DynamicResource AmbientBrush11FF}">
                 <Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform>
             </Ellipse>
         </Panel>
@@ -978,59 +974,59 @@
             <Ellipse Width="600" Height="600" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
-                        <GradientStop Offset="0" Color="#cc050510" />
-                        <GradientStop Offset="0.28" Color="#88102244" />
-                        <GradientStop Offset="1" Color="#00102244" />
+                        <GradientStop Offset="0" Color="{DynamicResource AmbientColorCC06}" />
+                        <GradientStop Offset="0.28" Color="{DynamicResource AmbientColor8821}" />
+                        <GradientStop Offset="1" Color="{DynamicResource AmbientColor0021}" />
                     </RadialGradientBrush>
                 </Ellipse.Fill>
             </Ellipse>
             <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(0deg)">
-                <Border Classes="warp-streak-a" Width="160" Height="3" CornerRadius="99" Background="#dd4aa8ff"
+                <Border Classes="warp-streak-a" Width="160" Height="3" CornerRadius="99" Background="{DynamicResource AmbientBrushDD9A}"
                         RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
             </Grid>
             <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(30deg)">
-                <Border Classes="warp-streak-b" Width="135" Height="2" CornerRadius="99" Background="#cc3ddc84"
+                <Border Classes="warp-streak-b" Width="135" Height="2" CornerRadius="99" Background="{DynamicResource AmbientBrushCCB4}"
                         RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
             </Grid>
             <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(60deg)">
-                <Border Classes="warp-streak-c" Width="175" Height="3" CornerRadius="99" Background="#eeff6b9d"
+                <Border Classes="warp-streak-c" Width="175" Height="3" CornerRadius="99" Background="{DynamicResource AmbientBrushEE8E}"
                         RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
             </Grid>
             <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(90deg)">
-                <Border Classes="warp-streak-b" Width="150" Height="2" CornerRadius="99" Background="#ccffd166"
+                <Border Classes="warp-streak-b" Width="150" Height="2" CornerRadius="99" Background="{DynamicResource AmbientBrushCCD3}"
                         RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
             </Grid>
             <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(120deg)">
-                <Border Classes="warp-streak-a" Width="170" Height="3" CornerRadius="99" Background="#ddb06bff"
+                <Border Classes="warp-streak-a" Width="170" Height="3" CornerRadius="99" Background="{DynamicResource AmbientBrushDD84}"
                         RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
             </Grid>
             <Grid Width="360" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(150deg)">
-                <Border Classes="warp-streak-c" Width="125" Height="2.5" CornerRadius="99" Background="#eef0a500"
+                <Border Classes="warp-streak-c" Width="125" Height="2.5" CornerRadius="99" Background="{DynamicResource AmbientBrushEEA9}"
                         RenderTransformOrigin="50%,50%"><Border.RenderTransform><ScaleTransform /></Border.RenderTransform></Border>
             </Grid>
-            <Ellipse Width="26" Height="26" HorizontalAlignment="Center" VerticalAlignment="Center" Fill="#ccffffff" />
+            <Ellipse Width="26" Height="26" HorizontalAlignment="Center" VerticalAlignment="Center" Fill="{DynamicResource AmbientBrushCCFF}" />
         </Panel>
 
         <!-- Radar pulse: expanding rings, crosshairs, and a rotating spectral scan arm. -->
         <Panel IsVisible="{Binding IsRadarMode}" IsHitTestVisible="False">
             <Ellipse Width="520" Height="520" HorizontalAlignment="Center" VerticalAlignment="Center"
-                     Stroke="#223ddc84" StrokeThickness="1" StrokeDashArray="3,8" />
+                     Stroke="{DynamicResource AmbientBrush22B4}" StrokeThickness="1" StrokeDashArray="3,8" />
             <Ellipse Width="360" Height="360" HorizontalAlignment="Center" VerticalAlignment="Center"
-                     Stroke="#333ddc84" StrokeThickness="1" StrokeDashArray="2,6" />
+                     Stroke="{DynamicResource AmbientBrush33B4}" StrokeThickness="1" StrokeDashArray="2,6" />
             <Ellipse Width="200" Height="200" HorizontalAlignment="Center" VerticalAlignment="Center"
-                     Stroke="#443ddc84" StrokeThickness="1" StrokeDashArray="1,5" />
-            <Border Width="620" Height="1" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#223ddc84" />
-            <Border Width="1" Height="620" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#223ddc84" />
+                     Stroke="{DynamicResource AmbientBrush44B4}" StrokeThickness="1" StrokeDashArray="1,5" />
+            <Border Width="620" Height="1" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{DynamicResource AmbientBrush22B4}" />
+            <Border Width="1" Height="620" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{DynamicResource AmbientBrush22B4}" />
             <Ellipse Classes="radar-ring-a" Width="190" Height="190" HorizontalAlignment="Center" VerticalAlignment="Center"
-                     Stroke="#aa3ddc84" StrokeThickness="3" Fill="{x:Null}" RenderTransformOrigin="50%,50%">
+                     Stroke="{DynamicResource AmbientBrushAAB4}" StrokeThickness="3" Fill="{x:Null}" RenderTransformOrigin="50%,50%">
                 <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
             </Ellipse>
             <Ellipse Classes="radar-ring-b" Width="190" Height="190" HorizontalAlignment="Center" VerticalAlignment="Center"
-                     Stroke="#884aa8ff" StrokeThickness="2.5" Fill="{x:Null}" RenderTransformOrigin="50%,50%">
+                     Stroke="{DynamicResource AmbientBrush889A}" StrokeThickness="2.5" Fill="{x:Null}" RenderTransformOrigin="50%,50%">
                 <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
             </Ellipse>
             <Ellipse Classes="radar-ring-c" Width="190" Height="190" HorizontalAlignment="Center" VerticalAlignment="Center"
-                     Stroke="#88ffd166" StrokeThickness="2" Fill="{x:Null}" RenderTransformOrigin="50%,50%">
+                     Stroke="{DynamicResource AmbientBrush88D3}" StrokeThickness="2" Fill="{x:Null}" RenderTransformOrigin="50%,50%">
                 <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
             </Ellipse>
             <Grid Classes="radar-sweep" Width="520" Height="520" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -1039,9 +1035,9 @@
                 <Border Width="250" Height="3" HorizontalAlignment="Right" VerticalAlignment="Center" CornerRadius="99">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
-                            <GradientStop Offset="0" Color="#003ddc84" />
-                            <GradientStop Offset="0.55" Color="#773ddc84" />
-                            <GradientStop Offset="1" Color="#ffb8ffd2" />
+                            <GradientStop Offset="0" Color="{DynamicResource AmbientColor00B4}" />
+                            <GradientStop Offset="0.55" Color="{DynamicResource AmbientColor77B4}" />
+                            <GradientStop Offset="1" Color="{DynamicResource AmbientColorFFED}" />
                         </LinearGradientBrush>
                     </Border.Background>
                 </Border>
@@ -1051,26 +1047,26 @@
         <!-- Fireflies: warm particles drift on different paths and pulse independently. -->
         <Panel IsVisible="{Binding IsFirefliesMode}" IsHitTestVisible="False">
             <Ellipse Classes="firefly-a" Width="12" Height="12" HorizontalAlignment="Left" VerticalAlignment="Top"
-                     Margin="100,100,0,0" Fill="#ffffd166"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+                     Margin="100,100,0,0" Fill="{DynamicResource AmbientBrushFFD3}"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
             <Ellipse Classes="firefly-b" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Center"
-                     Margin="180,0,0,80" Fill="#fff0a500"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+                     Margin="180,0,0,80" Fill="{DynamicResource AmbientBrushFFA9}"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
             <Ellipse Classes="firefly-c" Width="15" Height="15" HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                     Margin="85,0,0,120" Fill="#fffff0a8"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+                     Margin="85,0,0,120" Fill="{DynamicResource AmbientBrushFFEE}"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
             <Ellipse Classes="firefly-b" Width="11" Height="11" HorizontalAlignment="Center" VerticalAlignment="Top"
-                     Margin="-150,75,0,0" Fill="#ff3ddc84"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+                     Margin="-150,75,0,0" Fill="{DynamicResource AmbientBrushFFB4}"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
             <Ellipse Classes="firefly-a" Width="7" Height="7" HorizontalAlignment="Center" VerticalAlignment="Top"
-                     Margin="120,145,0,0" Fill="#ffffd166"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+                     Margin="120,145,0,0" Fill="{DynamicResource AmbientBrushFFD3}"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
             <Ellipse Classes="firefly-c" Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                     Margin="-80,0,0,90" Fill="#ffff9e7a"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+                     Margin="-80,0,0,90" Fill="{DynamicResource AmbientBrushFFB0}"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
             <Ellipse Classes="firefly-a" Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Top"
-                     Margin="0,115,130,0" Fill="#ffffd166"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+                     Margin="0,115,130,0" Fill="{DynamicResource AmbientBrushFFD3}"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
             <Ellipse Classes="firefly-c" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Center"
-                     Margin="0,70,210,0" Fill="#ff4aa8ff"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+                     Margin="0,70,210,0" Fill="{DynamicResource AmbientBrushFF9A}"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
             <Ellipse Classes="firefly-b" Width="13" Height="13" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                     Margin="0,0,90,135" Fill="#fff0a500"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
+                     Margin="0,0,90,135" Fill="{DynamicResource AmbientBrushFFA9}"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
             <Ellipse Width="520" Height="520" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.28">
                 <Ellipse.Fill>
-                    <RadialGradientBrush><GradientStop Offset="0" Color="#44ffd166" /><GradientStop Offset="1" Color="#00ffd166" /></RadialGradientBrush>
+                    <RadialGradientBrush><GradientStop Offset="0" Color="{DynamicResource AmbientColor44D3}" /><GradientStop Offset="1" Color="{DynamicResource AmbientColor00D3}" /></RadialGradientBrush>
                 </Ellipse.Fill>
             </Ellipse>
         </Panel>
@@ -1080,30 +1076,30 @@
             <Ellipse Classes="prism-glow" Width="500" Height="500" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
-                        <GradientStop Offset="0" Color="#77ffffff" />
-                        <GradientStop Offset="0.3" Color="#554aa8ff" />
-                        <GradientStop Offset="0.62" Color="#33ff6b9d" />
-                        <GradientStop Offset="1" Color="#00ff6b9d" />
+                        <GradientStop Offset="0" Color="{DynamicResource AmbientColor77FF}" />
+                        <GradientStop Offset="0.3" Color="{DynamicResource AmbientColor559A}" />
+                        <GradientStop Offset="0.62" Color="{DynamicResource AmbientColor338E}" />
+                        <GradientStop Offset="1" Color="{DynamicResource AmbientColor008E}" />
                     </RadialGradientBrush>
                 </Ellipse.Fill>
             </Ellipse>
             <Polygon Classes="prism-a" Points="260,8 512,470 8,470" Width="520" Height="480" Stretch="Fill"
-                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="#884aa8ff" StrokeThickness="3"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="{DynamicResource AmbientBrush889A}" StrokeThickness="3"
                      Fill="{x:Null}" RenderTransformOrigin="50%,50%">
                 <Polygon.RenderTransform><RotateTransform /></Polygon.RenderTransform>
             </Polygon>
             <Polygon Classes="prism-b" Points="230,8 452,410 8,410" Width="460" Height="420" Stretch="Fill"
-                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="#99ff6b9d" StrokeThickness="3"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="{DynamicResource AmbientBrush998E}" StrokeThickness="3"
                      Fill="{x:Null}" RenderTransformOrigin="50%,50%">
                 <Polygon.RenderTransform><RotateTransform /></Polygon.RenderTransform>
             </Polygon>
             <Polygon Classes="prism-a" Points="180,8 352,320 8,320" Width="360" Height="330" Stretch="Fill"
-                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="#aaf0a500" StrokeThickness="2.5"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="{DynamicResource AmbientBrushAAA9}" StrokeThickness="2.5"
                      Fill="{x:Null}" RenderTransformOrigin="50%,50%">
                 <Polygon.RenderTransform><RotateTransform /></Polygon.RenderTransform>
             </Polygon>
             <Polygon Classes="prism-b" Points="125,8 242,220 8,220" Width="250" Height="230" Stretch="Fill"
-                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="#aa3ddc84" StrokeThickness="2"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="{DynamicResource AmbientBrushAAB4}" StrokeThickness="2"
                      Fill="{x:Null}" RenderTransformOrigin="50%,50%">
                 <Polygon.RenderTransform><RotateTransform /></Polygon.RenderTransform>
             </Polygon>
@@ -1118,11 +1114,7 @@
                  Margin="0,80,0,0"
                  IsHitTestVisible="False"
                  Fill="{Binding HaloBrush}">
-            <Ellipse.Transitions>
-                <Transitions>
-                    <BrushTransition Property="Fill" Duration="0:0:1.4" />
-                </Transitions>
-            </Ellipse.Transitions>
+
         </Ellipse>
 
         <!-- Slowly counter-rotating dashed rings + rising steam wisps encircle the hero icon.
@@ -1134,7 +1126,7 @@
                      Margin="0,92,0,0"
                      Opacity="0.16"
                      IsHitTestVisible="False"
-                     Stroke="{StaticResource BrewTextPrimaryBrush}"
+                     Stroke="{DynamicResource BrewTextPrimaryBrush}"
                      StrokeThickness="1.4"
                      StrokeDashArray="2,7"
                      RenderTransformOrigin="50%,50%">
@@ -1148,7 +1140,7 @@
                      Margin="0,92,0,0"
                      Opacity="0.18"
                      IsHitTestVisible="False"
-                     Stroke="{StaticResource BrewAccentBrush}"
+                     Stroke="{DynamicResource BrewAccentBrush}"
                      StrokeThickness="1.2"
                      StrokeDashArray="1,9"
                      RenderTransformOrigin="50%,50%">
@@ -1166,7 +1158,7 @@
                     <TranslateTransform />
                 </Viewbox.RenderTransform>
                 <Path Data="M3,8 H13 A3,3 0 1 0 10,5 M3,13 H17 A3,3 0 1 1 14,16 M3,18 H11"
-                      Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.4"
+                      Stroke="{DynamicResource BrewTextPrimaryBrush}" StrokeThickness="1.4"
                       StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
             <Viewbox Classes="ambient-wisp delay-2"
@@ -1178,7 +1170,7 @@
                     <TranslateTransform />
                 </Viewbox.RenderTransform>
                 <Path Data="M12,3 C12.5,8 13,9 18,12 C13,15 12.5,16 12,21 C11.5,16 11,15 6,12 C11,9 11.5,8 12,3 Z"
-                      Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.6"
+                      Stroke="{DynamicResource BrewAccentBrush}" StrokeThickness="1.6"
                       StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
             <Viewbox Classes="ambient-wisp delay-4"
@@ -1190,14 +1182,14 @@
                     <TranslateTransform />
                 </Viewbox.RenderTransform>
                 <Path Data="M3,8 H13 A3,3 0 1 0 10,5 M3,13 H17 A3,3 0 1 1 14,16 M3,18 H11"
-                      Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.4"
+                      Stroke="{DynamicResource BrewTextPrimaryBrush}" StrokeThickness="1.4"
                       StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
         </Panel>
 
         <!-- DVD mode dims the lively backdrop so the bouncing logo reads clearly. Sits above
              the animated background but below the clock, so the clock stays bright and fixed. -->
-        <Border Background="#000000"
+        <Border Background="{DynamicResource AmbientBrushFF00}"
                 IsHitTestVisible="False"
                 Opacity="{Binding DvdDimOpacity}">
             <Border.Transitions>
@@ -1207,47 +1199,47 @@
             </Border.Transitions>
         </Border>
 
-        <!-- Orbit mode: brew icons revolve around the clock. Sits below the clock panel so the
-             icons sweep behind the time. Card text/particles are hidden in this mode. -->
-        <Grid Classes="orbit-spin"
+        <!-- Orbit stays outside the clock/date clearance region, including on narrow screens. -->
+        <Grid x:Name="OrbitStage" Classes="orbit-spin"
               IsVisible="{Binding IsOrbitMode}"
-              Width="300" Height="300"
+              Width="388" Height="388"
               HorizontalAlignment="Center" VerticalAlignment="Center"
               IsHitTestVisible="False"
               RenderTransformOrigin="50%,50%">
             <Grid.RenderTransform>
                 <RotateTransform />
             </Grid.RenderTransform>
-            <Viewbox Classes="orbit-counter" Width="48" Height="48"
+            <Ellipse x:Name="OrbitRing" Margin="16" Stroke="{DynamicResource BrewLineBrush}" StrokeThickness="1" />
+            <Viewbox Classes="orbit-counter" Width="32" Height="32"
                      HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0.7"
                      RenderTransformOrigin="50%,50%">
                 <Viewbox.RenderTransform><RotateTransform /></Viewbox.RenderTransform>
                 <Path Data="{Binding OrbitIconA, Converter={StaticResource AmbientIcon}}"
-                      Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
+                      Stroke="{DynamicResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
                       StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
-            <Viewbox Classes="orbit-counter" Width="48" Height="48"
+            <Viewbox Classes="orbit-counter" Width="32" Height="32"
                      HorizontalAlignment="Right" VerticalAlignment="Center" Opacity="0.7"
                      RenderTransformOrigin="50%,50%">
                 <Viewbox.RenderTransform><RotateTransform /></Viewbox.RenderTransform>
                 <Path Data="{Binding OrbitIconB, Converter={StaticResource AmbientIcon}}"
-                      Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.3"
+                      Stroke="{DynamicResource BrewAccentBrush}" StrokeThickness="1.3"
                       StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
-            <Viewbox Classes="orbit-counter" Width="48" Height="48"
+            <Viewbox Classes="orbit-counter" Width="32" Height="32"
                      HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.7"
                      RenderTransformOrigin="50%,50%">
                 <Viewbox.RenderTransform><RotateTransform /></Viewbox.RenderTransform>
                 <Path Data="{Binding OrbitIconC, Converter={StaticResource AmbientIcon}}"
-                      Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
+                      Stroke="{DynamicResource BrewTextPrimaryBrush}" StrokeThickness="1.3"
                       StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
-            <Viewbox Classes="orbit-counter" Width="48" Height="48"
+            <Viewbox Classes="orbit-counter" Width="32" Height="32"
                      HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0.7"
                      RenderTransformOrigin="50%,50%">
                 <Viewbox.RenderTransform><RotateTransform /></Viewbox.RenderTransform>
                 <Path Data="{Binding OrbitIconD, Converter={StaticResource AmbientIcon}}"
-                      Stroke="{StaticResource BrewAccentBrush}" StrokeThickness="1.3"
+                      Stroke="{DynamicResource BrewAccentBrush}" StrokeThickness="1.3"
                       StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
             </Viewbox>
         </Grid>
@@ -1258,27 +1250,28 @@
                     Margin="24,0"
                     MaxWidth="640">
 
-            <TextBlock Text="{Binding ClockTime}"
-                       FontSize="72"
-                       FontWeight="Bold"
-                       Foreground="{StaticResource BrewTextPrimaryBrush}"
+            <TextBlock x:Name="AmbientClock" Text="{Binding ClockTime}"
+                       FontSize="88"
+                       FontWeight="Light"
+                       Foreground="{DynamicResource BrewTextPrimaryBrush}"
                        HorizontalAlignment="Center"
-                       LetterSpacing="2" />
+                       LetterSpacing="-3" />
 
             <!-- Localised date under the clock — always on (every mode), like the clock.
                  Sits tight beneath the time; negative top margin trims the parent spacing. -->
-            <TextBlock Text="{Binding ClockDate}"
-                       FontSize="18"
-                       Foreground="{StaticResource BrewTextPrimaryBrush}"
+            <TextBlock x:Name="AmbientDate" Text="{Binding ClockDate}"
+                       FontSize="14"
+                       Foreground="{DynamicResource BrewTextPrimaryBrush}"
                        Opacity="0.7"
                        HorizontalAlignment="Center"
                        LetterSpacing="1"
                        Margin="0,-8,0,0" />
 
-            <!-- Card text fades out in DVD mode. Opacity (not IsVisible) keeps the layout
-                 slot, so the clock above never shifts when the mode flips. -->
+            <!-- The whole layer fades during mode changes. Reclaim this slot outside card
+                 mode so the clock is centered inside the orbit instead of meeting its icons. -->
             <StackPanel Spacing="12"
                         HorizontalAlignment="Center"
+                        IsVisible="{Binding IsCardMode}"
                         Opacity="{Binding CardOpacity}">
                 <StackPanel.Transitions>
                     <Transitions>
@@ -1295,7 +1288,7 @@
                         <ScaleTransform />
                     </Viewbox.RenderTransform>
                     <Path Data="{Binding HeroIcon, Converter={StaticResource AmbientIcon}}"
-                          Stroke="{StaticResource BrewTextPrimaryBrush}" StrokeThickness="1.4"
+                          Stroke="{DynamicResource BrewTextPrimaryBrush}" StrokeThickness="1.4"
                           StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
                 </Viewbox>
 
@@ -1313,7 +1306,7 @@
             </StackPanel>
         </StackPanel>
 
-        <!-- Retro DVD-screensaver bounce. Position + edge colour changes are driven from
+        <!-- Retro DVD-screensaver bounce. Position + edge opacity changes are driven from
              code-behind (needs live panel/text bounds); the VM only toggles visibility. -->
         <TextBlock x:Name="DvdLogo"
                    Text="{Binding DvdLogoText}"
@@ -1323,7 +1316,7 @@
                    LetterSpacing="3"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top"
-                   Foreground="#f0a500">
+                   Foreground="{DynamicResource BrewTextPrimaryBrush}">
             <TextBlock.RenderTransform>
                 <TranslateTransform />
             </TextBlock.RenderTransform>

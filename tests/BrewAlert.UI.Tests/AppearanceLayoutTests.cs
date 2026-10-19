@@ -117,6 +117,59 @@ public sealed class AppearanceLayoutTests
         Assert.Empty(fixture.Timer.GetActiveSessions());
     }
 
+    [AvaloniaFact]
+    public async Task EveryAmbientMode_RendersInBothAppearances()
+    {
+        foreach (var theme in new[] { BrewTheme.Obsidian, BrewTheme.Porcelain })
+        {
+            using var fixture = new Fixture(800, 480);
+            await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
+            await fixture.Main.ShowAmbientCommand.ExecuteAsync(null);
+            foreach (var mode in Enum.GetValues<AmbientMode>())
+            {
+                fixture.Main.Ambient.Mode = mode;
+                Layout(fixture.Window);
+                if (mode is AmbientMode.Card or AmbientMode.Orbit
+                    && Environment.GetEnvironmentVariable("BREWALERT_RENDER_DIR") is not null)
+                    await Task.Delay(650);
+                Layout(fixture.Window);
+                Assert.True(fixture.Main.Ambient.IsVisible);
+                var clock = fixture.View.GetVisualDescendants().OfType<TextBlock>()
+                    .Single(text => text.Text == fixture.Main.Ambient.ClockTime);
+                var position = clock.TranslatePoint(new Point(0, 0), fixture.Window)!.Value;
+                Assert.InRange(position.X, 0, fixture.Window.Width - clock.Bounds.Width);
+                Assert.InRange(position.Y, 0, fixture.Window.Height - clock.Bounds.Height);
+                Capture(fixture.Window, theme + "-ambient-" + mode);
+            }
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Orbit_LeavesClockAndDateClearAtPiAndNarrowSizes()
+    {
+        foreach (var width in new[] { 800, 320 })
+        {
+            using var fixture = new Fixture(width, 480);
+            await fixture.Main.ShowAmbientCommand.ExecuteAsync(null);
+            fixture.Main.Ambient.Mode = AmbientMode.Orbit;
+            Layout(fixture.Window);
+            var stage = fixture.View.GetVisualDescendants().OfType<Grid>().Single(x => x.Name == "OrbitStage");
+            var center = stage.TranslatePoint(new Point(stage.Width / 2, stage.Height / 2), fixture.Window)!.Value;
+            var iconSize = stage.Children.OfType<Viewbox>().Max(icon => icon.Width);
+            var innerRadius = stage.Width / 2 - iconSize / 2 - iconSize / Math.Sqrt(2);
+            foreach (var text in fixture.View.GetVisualDescendants().OfType<TextBlock>()
+                .Where(x => x.Name is "AmbientClock" or "AmbientDate"))
+            {
+                var origin = text.TranslatePoint(new Point(0, 0), fixture.Window)!.Value;
+                foreach (var corner in new[] { origin, origin + new Vector(text.Bounds.Width, 0),
+                    origin + new Vector(0, text.Bounds.Height), origin + new Vector(text.Bounds.Width, text.Bounds.Height) })
+                    Assert.True(Math.Sqrt(Math.Pow(corner.X - center.X, 2) + Math.Pow(corner.Y - center.Y, 2))
+                        < innerRadius, text.Name + " enters the orbit path.");
+            }
+            Capture(fixture.Window, "Obsidian-orbit-clearance-" + width);
+        }
+    }
+
     private static void Click(Window window, Button button)
     {
         var position = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;

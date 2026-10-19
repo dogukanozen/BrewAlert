@@ -5,6 +5,7 @@ using BrewAlert.Core.Models;
 using BrewAlert.UI.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.ComponentModel;
 
 namespace BrewAlert.UI.ViewModels;
 
@@ -81,6 +82,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _updateService = updateService;
         _ambient = ambient;
         Appearance = appearance;
+        Appearance.PropertyChanged += OnAppearanceChanged;
+        _ambient.SetAppearance(Appearance.CurrentTheme);
 
         _navigation.CurrentViewChanged += OnNavigationOrActivity;
         _timerService.BrewStarted += OnBrewStarted;
@@ -308,6 +311,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         UpdateClock();
     }
 
+    private void OnAppearanceChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(IAppearanceService.CurrentTheme))
+            _ambient.SetAppearance(Appearance.CurrentTheme);
+    }
+
     private void RefreshNavigationLabels()
     {
         foreach (var name in new[] { nameof(HomeNavText), nameof(ActiveNavText), nameof(SettingsNavText),
@@ -333,6 +342,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _timerService.BrewCancelled -= OnBrewCancelled;
         _loc.LanguageChanged -= OnLanguageChanged;
         _updateService.UpdateAvailable -= OnUpdateAvailable;
+        Appearance.PropertyChanged -= OnAppearanceChanged;
         _ambient.Dispose();
     }
 }
