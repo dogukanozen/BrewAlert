@@ -43,9 +43,9 @@ Pick the **narrowest** one that fits.
 | `ui` | `src/BrewAlert.UI/**` |
 | `tests` | `tests/**` (only when the commit is tests-only; otherwise use the code scope) |
 | `ci` | `.github/workflows/**` (pair with `type: ci`) |
-| `docs` | `docs/**`, `README.md`, `AGENT.md`, `CLAUDE.md`, `.gemini/**`, `.github/pull_request_template.md` |
+| `docs` | `docs/**`, `README.md`, `AGENT.md`, `CLAUDE.md`, `AGENTS.md`, `.github/pull_request_template.md` |
 | `deps` | Dependency / SDK bumps (pair with `type: chore`) |
-| `repo` | Top-level repo config: `.gitignore`, `.gitattributes`, `.editorconfig`, `*.slnx` |
+| `repo` | Top-level repo config: `.gitignore`, `.gitattributes`, `.editorconfig`, `.coderabbit.yaml`, `*.slnx` |
 
 If a commit spans multiple scopes, you are almost certainly doing two things — split the commit. Real cross-cutting changes (rare) may omit the scope: `refactor: rename IBrewTimerService.Tick to OnTick`.
 

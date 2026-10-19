@@ -1,6 +1,6 @@
 # AGENT.md — Shared brief for every AI agent
 
-Tool-agnostic entry point. Whether you are Claude, Gemini, Codex, Copilot, Cursor, or anything else, **read this file first**. The per-tool files (`CLAUDE.md`, `.gemini/GEMINI.md`, …) are thin pointers back here; this is the single source of truth.
+Tool-agnostic entry point. Whether you are Claude, Gemini, Codex, Copilot, Cursor, or anything else, **read this file first**. The per-tool files (`CLAUDE.md`, `AGENTS.md`, …) are thin pointers back here; this is the single source of truth.
 
 > **Rule #1: do not re-discover the repo.** Route the request via §3, open only the listed files, answer. No speculative reads, no whole-repo greps, no drive-by refactors.
 
@@ -70,6 +70,7 @@ All of the following are verified against the current code. If you see a change 
 
 ## 5. Working discipline
 
+- Code conventions: nullable reference types on, file-scoped namespaces, primary constructors for DI, `CommunityToolkit.Mvvm` `[ObservableProperty]`/`[RelayCommand]`. Domain interfaces live in `src/BrewAlert.Core/Interfaces/`; UI-layer service interfaces (`INavigationService`, `ILocalizationService`, …) in `src/BrewAlert.UI/Services/`. Shared UI styles go in `src/BrewAlert.UI/Themes/BrewAlertTheme.axaml`.
 - One feature branch per concern. Branch names: `feat/core-*`, `feat/infra-*`, `feat/ui-*`, `fix/*`, `chore/*`, `test/*`, `docs/*`, `ci/*`, `refactor/*`.
 - Run locally before pushing:
   ```bash
