@@ -1,136 +1,86 @@
 namespace BrewAlert.UI.Services;
 
-using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Text.Json.Nodes;
 using BrewAlert.UI.Constants;
 
+/// <summary>Update only the chosen setting, preserving other sections and future fields.</summary>
 public sealed class PreferencesService : IPreferencesService
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly SemaphoreSlim _fileSemaphore = new(1, 1);
     private readonly string _filePath;
 
-    public PreferencesService(string? filePath = null)
-    {
-        _filePath = filePath ?? BrewAlertPaths.Preferences;
-    }
-
-    public async Task SaveNotificationProviderAsync(string provider, CancellationToken ct = default)
-    {
-        await _fileSemaphore.WaitAsync(ct);
-        try
+    public PreferencesService(string? filePath = null) => _filePath = filePath ?? BrewAlertPaths.Preferences;
+    public Task SaveNotificationProviderAsync(string provider, CancellationToken ct = default) =>
+        UpdateAsync(root => Section(root, "Notifications")["Provider"] = provider, ct);
+    public Task SaveLanguageAsync(string language, CancellationToken ct = default) =>
+        UpdateAsync(root => root["Language"] = language, ct);
+    public Task SaveWebhookUrlAsync(string url, CancellationToken ct = default) =>
+        UpdateAsync(root => Section(Section(root, "Notifications"), "Teams")["WebhookUrl"] = url?.Trim() ?? "", ct);
+    public Task SaveAppearanceAsync(AppearanceOptions appearance, CancellationToken ct = default) =>
+        UpdateAsync(root =>
         {
-            var root = await ReadRootAsync(ct);
-            root.BrewAlert.Notifications.Provider = provider;
-            await WriteRootAsync(root, ct);
-        }
-        finally
-        {
-            _fileSemaphore.Release();
-        }
-    }
+            var section = Section(root, "Appearance");
+            var values = JsonSerializer.SerializeToNode(appearance.Normalized())!.AsObject();
+            foreach (var pair in values) section[pair.Key] = pair.Value?.DeepClone();
+        }, ct);
 
-    public async Task SaveLanguageAsync(string language, CancellationToken ct = default)
+    private async Task UpdateAsync(Action<JsonObject> update, CancellationToken ct)
     {
         await _fileSemaphore.WaitAsync(ct);
         try
         {
             var root = await ReadRootAsync(ct);
-            root.BrewAlert.Language = language;
-            await WriteRootAsync(root, ct);
+            update(Section(root, "BrewAlert"));
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(_filePath))!);
+            var tempPath = _filePath + ".tmp";
+            try
+            {
+                await File.WriteAllTextAsync(tempPath, root.ToJsonString(JsonOptions), ct);
+                File.Move(tempPath, _filePath, true);
+            }
+            finally
+            {
+                try { if (File.Exists(tempPath)) File.Delete(tempPath); }
+                catch { /* A cleanup failure must not hide the original write error. */ }
+            }
         }
-        finally
-        {
-            _fileSemaphore.Release();
-        }
+        finally { _fileSemaphore.Release(); }
     }
 
-    public async Task SaveWebhookUrlAsync(string url, CancellationToken ct = default)
+    private async Task<JsonObject> ReadRootAsync(CancellationToken ct)
     {
-        await _fileSemaphore.WaitAsync(ct);
+        if (!File.Exists(_filePath)) return new JsonObject();
         try
         {
-            var root = await ReadRootAsync(ct);
-            root.BrewAlert.Notifications.Teams.WebhookUrl = url?.Trim() ?? string.Empty;
-            await WriteRootAsync(root, ct);
-        }
-        finally
-        {
-            _fileSemaphore.Release();
-        }
-    }
-
-    private async Task<PreferencesRoot> ReadRootAsync(CancellationToken ct)
-    {
-        if (!File.Exists(_filePath))
-            return new PreferencesRoot();
-
-        try
-        {
-            var json = await File.ReadAllTextAsync(_filePath, ct);
-            return JsonSerializer.Deserialize<PreferencesRoot>(json, JsonOptions) ?? new PreferencesRoot();
+            var root = JsonNode.Parse(await File.ReadAllTextAsync(_filePath, ct)) as JsonObject
+                ?? throw new JsonException("Preferences must be a JSON object.");
+            ValidateObject(root, "BrewAlert");
+            if (root["BrewAlert"] is JsonObject app)
+            {
+                ValidateObject(app, "Appearance");
+                ValidateObject(app, "Notifications");
+                if (app["Notifications"] is JsonObject notifications) ValidateObject(notifications, "Teams");
+            }
+            return root;
         }
         catch (JsonException)
         {
-            // Corrupted file: back it up so the user's data isn't silently
-            // overwritten, then start from defaults.
             try { File.Copy(_filePath, _filePath + ".bak", true); }
-            catch { /* ignore backup failure */ }
-            return new PreferencesRoot();
+            catch { /* Keep recovery available even if a backup cannot be written. */ }
+            return new JsonObject();
         }
     }
-
-    private async Task WriteRootAsync(PreferencesRoot root, CancellationToken ct)
+    private static void ValidateObject(JsonObject parent, string key)
     {
-        var dir = Path.GetDirectoryName(_filePath)!;
-        Directory.CreateDirectory(dir);
-        var json = JsonSerializer.Serialize(root, JsonOptions);
-
-        // Atomic write: write to a temp file first, then move it into place so a
-        // crash mid-write cannot corrupt the existing preferences file.
-        var tempPath = _filePath + ".tmp";
-        try
-        {
-            await File.WriteAllTextAsync(tempPath, json, ct);
-            File.Move(tempPath, _filePath, true);
-        }
-        finally
-        {
-            // Clean up the temp file if the write or move failed partway through.
-            // After a successful move it no longer exists, so this is a no-op.
-            try { if (File.Exists(tempPath)) File.Delete(tempPath); }
-            catch { /* ignore cleanup failure; don't mask the original exception */ }
-        }
+        if (parent[key] is not null and not JsonObject) throw new JsonException($"{key} must be an object.");
     }
-
-    private sealed class PreferencesRoot
+    private static JsonObject Section(JsonObject parent, string key)
     {
-        [JsonPropertyName("BrewAlert")]
-        public BrewAlertSection BrewAlert { get; set; } = new();
-    }
-
-    private sealed class BrewAlertSection
-    {
-        [JsonPropertyName("Language")]
-        public string Language { get; set; } = AppLanguage.English;
-
-        [JsonPropertyName("Notifications")]
-        public NotificationsSection Notifications { get; set; } = new();
-    }
-
-    private sealed class NotificationsSection
-    {
-        [JsonPropertyName("Provider")]
-        public string Provider { get; set; } = "Console";
-
-        [JsonPropertyName("Teams")]
-        public TeamsSection Teams { get; set; } = new();
-    }
-
-    private sealed class TeamsSection
-    {
-        [JsonPropertyName("WebhookUrl")]
-        public string WebhookUrl { get; set; } = string.Empty;
+        if (parent[key] is JsonObject child) return child;
+        var section = new JsonObject();
+        parent[key] = section;
+        return section;
     }
 }

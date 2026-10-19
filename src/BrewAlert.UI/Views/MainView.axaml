@@ -1,84 +1,46 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:BrewAlert.UI.ViewModels"
-             xmlns:views="using:BrewAlert.UI.Views"
-             xmlns:media="using:BrewAlert.UI.Media"
-             x:Class="BrewAlert.UI.Views.MainView"
-             x:DataType="vm:MainWindowViewModel">
-
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BrewAlert.UI.ViewModels" xmlns:views="using:BrewAlert.UI.Views"
+             xmlns:media="using:BrewAlert.UI.Media" x:Class="BrewAlert.UI.Views.MainView"
+             x:DataType="vm:MainWindowViewModel" Classes="brew-shell" Classes.porcelain="{Binding Appearance.IsPorcelain}">
     <Grid>
         <DockPanel>
-            <!-- Navigation Bar — uses adaptive padding via classes -->
-            <Border DockPanel.Dock="Top"
-                    Background="{StaticResource BrewSurfaceBrush}"
-                    Padding="12,6">
-                <Grid ColumnDefinitions="*,Auto,Auto">
-                    <StackPanel Grid.Column="0"
-                                VerticalAlignment="Center"
-                                Spacing="2">
-                        <TextBlock Text="{Binding Title}"
-                                   Classes="brew-title" />
-                        <TextBlock Text="{Binding CurrentDateTime}"
-                                   Classes="brew-subtitle"
-                                   Opacity="0.75" />
+            <Border DockPanel.Dock="Top" Classes="app-chrome" BorderBrush="{DynamicResource BrewLineBrush}"
+                    BorderThickness="0,0,0,1">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+                    <TextBlock Text="brewalert" Classes="brand" FontWeight="Medium" LetterSpacing="-0.5" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding CurrentDateTime}" Classes="brew-subtitle header-date"
+                               VerticalAlignment="Center" Margin="0,0,18,0" FontSize="12" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2">
+                        <Button Content="{Binding HomeNavText}" Classes="brew-nav-btn" Command="{Binding NavigateHomeCommand}" />
+                        <Button Content="{Binding ActiveNavText}" Classes="brew-nav-btn" Command="{Binding NavigateToProfilesCommand}" />
                     </StackPanel>
-
-                    <Button Grid.Column="1"
-                            Content="{Binding BrewsNavText}"
-                            Classes="brew-primary brew-nav-btn"
-                            Command="{Binding NavigateToProfilesCommand}"
-                            Margin="0,0,6,0" />
-
-                    <Button Grid.Column="2"
-                            Classes="brew-primary brew-nav-btn"
-                            Command="{Binding NavigateToSettingsCommand}">
-                        <Viewbox Width="22" Height="22">
-                            <Path Data="{x:Static media:BrewIconGeometry.Gear}"
-                                  Stroke="White" StrokeThickness="1.4"
-                                  StrokeLineCap="Round" StrokeJoin="Round" Fill="{x:Null}" />
-                        </Viewbox>
+                    <Button Grid.Column="3" Classes="brew-icon-button" Command="{Binding NavigateToSettingsCommand}"
+                            AutomationProperties.Name="{Binding SettingsNavText}">
+                        <Viewbox Width="20" Height="20"><Path Data="{x:Static media:BrewIconGeometry.Gear}" Classes="brew-icon" /></Viewbox>
                     </Button>
                 </Grid>
             </Border>
-
-            <!-- Content Area — responsive margin that won't eat space on small screens -->
-            <ContentControl Content="{Binding CurrentView}"
-                            Margin="8" />
+            <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource BrewLineBrush}" BorderThickness="0,1,0,0" Padding="24,0">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <TextBlock Text="{Binding NotificationHint}" Classes="brew-subtitle" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="1" Content="{Binding IdleText}" Command="{Binding ShowAmbientCommand}"
+                            IsEnabled="{Binding CanShowAmbient}" Classes="brew-nav-btn" FontSize="11" />
+                </Grid>
+            </Border>
+            <ContentControl Content="{Binding CurrentView}" />
         </DockPanel>
-
-        <!-- Update Toast — appears at bottom-right when a new version is available -->
-        <Border IsVisible="{Binding IsUpdateToastVisible}"
-                Background="{StaticResource BrewCardBrush}"
-                CornerRadius="12"
-                Padding="16,12"
-                Margin="16"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Bottom"
-                BoxShadow="0 4 16 2 #66000000"
-                ZIndex="100">
-            <StackPanel Spacing="10">
-                <TextBlock Text="{Binding UpdateToastMessage}"
-                           Foreground="{StaticResource BrewTextPrimaryBrush}"
-                           FontSize="15"
-                           FontWeight="SemiBold" />
-                <StackPanel Orientation="Horizontal"
-                            Spacing="8"
-                            HorizontalAlignment="Right">
-                    <Button Content="{Binding UpdateToastDismissText}"
-                            Classes="brew-primary brew-nav-btn"
-                            Background="{StaticResource BrewSurfaceBrush}"
-                            Command="{Binding DismissUpdateCommand}" />
-                    <Button Content="{Binding UpdateToastInstallText}"
-                            Classes="brew-primary brew-nav-btn"
-                            Command="{Binding InstallUpdateCommand}" />
+        <Border IsVisible="{Binding IsUpdateToastVisible}" Background="{DynamicResource BrewSurfaceBrush}"
+                BorderBrush="{DynamicResource BrewLineBrush}" BorderThickness="1" CornerRadius="12"
+                Padding="18" Margin="16" HorizontalAlignment="Right" VerticalAlignment="Bottom" MaxWidth="290" ZIndex="100">
+            <StackPanel Spacing="12">
+                <TextBlock Text="{Binding UpdateToastMessage}" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Content="{Binding UpdateToastDismissText}" Classes="brew-secondary" Command="{Binding DismissUpdateCommand}" />
+                    <Button Content="{Binding UpdateToastInstallText}" Classes="brew-primary" Command="{Binding InstallUpdateCommand}" />
                 </StackPanel>
             </StackPanel>
         </Border>
-
-        <!-- Ambient screensaver — Pi-friendly transforms only; tap to dismiss -->
-        <Border IsVisible="{Binding Ambient.IsVisible}"
-                ZIndex="300"
-                Background="#F01a1a2e"
+        <Border IsVisible="{Binding Ambient.IsVisible}" ZIndex="300" Background="{DynamicResource BrewBackgroundBrush}"
                 PointerPressed="OnAmbientPointerPressed">
             <views:AmbientOverlayView DataContext="{Binding Ambient}" />
         </Border>

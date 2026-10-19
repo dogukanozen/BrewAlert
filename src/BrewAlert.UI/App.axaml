@@ -16,7 +16,12 @@
     </Application.DataTemplates>
 
     <Application.Styles>
-        <FluentTheme />
+        <FluentTheme>
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Dark" Accent="#a9aba6" />
+                <ColorPaletteResources x:Key="Light" Accent="#51574f" />
+            </FluentTheme.Palettes>
+        </FluentTheme>
         <StyleInclude Source="/Themes/BrewAlertTheme.axaml" />
     </Application.Styles>
 </Application>

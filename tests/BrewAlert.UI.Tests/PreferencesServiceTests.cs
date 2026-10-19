@@ -1,4 +1,5 @@
 using BrewAlert.UI.Services;
+using System.Text.Json.Nodes;
 using Xunit;
 
 namespace BrewAlert.UI.Tests;
@@ -83,6 +84,35 @@ public sealed class PreferencesServiceTests : IDisposable
         var json = await File.ReadAllTextAsync(_filePath);
         Assert.Contains("https://new.example.com/hook", json);
         Assert.DoesNotContain("https://old.example.com/hook", json);
+    }
+
+    [Fact]
+    public async Task AppearanceAndOtherSettings_PreserveEachOtherAndUnknownFields()
+    {
+        await File.WriteAllTextAsync(_filePath, """
+            {"FutureRoot":17,"BrewAlert":{"FutureOption":"keep","Notifications":{"Teams":{"ApiKey":"example-key"}}}}
+            """);
+        await _sut.SaveAppearanceAsync(new AppearanceOptions { Mode = "Weekly", Friday = "Porcelain" });
+        await Task.WhenAll(_sut.SaveLanguageAsync("Turkish"), _sut.SaveNotificationProviderAsync("Webhook"),
+            _sut.SaveWebhookUrlAsync("https://example.com/hook"));
+        var json = JsonNode.Parse(await File.ReadAllTextAsync(_filePath))!;
+        Assert.Equal(17, json["FutureRoot"]!.GetValue<int>());
+        Assert.Equal("keep", json["BrewAlert"]!["FutureOption"]!.GetValue<string>());
+        Assert.Equal("example-key", json["BrewAlert"]!["Notifications"]!["Teams"]!["ApiKey"]!.GetValue<string>());
+        Assert.Equal("Porcelain", json["BrewAlert"]!["Appearance"]!["Friday"]!.GetValue<string>());
+        Assert.Equal("Turkish", json["BrewAlert"]!["Language"]!.GetValue<string>());
+        Assert.Equal("Webhook", json["BrewAlert"]!["Notifications"]!["Provider"]!.GetValue<string>());
+    }
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("""{"BrewAlert":42}""")]
+    public async Task InvalidPreferenceShape_IsBackedUpAndRecovered(string invalid)
+    {
+        await File.WriteAllTextAsync(_filePath, invalid);
+        await _sut.SaveAppearanceAsync(new AppearanceOptions { Mode = "Porcelain" });
+        Assert.Equal(invalid, await File.ReadAllTextAsync(_filePath + ".bak"));
+        Assert.Equal("Porcelain", JsonNode.Parse(await File.ReadAllTextAsync(_filePath))!["BrewAlert"]!["Appearance"]!["Mode"]!.GetValue<string>());
     }
 
     [Fact]

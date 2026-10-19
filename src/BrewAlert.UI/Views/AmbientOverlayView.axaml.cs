@@ -15,23 +15,22 @@ public partial class AmbientOverlayView : UserControl
     // Only runs while the DVD mode is actually on screen.
     private static readonly TimeSpan DvdFrame = TimeSpan.FromMilliseconds(33);
 
-    // Logo recolours on every edge hit — the classic DVD-screensaver tell.
-    private static readonly Color[] DvdColors =
-    {
-        Color.Parse("#f0a500"), Color.Parse("#ff6b9d"), Color.Parse("#3ddc84"),
-        Color.Parse("#4aa8ff"), Color.Parse("#b06bff"), Color.Parse("#ff8a3d"),
-    };
+    // Bounce feedback changes opacity, never hue; foreground follows the active appearance.
+    private static readonly double[] DvdTones = { 0.72, 0.86, 1.0 };
 
     private readonly DispatcherTimer _dvdTimer;
     private readonly TranslateTransform _dvdTransform;
     private AmbientOverlayViewModel? _vm;
     private double _velocityX = 2.6;
     private double _velocityY = 2.0;
-    private int _colorIndex;
+    private int _toneIndex;
+    private readonly Viewbox[] _orbitIcons;
 
     public AmbientOverlayView()
     {
         InitializeComponent();
+        _orbitIcons = OrbitStage.Children.OfType<Viewbox>().ToArray();
+        SizeChanged += (_, _) => UpdateScale();
 
         _dvdTransform = (TranslateTransform)DvdLogo.RenderTransform!;
 
@@ -47,6 +46,7 @@ public partial class AmbientOverlayView : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        UpdateScale();
         BindViewModel();
     }
 
@@ -57,6 +57,20 @@ public partial class AmbientOverlayView : UserControl
         if (_vm is not null)
             _vm.PropertyChanged -= OnViewModelPropertyChanged;
         _vm = null;
+    }
+
+    private void UpdateScale()
+    {
+        if (Bounds.Width <= 0 || Bounds.Height <= 0) return;
+        var compact = Bounds.Width < 480;
+        var iconSize = compact ? 24 : 32;
+        var diameter = Math.Max(160, Math.Min(388, Math.Min(Bounds.Width - 16, Bounds.Height - 72)));
+        OrbitStage.Width = OrbitStage.Height = diameter;
+        OrbitRing.Margin = new Thickness(iconSize / 2.0);
+        foreach (var icon in _orbitIcons) icon.Width = icon.Height = iconSize;
+        AmbientClock.FontSize = compact ? 64 : 88;
+        AmbientDate.FontSize = compact ? 12 : 14;
+        AmbientDate.LetterSpacing = 0.5;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -108,7 +122,7 @@ public partial class AmbientOverlayView : UserControl
         _dvdTransform.Y = 48;
         _velocityX = Math.Abs(_velocityX);
         _velocityY = Math.Abs(_velocityY);
-        ApplyNextColor();
+        ApplyNextTone();
     }
 
     private void OnDvdTick(object? sender, EventArgs e)
@@ -132,12 +146,12 @@ public partial class AmbientOverlayView : UserControl
         _dvdTransform.Y = y;
 
         if (bounced)
-            ApplyNextColor();
+            ApplyNextTone();
     }
 
-    private void ApplyNextColor()
+    private void ApplyNextTone()
     {
-        DvdLogo.Foreground = new SolidColorBrush(DvdColors[_colorIndex % DvdColors.Length]);
-        _colorIndex++;
+        DvdLogo.Opacity = DvdTones[_toneIndex % DvdTones.Length];
+        _toneIndex++;
     }
 }

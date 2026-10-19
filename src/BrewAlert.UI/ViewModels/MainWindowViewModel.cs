@@ -5,6 +5,7 @@ using BrewAlert.Core.Models;
 using BrewAlert.UI.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.ComponentModel;
 
 namespace BrewAlert.UI.ViewModels;
 
@@ -59,19 +60,30 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private string _currentDateTime = string.Empty;
 
     public AmbientOverlayViewModel Ambient => _ambient;
+    public IAppearanceService Appearance { get; }
+    public string HomeNavText => _loc.Get("BrewsNavButton");
+    public string ActiveNavText => string.Format(_loc.Get("ActiveNavCount"), _timerService.GetActiveSessions().Count);
+    public string SettingsNavText => _loc.Get("SettingsTitle");
+    public string IdleText => _loc.Get("IdleScreen");
+    public string NotificationHint => _loc.Get("HomeNotificationHint");
+    public bool CanShowAmbient => _timerService.GetActiveSessions().Count == 0;
 
     public MainWindowViewModel(
         INavigationService navigation,
         IBrewTimerService timerService,
         ILocalizationService loc,
         IUpdateService updateService,
-        AmbientOverlayViewModel ambient)
+        AmbientOverlayViewModel ambient,
+        IAppearanceService appearance)
     {
         _navigation = navigation;
         _timerService = timerService;
         _loc = loc;
         _updateService = updateService;
         _ambient = ambient;
+        Appearance = appearance;
+        Appearance.PropertyChanged += OnAppearanceChanged;
+        _ambient.SetAppearance(Appearance.CurrentTheme);
 
         _navigation.CurrentViewChanged += OnNavigationOrActivity;
         _timerService.BrewStarted += OnBrewStarted;
@@ -167,6 +179,21 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void DismissAmbient() => RecordUserActivity();
 
     [RelayCommand]
+    private async Task ShowAmbient()
+    {
+        if (CanShowAmbient) await _ambient.ShowAsync();
+    }
+
+    [RelayCommand]
+    private void NavigateHome()
+    {
+        RecordUserActivity();
+        _navigation.NavigateTo<ProfileListViewModel>();
+        _currentTitleKey = TitleKeyAppName;
+        Title = "BrewAlert";
+    }
+
+    [RelayCommand]
     private void NavigateToProfiles()
     {
         RecordUserActivity();
@@ -223,6 +250,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void RefreshBrewTitle()
     {
+        RefreshNavigationLabels();
         // Brew events must not clobber non-brew page titles (Settings, etc.) — only refresh
         // when the user is currently in a brew-related context.
         if (_currentTitleKey != TitleKeyAppName && _currentTitleKey != TitleKeyBrewRunning)
@@ -243,6 +271,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         RecordUserActivity();
         CurrentView = viewModel;
+        Appearance.Refresh(_timerService.GetActiveSessions().Count > 0, viewModel is ProfileListViewModel);
     }
 
     private void OnClockTick(object? sender, EventArgs e)
@@ -254,6 +283,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void OnIdleCheck(object? sender, EventArgs e)
     {
+        Appearance.Refresh(_timerService.GetActiveSessions().Count > 0, CurrentView is ProfileListViewModel);
         if (DateTime.UtcNow - _lastUserActivityUtc < IdleThreshold) return;
         if (_timerService.GetActiveSessions().Count > 0) return;
         if (_ambient.IsVisible || _ambient.ShowPending) return;
@@ -262,6 +292,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void OnLanguageChanged(string _)
     {
+        RefreshNavigationLabels();
         BrewsNavText = _loc.Get("BrewsNavButton");
         if (_currentTitleKey == TitleKeyBrewRunning)
         {
@@ -278,6 +309,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         // Repaint the header clock now so the month name flips language immediately
         // instead of on the next 1s tick.
         UpdateClock();
+    }
+
+    private void OnAppearanceChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(IAppearanceService.CurrentTheme))
+            _ambient.SetAppearance(Appearance.CurrentTheme);
+    }
+
+    private void RefreshNavigationLabels()
+    {
+        foreach (var name in new[] { nameof(HomeNavText), nameof(ActiveNavText), nameof(SettingsNavText),
+            nameof(IdleText), nameof(NotificationHint), nameof(CanShowAmbient) }) OnPropertyChanged(name);
     }
 
     private void UpdateClock() =>
@@ -299,6 +342,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _timerService.BrewCancelled -= OnBrewCancelled;
         _loc.LanguageChanged -= OnLanguageChanged;
         _updateService.UpdateAvailable -= OnUpdateAvailable;
+        Appearance.PropertyChanged -= OnAppearanceChanged;
         _ambient.Dispose();
     }
 }

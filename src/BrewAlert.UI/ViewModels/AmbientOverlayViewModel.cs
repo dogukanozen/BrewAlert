@@ -37,7 +37,8 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     private readonly DispatcherTimer _sceneTimer;
     private readonly DispatcherTimer _modeTimer;
     private readonly CancellationTokenSource _disposeCts = new();
-    private readonly IReadOnlyList<AmbientPalette> _palettes = AmbientPalette.All;
+    private IReadOnlyList<AmbientPalette> _palettes = AmbientPalette.All;
+    private BrewAlert.UI.Services.BrewTheme _appearance;
     private readonly Random _random = new();
     private AmbientPalette _currentPalette = AmbientPalette.All[0];
 
@@ -267,6 +268,23 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         }
         while (ReferenceEquals(next, _currentPalette));
         _currentPalette = next;
+    }
+
+    public void SetAppearance(BrewAlert.UI.Services.BrewTheme theme)
+    {
+        if (_appearance == theme) return;
+        _appearance = theme;
+        _palettes = AmbientPalette.ForAppearance(theme);
+        _currentPalette = _palettes[0];
+        ApplyPalette();
+    }
+
+    private void ApplyPalette()
+    {
+        BackgroundBrush = _currentPalette.Background;
+        GlowTopBrush = _currentPalette.GlowTop;
+        GlowBottomBrush = _currentPalette.GlowBottom;
+        HaloBrush = _currentPalette.Halo;
     }
 
     public void UpdateClock()
@@ -503,13 +521,9 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     {
         if (index < 0 || index >= _scenes.Count) return;
 
-        // Apply the current (randomly chosen) palette. The view crossfades (BrushTransition)
-        // when these change on rotation, and dedups when the animation tick re-applies the
-        // same scene — so this assignment is safe to run on every 500ms tick.
-        BackgroundBrush = _currentPalette.Background;
-        GlowTopBrush = _currentPalette.GlowTop;
-        GlowBottomBrush = _currentPalette.GlowBottom;
-        HaloBrush = _currentPalette.Halo;
+        // Cached neutral brushes are reused across ticks. Light/dark changes are instant
+        // so text never crosses a background with the wrong contrast during a palette fade.
+        ApplyPalette();
 
         var scene = _scenes[index];
         // Freshness cards carry their source entry — re-render against the current

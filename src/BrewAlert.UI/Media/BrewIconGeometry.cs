@@ -14,6 +14,11 @@ namespace BrewAlert.UI.Media;
 /// </summary>
 public static class BrewIconGeometry
 {
+    public static Geometry Arrow { get; } = Geometry.Parse("M5,19 L19,5 M5,5 H19 V19");
+    public static Geometry Plus { get; } = Geometry.Parse("M12,4 V20 M4,12 H20");
+    public static Geometry Pause { get; } = Geometry.Parse("M8,5 V19 M16,5 V19");
+    public static Geometry Play { get; } = Geometry.Parse("M7,4 L20,12 L7,20 Z");
+    public static Geometry Moon { get; } = Geometry.Parse("M20,15 A9,9 0 1 1 9,3 A7,7 0 0 0 20,15 Z");
     // Authored in a 0..24 viewport, drawn stroked (Fill="None"); host in a Viewbox so the
     // stroke scales uniformly to the requested display size.
 
