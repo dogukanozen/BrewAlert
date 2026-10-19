@@ -11,7 +11,9 @@ Built with [Avalonia UI](https://avaloniaui.net/) for cross-platform support —
 - Ambient idle screen — clock, date, and brew freshness scenes across 12 animation modes, three mode-aware background families, and smooth cinematic transitions
 - Microsoft Teams Adaptive Card notifications (Power Automate webhook or Graph API)
 - TR / EN language toggle in Settings (no restart required)
-- Dark theme optimised for small screens
+- Obsidian and Porcelain appearances, selectable instantly in Settings or by a seven-day schedule
+- Touch-friendly layouts for Raspberry Pi 3 kiosk screens; bundled Inter text and font-independent vector icons
+- Neutral ambient palettes follow the selected appearance across all 12 animation modes
 - No secrets in the repository
 
 ## Architecture

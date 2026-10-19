@@ -35,6 +35,7 @@ BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams A
 | language, localization, TR, EN, Turkish, English | `src/BrewAlert.UI/Services/ILocalizationService.cs`, `LocalizationService.cs`, `AppLanguage.cs`, `src/BrewAlert.Infrastructure/Configuration/LanguageOptions.cs` |
 | preferences, provider setting, settings save | `src/BrewAlert.UI/Services/IPreferencesService.cs`, `PreferencesService.cs`, `Constants/BrewAlertPaths.cs` |
 | view, xaml, style, theme | `src/BrewAlert.UI/Views/`, `src/BrewAlert.UI/Themes/` |
+| appearance, weekly theme, Obsidian, Porcelain, day schedule | `src/BrewAlert.UI/Services/AppearanceOptions.cs`, `IAppearanceService.cs`, `AppearanceService.cs`, `ViewModels/AppearanceSettingsViewModel.cs`, `Views/AppearanceSettingsView.axaml`, `Themes/BrewAlertTheme.axaml`, `Themes/AmbientColors.axaml` |
 | viewmodel, binding, command | `src/BrewAlert.UI/ViewModels/` |
 | navigation, switch view | `src/BrewAlert.UI/Services/INavigationService.cs`, `NavigationService.cs` |
 | DI, startup, configuration | `src/BrewAlert.UI/App.axaml.cs`, `Program.cs`, `appsettings.json` |

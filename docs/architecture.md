@@ -64,6 +64,7 @@ Registered in `src/BrewAlert.UI/App.axaml.cs → ConfigureServices`.
 | `INotificationService` | Singleton | Routing facade → Teams (Graph or Webhook) or Console |
 | `IPreferencesService` | Singleton | Persists user preferences to `preferences.json` |
 | `ILocalizationService` | Singleton | Runtime EN/TR string table; fires `LanguageChanged` |
+| `IAppearanceService` | Singleton | Current appearance, persisted fixed/weekly selection, idle-home calendar changes |
 | `ActiveBrewsViewModel` | Transient | Hosts a live list of `BrewItemViewModel`s; fresh per navigation |
 | `ProfileListViewModel` | Transient | Re-fetches profiles on each visit |
 | `SettingsViewModel` | Transient | Re-reads config on each visit |
@@ -120,6 +121,23 @@ Environment variables prefixed BREWALERT__
 - Webhook URLs and Client Secrets supplied via env vars (or gitignored env-specific `appsettings`).
 - `git diff --cached` is the last line of defence — use it.
 
+### 2.8 Appearance and kiosk rendering
+
+`AppearanceService` reads `BrewAlert:Appearance` and uses `TimeProvider.GetLocalNow()`.
+The default schedule alternates Obsidian/Porcelain from Monday, with each weekday editable.
+A fixed choice applies immediately, including during an active brew. Calendar changes are checked
+on the existing 30-second idle tick and on navigation; they wait for the profile screen with no active sessions.
+Changing appearance does not navigate or recreate the timer service.
+
+`App` selects the Avalonia Light/Dark theme variant; DynamicResource brushes and the shell's
+`porcelain` class update colors and layout together. `PreferencesService` merges individual JSON
+settings atomically, so saving language/provider/webhook does not discard the weekly schedule or unknown fields.
+
+UI text uses the bundled Inter font, and icons use Avalonia Geometry paths rather than emoji
+or icon fonts. Ambient colors are cached neutral brushes for both appearances; DVD edge feedback
+changes opacity. All existing motion modes remain, with no added blur, shaders, browser rendering,
+or per-frame brush creation. Orbit sizing protects the clock/date on narrow screens.
+
 ## 3. Data flow — happy path
 
 ```
@@ -151,7 +169,10 @@ Per-session PeriodicTimer loop (1 s)
 
 ## 4. Raspberry Pi deployment
 
-Target: Raspberry Pi 4 / 5 with a 7" touchscreen (800 × 480).
+Low-end target: Raspberry Pi 3. Headless Skia rendering covers the 800 × 480 kiosk layout and
+320 px narrow windows. These checks validate rendering and interaction, not frame rate on physical hardware.
+The UI project targets both `linux-arm64` and `linux-arm`; the installed OS determines the appropriate RID.
+The existing release workflow packages `linux-arm64` only.
 
 Releases are built by CI on `v*` tags and published to GitHub Releases as `brewalert-<version>-linux-arm64.tar.gz`. The archive includes `install.sh` which handles system dependencies, app installation to `~/brewalert/`, and systemd service setup.
 
