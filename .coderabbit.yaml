@@ -1,0 +1,146 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: tr
+tone_instructions: "Direct and brief. Only raise issues you can tie to concrete wrong behaviour, a crash, a race, a leak, a security risk or a broken AGENT.md invariant. No praise, no filler, no style opinions."
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: false
+  collapse_walkthrough: true
+  sequence_diagrams: false
+  estimate_code_review_effort: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  in_progress_fortune: false
+  poem: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+
+  path_filters:
+    - "!**/bin/**"
+    - "!**/obj/**"
+    - "!**/*.g.cs"
+    - "!publish/**"
+    - "!publish_clean/**"
+
+  path_instructions:
+    - path: "**"
+      instructions: |
+        Comment only when the finding has a concrete consequence: incorrect behaviour,
+        crash, deadlock, race, resource or event-handler leak, data loss, secret exposure,
+        or a violation of an AGENT.md section 4 invariant. Say what breaks and when.
+        Do NOT comment on: naming, formatting, ordering of members, using/var style,
+        missing XML docs, comment wording, "consider extracting" refactors, or anything
+        `dotnet format` would fix. If you are not sure it is a real defect, stay silent.
+    - path: "src/BrewAlert.Core/**"
+      instructions: |
+        Pure domain layer: must not reference Infrastructure, UI, Avalonia or any I/O.
+        In BrewTimerService every TimerTick/BrewStarted/BrewCompleted/BrewCancelled
+        invocation must happen after the lock is released (re-entrant handlers deadlocked
+        before). Check shared state for races between the timer callback and public methods,
+        and that concurrent brews do not interfere with each other. Remaining time must be
+        recomputed from the monotonic deadline (TimeProvider.GetTimestamp); flag any per-tick
+        decrement or DateTime.UtcNow / Stopwatch use that bypasses the injected TimeProvider.
+        Only BrewSession snapshots may leave the lock.
+    - path: "src/BrewAlert.Infrastructure/**"
+      instructions: |
+        No hard-coded webhook URLs, tokens or tenant ids; config comes from env vars or the
+        gitignored appsettings.Development.json. A failing Teams/Graph call must not crash
+        the app or block the UI thread. HttpClient must come from IHttpClientFactory (named
+        clients are registered in App.axaml.cs); flag `new HttpClient()`. File writes must
+        not leave a half-written file on crash or power loss (the Pi can lose power):
+        PreferencesService writes to a .tmp file and moves it, follow that pattern.
+        SqliteBrewHistoryRepository: connections disposed, multi-statement writes atomic.
+        Schema changes are appended to Migrations (PRAGMA user_version); flag edits to an
+        existing migration step or schema SQL outside Migrations. Transient HTTP failures
+        (network, timeout, 408, 429, 5xx) must be returned via HttpFailure so they are retried;
+        configuration errors must not be marked transient.
+    - path: "src/BrewAlert.UI/**/*.cs"
+      instructions: |
+        ViewModels must not use App.Services, IServiceProvider or GetRequiredService<T>()
+        (use INavigationService / constructor injection). Any VM subscribing to
+        IBrewTimerService or ILocalizationService.LanguageChanged events must implement
+        IDisposable and unsubscribe; this also applies to IAppearanceService and any other
+        singleton service event. DI lifetimes in App.axaml.cs ConfigureServices: services,
+        MainWindowViewModel and AmbientOverlayViewModel are singletons; ActiveBrewsViewModel,
+        ProfileListViewModel and SettingsViewModel are transient. Flag a lifetime change,
+        a singleton capturing a transient, and any transient IDisposable resolved from the root
+        provider instead of a scope (NavigationService resolves each view in its own scope). BrewTimerService raises events from PeriodicTimer
+        loops off the UI thread; flag UI-bound state changed in those handlers without
+        Dispatcher.UIThread.Post (see BrewItemViewModel). UpdateService.ApplyUpdatesAndExit
+        kills the app and any running brew timers; it must only run from the user's explicit
+        install action in the update toast, never automatically.
+    - path: "src/BrewAlert.UI/**/*.axaml"
+      instructions: |
+        Appearance switches at runtime via RequestedThemeVariant (Obsidian=Dark,
+        Porcelain=Light, weekly schedule). Keys defined in ThemeDictionaries (Brew*Brush,
+        AmbientColor*, AmbientBrush*) must be referenced with DynamicResource from views and
+        styles; StaticResource is fine only inside the same ThemeDictionaries entry and for
+        converters. Flag global styles that override control-specific foregrounds.
+        In AmbientOverlayView.axaml every Style.Animations selector must start with
+        `Panel.ambient-live :is(Control).ambient-layer[IsVisible=True]` and the animated element
+        must sit under a panel with the `ambient-layer` class; Avalonia keeps animating hidden
+        controls, so an ungated infinite animation runs forever on the Pi. The app runs on a
+        Raspberry Pi 3: flag animations or effects likely to be expensive there, and layouts
+        that break in narrow windows. Do not comment on margins, spacing or colour taste.
+    - path: "tests/**"
+      instructions: |
+        Flag tests that cannot fail (no meaningful assert, asserting on the mock itself),
+        timing-dependent tests (Thread.Sleep, real clocks) that will be flaky in CI where a
+        FakeTimeProvider would do, and missing coverage for a bug the PR claims to fix.
+        Test data must be neutral (no real company, network or customer names): this repo is
+        public. Ignore test naming and structure.
+    - path: ".github/workflows/**"
+      instructions: |
+        Repo is on free-tier GitHub: flag any new actions/upload-artifact or extra artifact
+        upload; uploads are only allowed on v* tags. Flag secrets echoed to logs.
+    - path: "**/*.md"
+      instructions: |
+        Only flag statements that contradict the code in this PR (wrong file names, paths,
+        commands, env var names, invariants). No grammar, wording or formatting comments.
+
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: warning
+      requirements: |
+        The PR title becomes the squash commit subject on main, so it must follow
+        docs/commit-style.md: `<type>(<scope>): <subject>`, lowercase, imperative mood,
+        no trailing period, at most 72 characters. type is one of feat, fix, refactor,
+        perf, test, docs, chore, ci, style, revert; scope is one of core, infra, ui,
+        tests, ci, docs, deps, repo (scope may be omitted for real cross-cutting changes).
+    description:
+      mode: warning
+
+  finishing_touches:
+    docstrings:
+      enabled: false
+
+  tools:
+    markdownlint:
+      enabled: false
+    languagetool:
+      enabled: false
+    yamllint:
+      enabled: false
+    gitleaks:
+      enabled: true
+    actionlint:
+      enabled: true
+    shellcheck:
+      enabled: true
+    github-checks:
+      enabled: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENT.md"
+      - "docs/commit-style.md"
