@@ -8,7 +8,7 @@ public sealed class BrewSession
     public Guid Id { get; init; } = Guid.NewGuid();
     public required BrewProfile Profile { get; init; }
     public DateTime StartedAtUtc { get; init; } = DateTime.UtcNow;
-    public DateTime EndsAtUtc { get; init; }
+    public DateTime EndsAtUtc { get; set; }
     public TimeSpan Remaining { get; set; }
     public BrewSessionState State { get; set; } = BrewSessionState.Running;
 }

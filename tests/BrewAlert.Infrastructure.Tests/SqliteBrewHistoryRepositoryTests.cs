@@ -1,5 +1,6 @@
 using BrewAlert.Core.Models;
 using BrewAlert.Infrastructure.Persistence;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -96,6 +97,47 @@ public class SqliteBrewHistoryRepositoryTests : IDisposable
 
         var all = await second.GetAllAsync();
         Assert.Equal(2, all.Count);
+    }
+
+    [Fact]
+    public async Task NewDatabase_IsStampedWithSchemaVersion()
+    {
+        await _sut.GetAllAsync();
+
+        Assert.Equal(1L, await ScalarAsync("PRAGMA user_version;"));
+    }
+
+    [Fact]
+    public async Task PreVersioningDatabase_UpgradesInPlaceAndKeepsRows()
+    {
+        await ExecuteAsync("""
+            CREATE TABLE BrewHistory (Id TEXT PRIMARY KEY, CompletedAtUtc TEXT NOT NULL, ProfileName TEXT NOT NULL,
+                Type INTEGER NOT NULL, Icon TEXT NOT NULL, DurationSeconds INTEGER NOT NULL);
+            INSERT INTO BrewHistory VALUES ('6f1c1a4e-4c1b-4a8e-9a55-1d2f3b4c5d6e', '2026-10-01T08:00:00.0000000Z', 'Çay', 0, '♨', 900);
+            """);
+
+        var entry = Assert.Single(await _sut.GetAllAsync());
+
+        Assert.Equal("Çay", entry.ProfileName);
+        Assert.Equal(1L, await ScalarAsync("PRAGMA user_version;"));
+    }
+
+    private async Task ExecuteAsync(string sql)
+    {
+        await using var conn = new SqliteConnection($"Data Source={_testDbPath};Pooling=False");
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private async Task<object?> ScalarAsync(string sql)
+    {
+        await using var conn = new SqliteConnection($"Data Source={_testDbPath};Pooling=False");
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        return await cmd.ExecuteScalarAsync();
     }
 
     private static BrewHistoryEntry NewEntry(string name, BrewType type, string icon, int duration)

@@ -43,12 +43,12 @@ public sealed class TeamsWebhookNotifier(
 
             var responseBody = await response.Content.ReadAsStringAsync(ct);
             logger.LogError("Teams webhook returned {StatusCode}: {Body}", response.StatusCode, responseBody);
-            return NotificationResult.Failure($"Teams returned {(int)response.StatusCode}: {responseBody}");
+            return HttpFailure.FromStatus(response.StatusCode, $"Teams returned {(int)response.StatusCode}: {responseBody}");
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             logger.LogError(ex, "Failed to send Teams notification for session {SessionId}.", session.Id);
-            return NotificationResult.Failure($"HTTP error: {ex.Message}");
+            return HttpFailure.FromException(ex, $"HTTP error: {ex.Message}");
         }
     }
 

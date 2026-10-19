@@ -11,4 +11,10 @@ public sealed class NotificationResult
 
     public static NotificationResult Success() => new() { IsSuccess = true };
     public static NotificationResult Failure(string error) => new() { IsSuccess = false, ErrorMessage = error };
+
+    /// <summary>True when the same request may succeed later (network drop, timeout, 408/429/5xx).</summary>
+    public bool IsTransient { get; init; }
+
+    public static NotificationResult TransientFailure(string error) =>
+        new() { IsSuccess = false, ErrorMessage = error, IsTransient = true };
 }

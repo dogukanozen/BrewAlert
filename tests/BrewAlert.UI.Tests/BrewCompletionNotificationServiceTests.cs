@@ -4,6 +4,7 @@ using BrewAlert.Core.Events;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
 using BrewAlert.UI.Services;
+using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using Xunit;
 
@@ -167,5 +168,104 @@ public class BrewCompletionNotificationServiceTests
         Assert.Equal(session.Id, result.SessionId);
         Assert.False(result.IsSuccess);
         Assert.Contains("Teams unreachable", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task TransientFailure_IsRetriedUntilDelivered()
+    {
+        var session = MakeSession();
+        var clock = new FakeTimeProvider();
+        _notificationService
+            .SendBrewCompletedAsync(session, Arg.Any<CancellationToken>())
+            .Returns(
+                Task.FromResult(NotificationResult.TransientFailure("Wi-Fi down")),
+                Task.FromResult(NotificationResult.TransientFailure("Wi-Fi down")),
+                Task.FromResult(NotificationResult.Success()));
+
+        var tcs = new TaskCompletionSource<BrewNotificationResult>();
+        using var coordinator = new BrewCompletionNotificationService(_timerService, _notificationService, clock);
+        coordinator.NotificationCompleted += (_, r) => tcs.TrySetResult(r);
+
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
+        var result = await AdvanceUntilAsync(clock, tcs.Task);
+
+        Assert.True(result.IsSuccess);
+        await _notificationService.Received(3).SendBrewCompletedAsync(session, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task TransientFailure_GivesUpAfterTheLastRetry()
+    {
+        var session = MakeSession();
+        var clock = new FakeTimeProvider();
+        _notificationService
+            .SendBrewCompletedAsync(session, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(NotificationResult.TransientFailure("Wi-Fi down")));
+
+        var tcs = new TaskCompletionSource<BrewNotificationResult>();
+        using var coordinator = new BrewCompletionNotificationService(_timerService, _notificationService, clock);
+        coordinator.NotificationCompleted += (_, r) => tcs.TrySetResult(r);
+
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
+        var result = await AdvanceUntilAsync(clock, tcs.Task);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Wi-Fi down", result.ErrorMessage);
+        await _notificationService.Received(1 + BrewCompletionNotificationService.RetryDelays.Length)
+            .SendBrewCompletedAsync(session, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task PermanentFailure_IsReportedWithoutRetry()
+    {
+        var session = MakeSession();
+        var clock = new FakeTimeProvider();
+        _notificationService
+            .SendBrewCompletedAsync(session, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(NotificationResult.Failure("Webhook URL is not configured.")));
+
+        var tcs = new TaskCompletionSource<BrewNotificationResult>();
+        using var coordinator = new BrewCompletionNotificationService(_timerService, _notificationService, clock);
+        coordinator.NotificationCompleted += (_, r) => tcs.TrySetResult(r);
+
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
+        var result = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.False(result.IsSuccess);
+        await _notificationService.Received(1).SendBrewCompletedAsync(session, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Dispose_CancelsPendingRetries()
+    {
+        var session = MakeSession();
+        var clock = new FakeTimeProvider();
+        _notificationService
+            .SendBrewCompletedAsync(session, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(NotificationResult.TransientFailure("Wi-Fi down")));
+
+        var fired = false;
+        var coordinator = new BrewCompletionNotificationService(_timerService, _notificationService, clock);
+        coordinator.NotificationCompleted += (_, _) => fired = true;
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
+
+        coordinator.Dispose();
+        clock.Advance(TimeSpan.FromHours(1));
+        await Task.Delay(100);
+
+        Assert.False(fired);
+        await _notificationService.Received(1).SendBrewCompletedAsync(session, Arg.Any<CancellationToken>());
+    }
+
+    // Retry delays are registered asynchronously, so keep advancing until the result arrives.
+    private static async Task<T> AdvanceUntilAsync<T>(FakeTimeProvider clock, Task<T> task)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        while (!task.IsCompleted)
+        {
+            clock.Advance(TimeSpan.FromMinutes(5));
+            await Task.Delay(10, timeout.Token);
+        }
+        return await task;
     }
 }

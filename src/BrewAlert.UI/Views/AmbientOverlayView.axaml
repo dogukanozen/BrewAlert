@@ -14,7 +14,7 @@
          run independently of the 500ms VM tick, so they never stutter with it. -->
     <UserControl.Styles>
         <!-- Concentric rings that slowly rotate around the hero icon. -->
-        <Style Selector="Ellipse.ambient-ring-cw">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.ambient-ring-cw">
             <Style.Animations>
                 <Animation Duration="0:0:32" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
@@ -22,7 +22,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.ambient-ring-ccw">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.ambient-ring-ccw">
             <Style.Animations>
                 <Animation Duration="0:0:48" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
@@ -32,7 +32,7 @@
         </Style>
         <!-- Steam wisps that rise and fade on a loop above the hero. Staggered delays keep
              the three from puffing in unison. -->
-        <Style Selector="Viewbox.ambient-wisp.delay-0">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Viewbox.ambient-wisp.delay-0">
             <Style.Animations>
                 <Animation Duration="0:0:6" IterationCount="INFINITE">
                     <KeyFrame Cue="0%">
@@ -49,7 +49,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Viewbox.ambient-wisp.delay-2">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Viewbox.ambient-wisp.delay-2">
             <Style.Animations>
                 <Animation Duration="0:0:6" Delay="0:0:2" IterationCount="INFINITE">
                     <KeyFrame Cue="0%">
@@ -66,7 +66,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Viewbox.ambient-wisp.delay-4">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Viewbox.ambient-wisp.delay-4">
             <Style.Animations>
                 <Animation Duration="0:0:6" Delay="0:0:4" IterationCount="INFINITE">
                     <KeyFrame Cue="0%">
@@ -86,7 +86,7 @@
         <!-- Orbit mode: the ring spins one way while each icon counter-spins at the same rate,
              so the icons travel the circle but stay upright. Same duration + linear timing
              keeps the cancellation exact. -->
-        <Style Selector="Grid.orbit-spin">
+        <Style Selector="Panel.ambient-live Grid.orbit-spin.ambient-layer[IsVisible=True]">
             <Style.Animations>
                 <Animation Duration="0:0:26" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
@@ -94,7 +94,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Viewbox.orbit-counter">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Viewbox.orbit-counter">
             <Style.Animations>
                 <Animation Duration="0:0:26" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
@@ -105,7 +105,7 @@
         <!-- Hero icon "breathing" and the halo "pulse" are continuous compositor keyframe
              animations (SineEaseInOut), not sampled off the 500ms VM tick — so the scale and
              glow glide smoothly instead of stepping 8 times per cycle. -->
-        <Style Selector="Viewbox.ambient-breathe">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Viewbox.ambient-breathe">
             <Style.Animations>
                 <Animation Duration="0:0:6" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%">
@@ -123,7 +123,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.ambient-pulse">
+        <Style Selector="Panel.ambient-live Ellipse.ambient-pulse">
             <Style.Animations>
                 <Animation Duration="0:0:6" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.22" /></KeyFrame>
@@ -135,7 +135,7 @@
 
         <!-- Aurora mode: oversized translucent ribbons rotate at unrelated speeds. Their
              geometry stays simple, but the overlap produces a constantly changing backdrop. -->
-        <Style Selector="Ellipse.aurora-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.aurora-a">
             <Style.Animations>
                 <Animation Duration="0:0:18" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="-18" /></KeyFrame>
@@ -144,7 +144,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.aurora-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.aurora-b">
             <Style.Animations>
                 <Animation Duration="0:0:24" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="28" /></KeyFrame>
@@ -153,7 +153,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.aurora-c">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.aurora-c">
             <Style.Animations>
                 <Animation Duration="0:0:13" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.16" /></KeyFrame>
@@ -164,7 +164,7 @@
         </Style>
 
         <!-- Brew rain: three timing lanes are shared by many vector particles. -->
-        <Style Selector="Viewbox.brew-rain-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Viewbox.brew-rain-a">
             <Style.Animations>
                 <Animation Duration="0:0:8" IterationCount="INFINITE">
                     <KeyFrame Cue="0%">
@@ -182,7 +182,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Viewbox.brew-rain-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Viewbox.brew-rain-b">
             <Style.Animations>
                 <Animation Duration="0:0:11" Delay="0:0:2" IterationCount="INFINITE">
                     <KeyFrame Cue="0%">
@@ -200,7 +200,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Viewbox.brew-rain-c">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Viewbox.brew-rain-c">
             <Style.Animations>
                 <Animation Duration="0:0:6" Delay="0:0:4" IterationCount="INFINITE">
                     <KeyFrame Cue="0%">
@@ -220,7 +220,7 @@
         </Style>
 
         <!-- Kaleidoscope geometry rotates in opposing directions, creating a folding tunnel. -->
-        <Style Selector="Border.kaleido-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Border.kaleido-a">
             <Style.Animations>
                 <Animation Duration="0:0:16" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
@@ -228,7 +228,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Border.kaleido-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Border.kaleido-b">
             <Style.Animations>
                 <Animation Duration="0:0:11" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="45" /></KeyFrame>
@@ -236,7 +236,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Border.kaleido-c">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Border.kaleido-c">
             <Style.Animations>
                 <Animation Duration="0:0:5" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.18" /></KeyFrame>
@@ -247,7 +247,7 @@
         </Style>
 
         <!-- Meteor streaks cross the entire screen; staggered delays prevent a repeated volley. -->
-        <Style Selector="Grid.meteor-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Grid.meteor-a">
             <Style.Animations>
                 <Animation Duration="0:0:5" IterationCount="INFINITE">
                     <KeyFrame Cue="0%">
@@ -265,7 +265,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Grid.meteor-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Grid.meteor-b">
             <Style.Animations>
                 <Animation Duration="0:0:7" Delay="0:0:2.5" IterationCount="INFINITE">
                     <KeyFrame Cue="0%">
@@ -282,7 +282,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Grid.meteor-c">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Grid.meteor-c">
             <Style.Animations>
                 <Animation Duration="0:0:4" Delay="0:0:1.2" IterationCount="INFINITE">
                     <KeyFrame Cue="0%">
@@ -301,7 +301,7 @@
         </Style>
 
         <!-- Liquid mode: giant wave bodies slide horizontally while bubbles rise through them. -->
-        <Style Selector="Ellipse.liquid-wave-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.liquid-wave-a">
             <Style.Animations>
                 <Animation Duration="0:0:12" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="TranslateTransform.X" Value="-120" /></KeyFrame>
@@ -310,7 +310,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.liquid-wave-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.liquid-wave-b">
             <Style.Animations>
                 <Animation Duration="0:0:17" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="TranslateTransform.X" Value="150" /></KeyFrame>
@@ -319,7 +319,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.liquid-bubble-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.liquid-bubble-a">
             <Style.Animations>
                 <Animation Duration="0:0:7" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="TranslateTransform.Y" Value="220" /></KeyFrame>
@@ -328,7 +328,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.liquid-bubble-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.liquid-bubble-b">
             <Style.Animations>
                 <Animation Duration="0:0:9" Delay="0:0:3" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="TranslateTransform.Y" Value="260" /></KeyFrame>
@@ -339,7 +339,7 @@
         </Style>
 
         <!-- Hyperspace: short center streaks stretch rapidly into a luminous star tunnel. -->
-        <Style Selector="Border.warp-streak-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Border.warp-streak-a">
             <Style.Animations>
                 <Animation Duration="0:0:3.2" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="0.05" /></KeyFrame>
@@ -348,7 +348,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Border.warp-streak-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Border.warp-streak-b">
             <Style.Animations>
                 <Animation Duration="0:0:4.4" Delay="0:0:1.1" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="0.04" /></KeyFrame>
@@ -357,7 +357,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Border.warp-streak-c">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Border.warp-streak-c">
             <Style.Animations>
                 <Animation Duration="0:0:2.6" Delay="0:0:0.6" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /><Setter Property="ScaleTransform.ScaleX" Value="0.08" /></KeyFrame>
@@ -368,7 +368,7 @@
         </Style>
 
         <!-- Radar: scan rings expand from the clock while a targeting line sweeps around it. -->
-        <Style Selector="Ellipse.radar-ring-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.radar-ring-a">
             <Style.Animations>
                 <Animation Duration="0:0:5" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.72" /><Setter Property="ScaleTransform.ScaleX" Value="0.18" /><Setter Property="ScaleTransform.ScaleY" Value="0.18" /></KeyFrame>
@@ -376,7 +376,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.radar-ring-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.radar-ring-b">
             <Style.Animations>
                 <Animation Duration="0:0:5" Delay="0:0:1.7" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.62" /><Setter Property="ScaleTransform.ScaleX" Value="0.18" /><Setter Property="ScaleTransform.ScaleY" Value="0.18" /></KeyFrame>
@@ -384,7 +384,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.radar-ring-c">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.radar-ring-c">
             <Style.Animations>
                 <Animation Duration="0:0:5" Delay="0:0:3.4" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.52" /><Setter Property="ScaleTransform.ScaleX" Value="0.18" /><Setter Property="ScaleTransform.ScaleY" Value="0.18" /></KeyFrame>
@@ -392,7 +392,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Grid.radar-sweep">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Grid.radar-sweep">
             <Style.Animations>
                 <Animation Duration="0:0:8" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
@@ -402,7 +402,7 @@
         </Style>
 
         <!-- Fireflies: independent warm particles wander and breathe across wide arcs. -->
-        <Style Selector="Ellipse.firefly-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.firefly-a">
             <Style.Animations>
                 <Animation Duration="0:0:9" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.12" /><Setter Property="TranslateTransform.X" Value="-80" /><Setter Property="TranslateTransform.Y" Value="40" /></KeyFrame>
@@ -411,7 +411,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.firefly-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.firefly-b">
             <Style.Animations>
                 <Animation Duration="0:0:13" Delay="0:0:2" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.08" /><Setter Property="TranslateTransform.X" Value="70" /><Setter Property="TranslateTransform.Y" Value="-50" /></KeyFrame>
@@ -420,7 +420,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.firefly-c">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.firefly-c">
             <Style.Animations>
                 <Animation Duration="0:0:7" Delay="0:0:1" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.1" /><Setter Property="TranslateTransform.X" Value="-30" /><Setter Property="TranslateTransform.Y" Value="-80" /></KeyFrame>
@@ -431,7 +431,7 @@
         </Style>
 
         <!-- Prism: triangular outlines counter-rotate while a central spectral glow pulses. -->
-        <Style Selector="Polygon.prism-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Polygon.prism-a">
             <Style.Animations>
                 <Animation Duration="0:0:18" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
@@ -439,7 +439,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Polygon.prism-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Polygon.prism-b">
             <Style.Animations>
                 <Animation Duration="0:0:12" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="30" /></KeyFrame>
@@ -447,7 +447,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.prism-glow">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.prism-glow">
             <Style.Animations>
                 <Animation Duration="0:0:4" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.16" /></KeyFrame>
@@ -459,7 +459,7 @@
 
         <!-- The base backdrop has three motion families. Mode changes now alter the silhouette
              of the whole screen instead of leaving the same corner blobs underneath every mode. -->
-        <Style Selector="Ellipse.backdrop-organic-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.backdrop-organic-a">
             <Style.Animations>
                 <Animation Duration="0:0:11" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.28" /><Setter Property="ScaleTransform.ScaleX" Value="0.82" /><Setter Property="ScaleTransform.ScaleY" Value="1.08" /></KeyFrame>
@@ -468,7 +468,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.backdrop-organic-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.backdrop-organic-b">
             <Style.Animations>
                 <Animation Duration="0:0:15" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.5" /><Setter Property="ScaleTransform.ScaleX" Value="1.12" /><Setter Property="ScaleTransform.ScaleY" Value="0.84" /></KeyFrame>
@@ -477,7 +477,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.backdrop-organic-c">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.backdrop-organic-c">
             <Style.Animations>
                 <Animation Duration="0:0:8" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.18" /><Setter Property="ScaleTransform.ScaleX" Value="0.72" /><Setter Property="ScaleTransform.ScaleY" Value="0.72" /></KeyFrame>
@@ -486,7 +486,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Grid.backdrop-cosmic-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Grid.backdrop-cosmic-a">
             <Style.Animations>
                 <Animation Duration="0:0:30" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
@@ -494,7 +494,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Grid.backdrop-cosmic-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Grid.backdrop-cosmic-b">
             <Style.Animations>
                 <Animation Duration="0:0:43" IterationCount="INFINITE">
                     <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
@@ -502,7 +502,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Ellipse.backdrop-cosmic-core">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.backdrop-cosmic-core">
             <Style.Animations>
                 <Animation Duration="0:0:7" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.14" /><Setter Property="ScaleTransform.ScaleX" Value="0.76" /><Setter Property="ScaleTransform.ScaleY" Value="0.76" /></KeyFrame>
@@ -511,7 +511,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Border.backdrop-prism-a">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Border.backdrop-prism-a">
             <Style.Animations>
                 <Animation Duration="0:0:14" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.16" /><Setter Property="TranslateTransform.X" Value="-260" /></KeyFrame>
@@ -520,7 +520,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Border.backdrop-prism-b">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Border.backdrop-prism-b">
             <Style.Animations>
                 <Animation Duration="0:0:19" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.46" /><Setter Property="TranslateTransform.X" Value="300" /></KeyFrame>
@@ -529,7 +529,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Border.backdrop-prism-c">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Border.backdrop-prism-c">
             <Style.Animations>
                 <Animation Duration="0:0:9" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.08" /><Setter Property="TranslateTransform.X" Value="-160" /></KeyFrame>
@@ -540,7 +540,7 @@
         </Style>
     </UserControl.Styles>
 
-    <Panel ClipToBounds="True" Opacity="{Binding ModeTransitionOpacity}">
+    <Panel ClipToBounds="True" Classes.ambient-live="{Binding IsVisible}" Opacity="{Binding ModeTransitionOpacity}">
         <Panel.Transitions>
             <Transitions>
                 <DoubleTransition Property="Opacity" Duration="0:0:0.45" />
@@ -553,7 +553,7 @@
         </Border>
 
         <!-- Organic backdrop: metaballs breathe, squash, and wander independently. -->
-        <Panel IsVisible="{Binding IsOrganicBackdrop}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsOrganicBackdrop}" IsHitTestVisible="False">
             <Grid Width="670" Height="610" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-210,-230,0,0">
                 <Grid.RenderTransform>
                     <TranslateTransform X="{Binding AnimationPhase, Converter={StaticResource AmbientDrift}, ConverterParameter=1:58}"
@@ -593,7 +593,7 @@
         </Panel>
 
         <!-- Cosmic backdrop: rotating elliptical light tracks orbit a breathing core. -->
-        <Panel IsVisible="{Binding IsCosmicBackdrop}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsCosmicBackdrop}" IsHitTestVisible="False">
             <Ellipse Classes="backdrop-cosmic-core" Width="560" Height="560" HorizontalAlignment="Center" VerticalAlignment="Center"
                      Fill="{Binding HaloBrush}" RenderTransformOrigin="50%,50%">
                 <Ellipse.RenderTransform><ScaleTransform /></Ellipse.RenderTransform>
@@ -614,7 +614,7 @@
         </Panel>
 
         <!-- Prismatic backdrop: diagonal light planes slide in opposing directions. -->
-        <Panel IsVisible="{Binding IsPrismaticBackdrop}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsPrismaticBackdrop}" IsHitTestVisible="False">
             <Grid Width="1400" Height="260" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransform="rotate(-22deg)">
                 <Border Classes="backdrop-prism-a" Width="1150" Height="190" CornerRadius="999" Background="{Binding GlowTopBrush}">
                     <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
@@ -751,7 +751,7 @@
         </Panel>
 
         <!-- Aurora: broad luminous ribbons sweep through each other behind the clock. -->
-        <Panel IsVisible="{Binding IsAuroraMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsAuroraMode}" IsHitTestVisible="False">
             <Ellipse Classes="aurora-a"
                      Width="1100" Height="230"
                      HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -810,7 +810,7 @@
         </Panel>
 
         <!-- Brew rain: vector brew glyphs fall on independent depth lanes. -->
-        <Panel IsVisible="{Binding IsBrewRainMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsBrewRainMode}" IsHitTestVisible="False">
             <Viewbox Classes="brew-rain-a" Width="48" Height="48" HorizontalAlignment="Left" VerticalAlignment="Top"
                      Margin="70,0,0,0"><Viewbox.RenderTransform><TranslateTransform /></Viewbox.RenderTransform>
                 <Path Data="{Binding FloatIconA, Converter={StaticResource AmbientIcon}}" Stroke="{DynamicResource BrewTextPrimaryBrush}"
@@ -849,7 +849,7 @@
         </Panel>
 
         <!-- Kaleidoscope: a neon geometric tunnel folds behind the fixed clock. -->
-        <Panel IsVisible="{Binding IsKaleidoscopeMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsKaleidoscopeMode}" IsHitTestVisible="False">
             <Border Classes="kaleido-a" Width="560" Height="560" BorderBrush="{DynamicResource AmbientBrush44B4}" BorderThickness="3"
                     CornerRadius="90" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="50%,50%">
                 <Border.RenderTransform><RotateTransform /></Border.RenderTransform>
@@ -881,7 +881,7 @@
         </Panel>
 
         <!-- Meteor shower: bright streaks fly diagonally across different screen lanes. -->
-        <Panel IsVisible="{Binding IsMeteorMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsMeteorMode}" IsHitTestVisible="False">
             <Grid Classes="meteor-a" Width="280" Height="24" HorizontalAlignment="Left" VerticalAlignment="Top"
                   Margin="20,80,0,0"><Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
                 <Grid RenderTransform="rotate(24deg)">
@@ -924,7 +924,7 @@
         </Panel>
 
         <!-- Liquid: overlapping brew-coloured wave bodies roll while bubbles rise. -->
-        <Panel IsVisible="{Binding IsLiquidMode}" IsHitTestVisible="False" ClipToBounds="True">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsLiquidMode}" IsHitTestVisible="False" ClipToBounds="True">
             <Ellipse Classes="liquid-wave-b" Width="1300" Height="640"
                      HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,-410" Opacity="0.42">
                 <Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform>
@@ -970,7 +970,7 @@
         </Panel>
 
         <!-- Hyperspace: radial streaks accelerate away from the clock in layered colours. -->
-        <Panel IsVisible="{Binding IsHyperspaceMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsHyperspaceMode}" IsHitTestVisible="False">
             <Ellipse Width="600" Height="600" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
@@ -1008,7 +1008,7 @@
         </Panel>
 
         <!-- Radar pulse: expanding rings, crosshairs, and a rotating spectral scan arm. -->
-        <Panel IsVisible="{Binding IsRadarMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsRadarMode}" IsHitTestVisible="False">
             <Ellipse Width="520" Height="520" HorizontalAlignment="Center" VerticalAlignment="Center"
                      Stroke="{DynamicResource AmbientBrush22B4}" StrokeThickness="1" StrokeDashArray="3,8" />
             <Ellipse Width="360" Height="360" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -1045,7 +1045,7 @@
         </Panel>
 
         <!-- Fireflies: warm particles drift on different paths and pulse independently. -->
-        <Panel IsVisible="{Binding IsFirefliesMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsFirefliesMode}" IsHitTestVisible="False">
             <Ellipse Classes="firefly-a" Width="12" Height="12" HorizontalAlignment="Left" VerticalAlignment="Top"
                      Margin="100,100,0,0" Fill="{DynamicResource AmbientBrushFFD3}"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
             <Ellipse Classes="firefly-b" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Center"
@@ -1072,7 +1072,7 @@
         </Panel>
 
         <!-- Prism: spectral triangular echoes counter-rotate around a pulsing core. -->
-        <Panel IsVisible="{Binding IsPrismMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsPrismMode}" IsHitTestVisible="False">
             <Ellipse Classes="prism-glow" Width="500" Height="500" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
@@ -1119,7 +1119,7 @@
 
         <!-- Slowly counter-rotating dashed rings + rising steam wisps encircle the hero icon.
              Card mode only; pure compositor transforms so the Pi stays smooth. -->
-        <Panel IsVisible="{Binding IsCardMode}">
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsCardMode}">
             <Ellipse Classes="ambient-ring-cw"
                      Width="208" Height="208"
                      HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -1200,7 +1200,7 @@
         </Border>
 
         <!-- Orbit stays outside the clock/date clearance region, including on narrow screens. -->
-        <Grid x:Name="OrbitStage" Classes="orbit-spin"
+        <Grid x:Name="OrbitStage" Classes="orbit-spin ambient-layer"
               IsVisible="{Binding IsOrbitMode}"
               Width="388" Height="388"
               HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -1269,7 +1269,7 @@
 
             <!-- The whole layer fades during mode changes. Reclaim this slot outside card
                  mode so the clock is centered inside the orbit instead of meeting its icons. -->
-            <StackPanel Spacing="12"
+            <StackPanel Classes="ambient-layer" Spacing="12"
                         HorizontalAlignment="Center"
                         IsVisible="{Binding IsCardMode}"
                         Opacity="{Binding CardOpacity}">

@@ -87,6 +87,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<EditableProfileViewModel> Profiles { get; } = new();
     public AppearanceSettingsViewModel Appearance { get; }
+    public NetworkSettingsViewModel Network { get; }
 
     public SettingsViewModel(
         INotificationService notificationService,
@@ -98,7 +99,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         ILocalizationService loc,
         IUpdateService updateService,
         IConfigurationRoot configuration,
-        IAppearanceService appearance)
+        IAppearanceService appearance,
+        INetworkInfoService network)
     {
         _notificationService = notificationService;
         _graphOptions = graphOptions;
@@ -109,6 +111,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _updateService = updateService;
         _configuration = configuration;
         Appearance = new AppearanceSettingsViewModel(appearance, loc);
+        Network = new NetworkSettingsViewModel(network, loc);
 
         _selectedProvider = providerOptions.CurrentValue.Provider;
         _currentLanguage = loc.CurrentLanguage;
@@ -430,6 +433,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     {
         _loc.LanguageChanged -= OnLanguageChanged;
         Appearance.Dispose();
+        Network.Dispose();
     }
 }
 

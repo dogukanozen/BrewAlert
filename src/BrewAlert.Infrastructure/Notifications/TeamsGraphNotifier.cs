@@ -65,7 +65,7 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             _logger.LogError(ex, "HTTP error sending Teams Graph notification for session {SessionId}.", session.Id);
-            return NotificationResult.Failure($"HTTP error: {ex.Message}");
+            return HttpFailure.FromException(ex, $"HTTP error: {ex.Message}");
         }
     }
 
@@ -120,7 +120,7 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogError("Token request failed {StatusCode}: {Body}", response.StatusCode, json);
-                throw new HttpRequestException($"Token request failed: {(int)response.StatusCode}");
+                throw new HttpRequestException($"Token request failed: {(int)response.StatusCode}", null, response.StatusCode);
             }
 
             using var doc = JsonDocument.Parse(json);
@@ -157,7 +157,7 @@ public sealed class TeamsGraphNotifier : INotificationService, IDisposable
 
         var body = await response.Content.ReadAsStringAsync(ct);
         _logger.LogError("Graph API returned {StatusCode}: {Body}", response.StatusCode, body);
-        return NotificationResult.Failure($"Graph API returned {(int)response.StatusCode}: {body}");
+        return HttpFailure.FromStatus(response.StatusCode, $"Graph API returned {(int)response.StatusCode}: {body}");
     }
 
     private bool IsConfigured(TeamsGraphOptions opts, out string missing)

@@ -91,6 +91,10 @@
                     <Button Content="{Binding CheckUpdatesButtonText}" Command="{Binding CheckForUpdatesCommand}"
                             IsEnabled="{Binding !IsBusy}" Classes="brew-secondary" HorizontalAlignment="Left" />
                     <TextBlock Text="{Binding UpdateStatusText}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Network.Title}" Classes="brew-section" Margin="0,8,0,0" />
+                    <TextBlock x:Name="NetworkName" Text="{Binding Network.NetworkText}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                    <TextBlock x:Name="NetworkAddress" Text="{Binding Network.AddressText}" Classes="brew-subtitle" TextWrapping="Wrap"
+                               IsVisible="{Binding Network.AddressText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 </StackPanel>
             </Border>
         </Grid>

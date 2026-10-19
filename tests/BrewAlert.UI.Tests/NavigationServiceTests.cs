@@ -1,5 +1,7 @@
+using System.Runtime.CompilerServices;
 using BrewAlert.UI.Services;
 using BrewAlert.UI.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Xunit;
 using System;
@@ -8,17 +10,20 @@ namespace BrewAlert.UI.Tests;
 
 public class TestViewModel : ViewModelBase { }
 
+public sealed class DisposableTestViewModel : ViewModelBase, IDisposable
+{
+    public bool IsDisposed { get; private set; }
+    public void Dispose() => IsDisposed = true;
+}
+
 public class NavigationServiceTests
 {
     [Fact]
     public void NavigateTo_Generic_ResolvesFromServiceProviderAndNotifies()
     {
         // Arrange
-        var serviceProvider = Substitute.For<IServiceProvider>();
-        var mockVm = new TestViewModel();
-        serviceProvider.GetService(typeof(TestViewModel)).Returns(mockVm);
-
-        var navigation = new NavigationService(serviceProvider);
+        using var provider = new ServiceCollection().AddTransient<TestViewModel>().BuildServiceProvider();
+        using var navigation = new NavigationService(provider);
         ViewModelBase? notifiedVm = null;
         navigation.CurrentViewChanged += vm => notifiedVm = vm;
 
@@ -26,8 +31,49 @@ public class NavigationServiceTests
         navigation.NavigateTo<TestViewModel>();
 
         // Assert
-        Assert.Equal(mockVm, navigation.CurrentView);
-        Assert.Equal(mockVm, notifiedVm);
+        Assert.IsType<TestViewModel>(navigation.CurrentView);
+        Assert.Same(navigation.CurrentView, notifiedVm);
+    }
+
+    [Fact]
+    public void NavigateTo_Generic_DisposesPreviousViewModel()
+    {
+        using var provider = new ServiceCollection().AddTransient<DisposableTestViewModel>().BuildServiceProvider();
+        using var navigation = new NavigationService(provider);
+        navigation.NavigateTo<DisposableTestViewModel>();
+        var first = (DisposableTestViewModel)navigation.CurrentView;
+
+        navigation.NavigateTo<DisposableTestViewModel>();
+
+        Assert.True(first.IsDisposed);
+        Assert.False(((DisposableTestViewModel)navigation.CurrentView).IsDisposed);
+    }
+
+    [Fact]
+    public void NavigateTo_Generic_DoesNotRetainPreviousViewModels()
+    {
+        using var provider = new ServiceCollection().AddTransient<DisposableTestViewModel>().BuildServiceProvider();
+        using var navigation = new NavigationService(provider);
+
+        var previous = NavigateRepeatedly(navigation, 50);
+        navigation.NavigateTo<DisposableTestViewModel>();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.All(previous, reference => Assert.False(reference.IsAlive));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static List<WeakReference> NavigateRepeatedly(NavigationService navigation, int count)
+    {
+        var references = new List<WeakReference>();
+        for (var i = 0; i < count; i++)
+        {
+            navigation.NavigateTo<DisposableTestViewModel>();
+            references.Add(new WeakReference(navigation.CurrentView));
+        }
+        return references;
     }
 
     [Fact]

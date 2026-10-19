@@ -39,6 +39,19 @@ public class ProfileListViewModelTests
         NullLogger<ProfileListViewModel>.Instance);
 
     [AvaloniaFact]
+    public void LoadProfiles_WhenRepositoryFails_ShowsTheError()
+    {
+        _repository.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<IReadOnlyList<BrewProfile>>(new IOException("disk unavailable")));
+
+        var vm = CreateVm();
+
+        Assert.False(vm.IsLoading);
+        Assert.Empty(vm.Profiles);
+        Assert.Equal("ProfilesLoadError", vm.ProfilesErrorText);
+    }
+
+    [AvaloniaFact]
     public async Task LoadProfiles_PopulatesCollection()
     {
         var profiles = BrewProfileService.DefaultProfiles.ToList();

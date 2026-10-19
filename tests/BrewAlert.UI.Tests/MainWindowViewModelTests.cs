@@ -334,6 +334,23 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task InstallUpdate_WhileBrewing_DoesNotExitTheApp()
+    {
+        _timerService.GetActiveSessions().Returns(new[]
+        {
+            new BrewSession { Profile = new BrewProfile { Name = "Tea", BrewDuration = TimeSpan.FromMinutes(15) } }
+        });
+        var vm = CreateVm();
+        vm.IsUpdateToastVisible = true;
+
+        await ((IAsyncRelayCommand)vm.InstallUpdateCommand).ExecuteAsync(null);
+
+        await _updateService.DidNotReceive().DownloadAndInstallUpdatesAsync();
+        Assert.True(vm.IsUpdateToastVisible);
+        Assert.Equal("UpdateWaitsForBrew", vm.UpdateToastMessage);
+    }
+
+    [Fact]
     public void LanguageChanged_WhenToastVisible_RefreshesToastTexts()
     {
         var vm = CreateVm();

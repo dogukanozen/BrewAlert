@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -97,7 +98,16 @@ public sealed class AppearanceLayoutTests
             var settings = Assert.IsType<SettingsViewModel>(fixture.Main.CurrentView);
             Assert.Equal(7, settings.Appearance.Days.Count);
             Assert.False(settings.Appearance.IsWeekly);
+            var texts = fixture.View.GetVisualDescendants().OfType<TextBlock>().ToArray();
+            Assert.Equal("Office-WiFi", texts.Single(x => x.Name == "NetworkName").Text);
+            var address = texts.Single(x => x.Name == "NetworkAddress");
+            Assert.Equal("IPv4: 192.168.1.23", address.Text);
+            Assert.True(address.IsEffectivelyVisible);
+            Assert.InRange(address.Bounds.Width, 1, width);
             Capture(fixture.Window, theme + "-settings-" + width);
+            address.BringIntoView();
+            Layout(fixture.Window);
+            Capture(fixture.Window, theme + "-settings-network-" + width);
             await settings.Appearance.SetModeCommand.ExecuteAsync(AppearanceOptions.Weekly);
             Layout(fixture.Window);
             Assert.True(settings.Appearance.IsWeekly);
@@ -210,6 +220,41 @@ public sealed class AppearanceLayoutTests
         }
     }
 
+    [AvaloniaFact]
+    public async Task AmbientAnimations_RunOnlyWhileTheirModeIsOnScreen()
+    {
+        using var fixture = new Fixture(800, 480);
+        var aurora = fixture.View.GetLogicalDescendants().OfType<Avalonia.Controls.Shapes.Ellipse>()
+            .Single(x => x.Classes.Contains("aurora-a"));
+        double Angle() => ((RotateTransform)aurora.RenderTransform!).Angle;
+
+        Assert.False(fixture.Main.Ambient.IsVisible);
+        Assert.False(IsAnimating(fixture.Window, Angle), "Aurora animates while the ambient screen is hidden.");
+
+        await fixture.Main.ShowAmbientCommand.ExecuteAsync(null);
+        fixture.Main.Ambient.Mode = AmbientMode.Aurora;
+        Assert.True(IsAnimating(fixture.Window, Angle), "Aurora does not animate in aurora mode.");
+
+        fixture.Main.Ambient.Mode = AmbientMode.Radar;
+        Assert.False(IsAnimating(fixture.Window, Angle), "Aurora keeps animating in another mode.");
+
+        fixture.Main.Ambient.Mode = AmbientMode.Aurora;
+        Assert.True(IsAnimating(fixture.Window, Angle), "Aurora does not resume in aurora mode.");
+
+        fixture.Main.DismissAmbientCommand.Execute(null);
+        Assert.False(fixture.Main.Ambient.IsVisible);
+        Assert.False(IsAnimating(fixture.Window, Angle), "Aurora keeps animating after the ambient screen is dismissed.");
+    }
+
+    private static bool IsAnimating(Window window, Func<double> value)
+    {
+        Layout(window);
+        var before = value();
+        Thread.Sleep(300);
+        Layout(window);
+        return value() != before;
+    }
+
     private static void Click(Window window, Button button)
     {
         var position = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
@@ -277,6 +322,10 @@ public sealed class AppearanceLayoutTests
             services.AddSingleton<IAppearanceService, AppearanceService>();
             services.AddSingleton<ILocalizationService, LocalizationService>();
             services.AddSingleton(Substitute.For<IUpdateService>());
+            var network = Substitute.For<INetworkInfoService>();
+            network.GetStatusAsync(Arg.Any<CancellationToken>())
+                .Returns(new NetworkStatus("Office-WiFi", true, ["192.168.1.23"]));
+            services.AddSingleton(network);
             services.AddSingleton(Substitute.For<INotificationService>());
             services.AddSingleton<IBrewCompletionNotificationService, BrewCompletionNotificationService>();
             services.AddSingleton<IConfigurationRoot>(new ConfigurationBuilder().Build());

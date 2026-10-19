@@ -181,4 +181,43 @@ public class TeamsWebhookNotifierTests
 
         Assert.False(result);
     }
+
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError, true)]
+    [InlineData(HttpStatusCode.ServiceUnavailable, true)]
+    [InlineData(HttpStatusCode.TooManyRequests, true)]
+    [InlineData(HttpStatusCode.RequestTimeout, true)]
+    [InlineData(HttpStatusCode.BadRequest, false)]
+    [InlineData(HttpStatusCode.NotFound, false)]
+    public async Task SendBrewCompletedAsync_MarksOnlyRetryableStatusesTransient(HttpStatusCode status, bool transient)
+    {
+        var (sut, handler) = CreateSut();
+        handler.Response = new HttpResponseMessage(status);
+
+        var result = await sut.SendBrewCompletedAsync(CreateSession());
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(transient, result.IsTransient);
+    }
+
+    [Fact]
+    public async Task SendBrewCompletedAsync_WhenNetworkFails_IsTransient()
+    {
+        var (sut, handler) = CreateSut();
+        handler.ThrowOnSend = new HttpRequestException("Network unreachable");
+
+        var result = await sut.SendBrewCompletedAsync(CreateSession());
+
+        Assert.True(result.IsTransient);
+    }
+
+    [Fact]
+    public async Task SendBrewCompletedAsync_WhenWebhookUrlEmpty_IsNotTransient()
+    {
+        var (sut, _) = CreateSut(webhookUrl: "");
+
+        var result = await sut.SendBrewCompletedAsync(CreateSession());
+
+        Assert.False(result.IsTransient);
+    }
 }

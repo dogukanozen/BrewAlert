@@ -135,11 +135,25 @@ public class JsonProfileRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetAll_WhenFileContainsMalformedJson_ShouldThrow()
+    public async Task GetAll_WhenFileContainsMalformedJson_BacksItUpAndStartsEmpty()
     {
-        await File.WriteAllTextAsync(_testFilePath, "{ this is not valid json !!!");
+        const string corrupt = "{ this is not valid json !!!";
+        await File.WriteAllTextAsync(_testFilePath, corrupt);
 
-        await Assert.ThrowsAnyAsync<Exception>(() => _sut.GetAllAsync());
+        Assert.Empty(await _sut.GetAllAsync());
+        Assert.Equal(corrupt, await File.ReadAllTextAsync(_testFilePath + ".bak"));
+
+        await _sut.SaveAsync(new BrewProfile { Name = "Tea", BrewDuration = TimeSpan.FromMinutes(5) });
+        Assert.Equal("Tea", Assert.Single(await _sut.GetAllAsync()).Name);
+    }
+
+    [Fact]
+    public async Task Save_LeavesNoTempFileBehind()
+    {
+        await _sut.SaveAsync(new BrewProfile { Name = "Tea", BrewDuration = TimeSpan.FromMinutes(5) });
+
+        Assert.True(File.Exists(_testFilePath));
+        Assert.False(File.Exists(_testFilePath + ".tmp"));
     }
 
     [Fact]
@@ -170,7 +184,8 @@ public class JsonProfileRepositoryTests : IDisposable
 
     public void Dispose()
     {
-        if (File.Exists(_testFilePath))
-            File.Delete(_testFilePath);
+        foreach (var path in new[] { _testFilePath, _testFilePath + ".bak", _testFilePath + ".tmp" })
+            if (File.Exists(path))
+                File.Delete(path);
     }
 }

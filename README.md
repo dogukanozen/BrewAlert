@@ -8,8 +8,10 @@ Built with [Avalonia UI](https://avaloniaui.net/) for cross-platform support —
 
 - Pre-configured brew profiles (Turkish Tea, Filter Coffee) — editable durations, add/delete custom profiles
 - Visual countdown timer with pause / resume / cancel — run several brews at once, each tracked on its own row
+- Today's completed brews on the home screen, kept in a local SQLite history
 - Ambient idle screen — clock, date, and brew freshness scenes across 12 animation modes, three mode-aware background families, and smooth cinematic transitions
-- Microsoft Teams Adaptive Card notifications (Power Automate webhook or Graph API)
+- Microsoft Teams Adaptive Card notifications (Power Automate webhook or Graph API), retried when the network drops
+- Settings shows the device's network name and IPv4 address, so a kiosk Pi can be reached over SSH
 - TR / EN language toggle in Settings (no restart required)
 - Obsidian and Porcelain appearances, selectable instantly in Settings or by a seven-day schedule
 - Touch-friendly layouts for Raspberry Pi 3 kiosk screens; bundled Inter text and font-independent vector icons
@@ -21,7 +23,7 @@ Built with [Avalonia UI](https://avaloniaui.net/) for cross-platform support —
 ```
 src/
 ├── BrewAlert.Core/            # Business logic, models, interfaces (zero dependencies)
-├── BrewAlert.Infrastructure/  # Teams notifications, JSON persistence
+├── BrewAlert.Infrastructure/  # Teams notifications, JSON profiles, SQLite brew history
 └── BrewAlert.UI/              # Avalonia views + view models
 
 tests/
@@ -119,7 +121,7 @@ bash ~/brewalert/install.sh
 
 `install.sh` installs the required system libraries (`libdrm2`, `libgbm1`, `libfontconfig1`, `libfreetype6`, `libinput10`, `libfuse2`), copies `BrewAlert.AppImage` to `~/brewalert/`, and sets up a systemd service that starts automatically on boot.
 
-The app runs in DRM/KMS mode (`--drm`) for direct framebuffer access — no desktop environment required. Auto-updates are handled by Velopack: when a new release is published, the running app downloads and applies the update automatically, then restarts via systemd.
+The app runs in DRM/KMS mode (`--drm`) for direct framebuffer access — no desktop environment required. Updates are handled by Velopack: the running app checks GitHub Releases at startup and every hour, downloads a new release in the background, and shows an install prompt. The update is applied only when you tap install and no brew is running; the app exits and systemd restarts it with the new version.
 
 ### Teams notifications on Raspberry Pi
 

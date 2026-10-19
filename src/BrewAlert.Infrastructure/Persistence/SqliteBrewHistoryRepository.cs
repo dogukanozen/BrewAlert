@@ -7,12 +7,16 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
-/// SQLite-backed brew history. Schema is created lazily on first call.
-/// Thread-safe via <see cref="SemaphoreSlim"/>.
+/// SQLite-backed brew history. Schema is migrated lazily on first call, tracked by
+/// <c>PRAGMA user_version</c>. Thread-safe via <see cref="SemaphoreSlim"/>.
 /// </summary>
 public sealed class SqliteBrewHistoryRepository : IBrewHistoryRepository
 {
-    private const string CreateTableSql = """
+    // Migrations[n] upgrades a database from user_version n to n + 1. Append new steps;
+    // never edit a shipped one. Step 0 uses IF NOT EXISTS so pre-versioning files upgrade in place.
+    private static readonly string[] Migrations =
+    [
+        """
         CREATE TABLE IF NOT EXISTS BrewHistory (
             Id TEXT PRIMARY KEY,
             CompletedAtUtc TEXT NOT NULL,
@@ -23,7 +27,8 @@ public sealed class SqliteBrewHistoryRepository : IBrewHistoryRepository
         );
         CREATE INDEX IF NOT EXISTS IX_BrewHistory_CompletedAt
             ON BrewHistory(CompletedAtUtc DESC);
-        """;
+        """,
+    ];
 
     private readonly string _connectionString;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
@@ -126,9 +131,7 @@ public sealed class SqliteBrewHistoryRepository : IBrewHistoryRepository
             await conn.OpenAsync(ct);
             if (!_schemaReady)
             {
-                await using var schemaCmd = conn.CreateCommand();
-                schemaCmd.CommandText = CreateTableSql;
-                await schemaCmd.ExecuteNonQueryAsync(ct);
+                await MigrateAsync(conn, ct);
                 _schemaReady = true;
             }
             return conn;
@@ -137,6 +140,23 @@ public sealed class SqliteBrewHistoryRepository : IBrewHistoryRepository
         {
             await conn.DisposeAsync();
             throw;
+        }
+    }
+
+    private static async Task MigrateAsync(SqliteConnection conn, CancellationToken ct)
+    {
+        await using var versionCmd = conn.CreateCommand();
+        versionCmd.CommandText = "PRAGMA user_version;";
+        var version = Convert.ToInt32(await versionCmd.ExecuteScalarAsync(ct), CultureInfo.InvariantCulture);
+
+        for (; version < Migrations.Length; version++)
+        {
+            await using var tx = (SqliteTransaction)await conn.BeginTransactionAsync(ct);
+            await using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = $"{Migrations[version]}\nPRAGMA user_version = {version + 1};";
+            await cmd.ExecuteNonQueryAsync(ct);
+            await tx.CommitAsync(ct);
         }
     }
 

@@ -10,6 +10,8 @@
                 <TextBlock Text="{Binding HomeTitle}" Classes="home-title" />
                 <TextBlock Text="{Binding HomeSubtitle}" Classes="brew-subtitle" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding LoadingText}" Classes="brew-subtitle" IsVisible="{Binding IsLoading}" />
+                <TextBlock Text="{Binding ProfilesErrorText}" Classes="brew-subtitle" TextWrapping="Wrap"
+                           IsVisible="{Binding ProfilesErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </StackPanel>
             <ItemsControl ItemsSource="{Binding Profiles}" Classes="home-choices">
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Classes="profile-grid" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>

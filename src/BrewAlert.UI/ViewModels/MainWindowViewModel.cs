@@ -112,6 +112,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private async Task InstallUpdateAsync()
     {
+        // Applying an update exits the process, which would drop every running timer
+        // and its Teams notification.
+        if (_timerService.GetActiveSessions().Count > 0)
+        {
+            UpdateToastMessage = _loc.Get("UpdateWaitsForBrew");
+            return;
+        }
+
         try
         {
             await _updateService.DownloadAndInstallUpdatesAsync();

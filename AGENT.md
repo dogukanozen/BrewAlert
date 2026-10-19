@@ -17,7 +17,7 @@ Everything else is opened on-demand from §3.
 
 ## 2. Project in one paragraph
 
-BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams Adaptive Card when the brew completes. Runs on Windows x64 and Raspberry Pi linux-arm64. Three layers: **Core** (pure domain, zero deps) ← **Infrastructure** (Teams, JSON) ← **UI** (Avalonia + `CommunityToolkit.Mvvm`). Dependency direction is one-way; never reverse it. The recommended notification path is **Power Automate webhook** (`TeamsWebhookNotifier`); Graph API (`TeamsGraphNotifier`) is available but requires RSC on the target chat.
+BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams Adaptive Card when the brew completes. Runs on Windows x64 and Raspberry Pi linux-arm64. Three layers: **Core** (pure domain, zero deps) ← **Infrastructure** (Teams, JSON profiles, SQLite brew history) ← **UI** (Avalonia + `CommunityToolkit.Mvvm`). Dependency direction is one-way; never reverse it. The recommended notification path is **Power Automate webhook** (`TeamsWebhookNotifier`); Graph API (`TeamsGraphNotifier`) is available but requires RSC on the target chat.
 
 ## 3. Request → files (low-token lookup)
 
@@ -28,6 +28,11 @@ BrewAlert is a .NET 10 + Avalonia MVVM brew timer that sends a Microsoft Teams A
 | session state | `src/BrewAlert.Core/Models/BrewSession.cs` |
 | ambient, idle screen, screensaver, DVD bounce, orbit mode, animation mode, freshness, bayat, stale, cooling | `src/BrewAlert.Core/Services/BrewFreshnessEvaluator.cs`, `Models/BrewFreshnessLevel.cs`, `src/BrewAlert.UI/ViewModels/AmbientOverlayViewModel.cs`, `AmbientSceneItem.cs`, `AmbientMode.cs`, `AmbientPalette.cs`, `Views/AmbientOverlayView.axaml(.cs)`, `Converters/Ambient*.cs` |
 | load/save profile, JSON file | `src/BrewAlert.Infrastructure/Persistence/JsonProfileRepository.cs` |
+| history, recent brews, SQLite, history.db | `src/BrewAlert.Core/Interfaces/IBrewHistoryService.cs`, `IBrewHistoryRepository.cs`, `Models/BrewHistoryEntry.cs`, `src/BrewAlert.Infrastructure/Persistence/BrewHistoryService.cs`, `SqliteBrewHistoryRepository.cs`, `src/BrewAlert.UI/ViewModels/ProfileListViewModel.cs`, `RecentBrewItem.cs` |
+| completion notification, duplicate notification | `src/BrewAlert.UI/Services/IBrewCompletionNotificationService.cs`, `BrewCompletionNotificationService.cs` |
+| update, velopack, update toast | `src/BrewAlert.UI/Services/IUpdateService.cs`, `UpdateService.cs`, `ViewModels/MainWindowViewModel.cs`, `Program.cs` |
+| network, IP address, IPv4, SSID, Wi-Fi name, ssh | `src/BrewAlert.UI/Services/INetworkInfoService.cs`, `NetworkInfoService.cs`, `ViewModels/NetworkSettingsViewModel.cs`, `Views/SettingsView.axaml` |
+| retry, notification failed, transient | `src/BrewAlert.UI/Services/BrewCompletionNotificationService.cs`, `src/BrewAlert.Infrastructure/Notifications/HttpFailure.cs`, `src/BrewAlert.Core/Models/NotificationResult.cs` |
 | teams, webhook, adaptive card, power automate | `src/BrewAlert.Infrastructure/Notifications/TeamsWebhookNotifier.cs`, `TeamsMessageBuilder.cs`, `Configuration/TeamsNotificationOptions.cs` |
 | teams graph api, graph notifier | `src/BrewAlert.Infrastructure/Notifications/TeamsGraphNotifier.cs`, `TeamsGraphMessageBuilder.cs`, `Configuration/TeamsGraphOptions.cs` |
 | notification routing, provider selection | `src/BrewAlert.Infrastructure/Notifications/RoutingNotificationService.cs`, `Configuration/NotificationProviderOptions.cs` |
@@ -51,15 +56,17 @@ If the request maps to nothing here, **ask** the user instead of scanning the wh
 All of the following are verified against the current code. If you see a change that violates one, reject it in review.
 
 1. **No service locator.** ViewModels never call `App.Services`, `IServiceProvider`, or `GetRequiredService<T>()`. Use `INavigationService` for view transitions and constructor injection for everything else. (see `ActiveBrewsViewModel.cs`, `BrewItemViewModel.cs`, `App.axaml.cs`)
-2. **Events fire outside `lock` blocks.** In `BrewTimerService` every `TimerTick` / `BrewStarted` / `BrewCompleted` / `BrewCancelled` invocation happens after the lock is released. Re-entrant handlers used to deadlock. (see `BrewTimerService.cs:53, 73, 143`)
-3. **Event subscribers implement `IDisposable`** and unsubscribe in `Dispose()`. Required for any VM holding `IBrewTimerService` events (`TimerTick`, `BrewStarted`, etc.) **and** `ILocalizationService.LanguageChanged`. (see `BrewItemViewModel.cs`, `ActiveBrewsViewModel.cs`)
-4. **DI lifetimes** (in `App.axaml.cs:ConfigureServices`):
-   - **Singleton**: `MainWindowViewModel`, `INavigationService`, `IBrewTimerService`, `BrewProfileService`, `IProfileRepository`, `INotificationService`, `IPreferencesService`, `ILocalizationService`.
-   - **Transient**: `ActiveBrewsViewModel`, `ProfileListViewModel`, `SettingsViewModel` — fresh instance per navigation so state never goes stale.
+2. **Events fire outside `lock` blocks.** In `BrewTimerService` every `TimerTick` / `BrewStarted` / `BrewCompleted` / `BrewCancelled` invocation happens after the lock is released. Re-entrant handlers used to deadlock. (see the `Fire events OUTSIDE the lock` comment in `BrewTimerService.cs`)
+3. **Event subscribers implement `IDisposable`** and unsubscribe in `Dispose()`. Required for any VM or service subscribing to an event on a singleton: `IBrewTimerService` (`TimerTick`, `BrewStarted`, etc.), `ILocalizationService.LanguageChanged`, `IBrewHistoryService.HistoryUpdated`, `IAppearanceService.PropertyChanged`, `IUpdateService.UpdateAvailable`. (see `BrewItemViewModel.cs`, `ActiveBrewsViewModel.cs`, `BrewHistoryService.cs`)
+4. **DI lifetimes** (in `App.axaml.cs:ConfigureServices`, table in `docs/architecture.md` §2.4):
+   - **Singleton**: every service (timer, profiles, history, notifications, preferences, localization, appearance, navigation, completion notifications, updates, network info, `TimeProvider`) plus `MainWindowViewModel` and `AmbientOverlayViewModel`.
+   - **Transient**: `ActiveBrewsViewModel`, `ProfileListViewModel`, `SettingsViewModel` — fresh instance per navigation so state never goes stale. `NavigationService` resolves each one in its own DI scope and disposes the scope on the next navigation; resolving them from the root provider leaks every instance.
 5. **Dependency direction** UI → Infrastructure → Core. Never add a reverse reference.
 6. **No secrets in repo.** Webhook URL via env var `BREWALERT__BrewAlert__Notifications__Teams__WebhookUrl` (provider via `BREWALERT__BrewAlert__Notifications__Provider=Webhook`) or gitignored `appsettings.Development.json`. `git diff --cached` before committing. `preferences.json` is gitignored.
 7. **No new CI artifact uploads** without user approval — repo is on free-tier GitHub. `ci.yml` currently uploads only on `v*` tags.
 8. **No direct pushes to `main`.** Everything goes through a feature branch + PR.
+9. **Timer time comes from the deadline, not from ticks.** `BrewTimerService` recomputes `Remaining` from a monotonic `TimeProvider` timestamp on every tick; never decrement per tick (`PeriodicTimer` drops missed ticks, so a stall stretched brews). Take `TimeProvider` for anything time-based so tests can use `FakeTimeProvider`.
+10. **Ambient animations are gated.** Every `Style.Animations` selector in `AmbientOverlayView.axaml` starts with `Panel.ambient-live :is(Control).ambient-layer[IsVisible=True]`, and the element sits under a panel with the `ambient-layer` class. Avalonia keeps infinite style animations running on hidden controls, so an ungated one runs forever on the Pi after the first idle screen.
 
 ## 5. Working discipline
 

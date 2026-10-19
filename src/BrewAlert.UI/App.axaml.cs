@@ -17,6 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using System.ComponentModel;
 
 namespace BrewAlert.UI;
@@ -35,14 +36,17 @@ public partial class App : Application
     {
         DisableAvaloniaDataAnnotationValidation();
         _services = ConfigureServices();
+        HandleUnhandledExceptions(_services.GetRequiredService<ILogger<App>>());
         _appearance = _services.GetRequiredService<IAppearanceService>();
         _appearance.PropertyChanged += OnAppearanceChanged;
         ApplyAppearance();
 
         var mainVm = _services.GetRequiredService<MainWindowViewModel>();
 
-        // Eagerly resolve so the singleton subscribes to BrewCompleted at startup.
+        // Eagerly resolve so the singletons subscribe to BrewCompleted at startup, not when
+        // the first view that happens to depend on them is created.
         _ = _services.GetRequiredService<IBrewHistoryService>();
+        _ = _services.GetRequiredService<IBrewCompletionNotificationService>();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -60,6 +64,24 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    // Running brews live only in memory: a UI exception that kills the process loses every
+    // timer and its Teams notification, so log it and keep the kiosk running instead.
+    private static void HandleUnhandledExceptions(ILogger logger)
+    {
+        Dispatcher.UIThread.UnhandledException += (_, e) =>
+        {
+            logger.LogCritical(e.Exception, "Unhandled UI exception; the app keeps running.");
+            e.Handled = true;
+        };
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            logger.LogError(e.Exception, "Unobserved task exception.");
+            e.SetObserved();
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            logger.LogCritical(e.ExceptionObject as Exception, "Unhandled exception; the process is terminating.");
     }
 
     private static IServiceProvider ConfigureServices()
@@ -141,6 +163,9 @@ public partial class App : Application
 
         // Update Service
         services.AddSingleton<IUpdateService, UpdateService>();
+
+        // Network status for the Settings screen (SSH access to the Pi)
+        services.AddSingleton<INetworkInfoService, NetworkInfoService>();
 
         // ViewModels
         services.AddSingleton<AmbientOverlayViewModel>();

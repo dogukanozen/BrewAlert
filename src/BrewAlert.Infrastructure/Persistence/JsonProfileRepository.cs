@@ -92,7 +92,19 @@ public sealed class JsonProfileRepository : IProfileRepository
             return [];
 
         var json = await File.ReadAllTextAsync(_filePath, ct);
-        return JsonSerializer.Deserialize<List<BrewProfile>>(json, JsonOptions) ?? [];
+        try
+        {
+            return JsonSerializer.Deserialize<List<BrewProfile>>(json, JsonOptions) ?? [];
+        }
+        catch (JsonException ex)
+        {
+            // A torn write (power cut on the Pi) must not leave the home screen empty forever:
+            // keep the damaged file for inspection and let the defaults be re-seeded.
+            _logger.LogError(ex, "Profiles file {FilePath} is corrupt; backed up to .bak and starting fresh.", _filePath);
+            try { File.Copy(_filePath, _filePath + ".bak", true); }
+            catch (IOException copyEx) { _logger.LogWarning(copyEx, "Could not back up corrupt profiles file."); }
+            return [];
+        }
     }
 
     private async Task WriteFileAsync(List<BrewProfile> profiles, CancellationToken ct)
@@ -102,7 +114,17 @@ public sealed class JsonProfileRepository : IProfileRepository
             Directory.CreateDirectory(dir);
 
         var json = JsonSerializer.Serialize(profiles, JsonOptions);
-        await File.WriteAllTextAsync(_filePath, json, ct);
+        var tempPath = _filePath + ".tmp";
+        try
+        {
+            await File.WriteAllTextAsync(tempPath, json, ct);
+            File.Move(tempPath, _filePath, true);
+        }
+        finally
+        {
+            try { if (File.Exists(tempPath)) File.Delete(tempPath); }
+            catch (IOException) { /* A cleanup failure must not hide the original write error. */ }
+        }
     }
 
     private static string GetDefaultFilePath()

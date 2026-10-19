@@ -34,6 +34,7 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
     private bool _disposed;
 
     [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private string _profilesErrorText = string.Empty;
     [ObservableProperty] private string _pageTitle = string.Empty;
     [ObservableProperty] private string _loadingText = string.Empty;
     [ObservableProperty] private string _recentBrewsLabel = string.Empty;
@@ -118,12 +119,19 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
     private async Task LoadProfilesAsync()
     {
         IsLoading = true;
+        ProfilesErrorText = string.Empty;
         try
         {
             var profiles = await _profileService.GetAllProfilesAsync();
             Profiles.Clear();
             foreach (var p in profiles)
                 Profiles.Add(p);
+        }
+        catch (Exception ex)
+        {
+            // An unreadable profiles file used to leave the home screen silently empty.
+            _logger.LogError(ex, "Failed to load brew profiles.");
+            ProfilesErrorText = string.Format(CultureInfo.CurrentCulture, _loc.Get("ProfilesLoadError"), ex.Message);
         }
         finally
         {
