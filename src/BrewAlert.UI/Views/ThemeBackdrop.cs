@@ -157,8 +157,10 @@ public sealed class ThemeBackdrop : Control
                     }
                     break;
                 case BrewTheme.Aizome:
+                    // Preserve the moon's circle when a narrow display compresses the wave grid.
+                    var moonRadiusX = 35 * (Bounds.Height / 480) / (Bounds.Width / 800);
                     using (context.PushOpacity(.08))
-                        context.DrawEllipse(Stroke, null, new Point(651, 118), 35, 35);
+                        context.DrawEllipse(Stroke, null, new Point(651, 118), moonRadiusX, 35);
                     using (context.PushOpacity(.075 + Math.Sin(_seconds * .14) * .02))
                     using (context.PushTransform(Matrix.CreateTranslation(Math.Sin(_seconds * .105) * 17, 0)))
                         context.DrawGeometry(null, _pen, _waves);

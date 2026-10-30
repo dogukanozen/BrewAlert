@@ -208,6 +208,34 @@ public sealed class AppearanceLayoutTests
         }
     }
 
+    [AvaloniaTheory]
+    [InlineData(BrewTheme.Sumi)]
+    [InlineData(BrewTheme.Ibre)]
+    [InlineData(BrewTheme.Aizome)]
+    public async Task SignatureAmbient_KeepsFreshnessAndWakeHintSeparateOnNarrowScreens(BrewTheme theme)
+    {
+        using var fixture = new Fixture(320, 480);
+        await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
+        await fixture.Main.ShowAmbientCommand.ExecuteAsync(null);
+        Layout(fixture.Window);
+        var summary = fixture.View.GetVisualDescendants().OfType<StackPanel>()
+            .Single(x => x.Classes.Contains("signature-summary"));
+        var hint = fixture.View.GetVisualDescendants().OfType<TextBlock>()
+            .Single(x => x.Text == fixture.Main.Ambient.TapHint);
+        var origin = summary.TranslatePoint(new Point(), fixture.Window)!.Value;
+        var hintOrigin = hint.TranslatePoint(new Point(), fixture.Window)!.Value;
+        Assert.True(summary.IsEffectivelyVisible);
+        Assert.InRange(origin.X, 0, 320 - summary.Bounds.Width);
+        Assert.True(origin.Y + summary.Bounds.Height < hintOrigin.Y);
+        var clock = fixture.View.GetVisualDescendants().OfType<AnimatedClock>().Single();
+        var clockOrigin = clock.TranslatePoint(new Point(), fixture.Window)!.Value;
+        Assert.InRange(clockOrigin.X, 0, 320 - clock.Bounds.Width);
+        Assert.True(clockOrigin.Y + clock.Bounds.Height < origin.Y);
+        if (Environment.GetEnvironmentVariable("BREWALERT_RENDER_DIR") is not null) await Task.Delay(900);
+        Layout(fixture.Window);
+        Capture(fixture.Window, theme + "-ambient-narrow");
+    }
+
     [AvaloniaFact]
     public async Task Orbit_LeavesClockAndDateClearAtPiAndNarrowSizes()
     {

@@ -14,6 +14,12 @@
     <!-- Smooth, compositor-driven idle motion (transform/opacity only, Pi-friendly). These
          run independently of the 500ms VM tick, so they never stutter with it. -->
     <UserControl.Styles>
+        <Style Selector="StackPanel.signature-summary">
+            <Setter Property="Margin" Value="28,0,28,26" />
+        </Style>
+        <Style Selector=":is(UserControl).compact StackPanel.signature-summary">
+            <Setter Property="Margin" Value="28,0,28,74" />
+        </Style>
         <!-- Concentric rings that slowly rotate around the hero icon. -->
         <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.ambient-ring-cw">
             <Style.Animations>
@@ -556,10 +562,12 @@
         <views:ThemeBackdrop x:Name="ThemeBackdrop" IsVisible="{Binding HasThemeBackdrop}"
                              IsActive="{Binding IsThemeBackdropActive}" Appearance="{Binding AppearanceTheme}"
                              Stroke="{DynamicResource BrewAccentBrush}" IsHitTestVisible="False" />
-        <StackPanel IsVisible="{Binding HasThemeBackdrop}" Orientation="Horizontal" Spacing="10"
-                    HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="28,0,28,26" MaxWidth="270">
+        <StackPanel Classes="signature-summary" IsVisible="{Binding HasThemeBackdrop}" Spacing="4"
+                    HorizontalAlignment="Left" VerticalAlignment="Bottom" MaxWidth="264">
             <TextBlock Text="{Binding Headline}" FontSize="12" Foreground="{DynamicResource BrewTextSecondaryBrush}"
                        TextTrimming="CharacterEllipsis" MaxWidth="250" />
+            <TextBlock Text="{Binding Subheadline}" FontSize="11" Foreground="{DynamicResource BrewTextSecondaryBrush}"
+                       TextWrapping="Wrap" MaxWidth="264" />
         </StackPanel>
 
         <!-- Silk has no additional glow/backdrop. Its timer is gated by mode and visibility. -->
