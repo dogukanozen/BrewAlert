@@ -127,6 +127,36 @@ public sealed class AppearanceLayoutTests
         }
     }
 
+    [AvaloniaTheory]
+    [InlineData(800)]
+    [InlineData(320)]
+    public async Task WeeklyPicker_SelectionSavesSelectedDay(int width)
+    {
+        using var fixture = new Fixture(width, 480);
+        fixture.Main.NavigateToSettingsCommand.Execute(null);
+        var settings = Assert.IsType<SettingsViewModel>(fixture.Main.CurrentView);
+        await settings.Appearance.SetModeCommand.ExecuteAsync(AppearanceOptions.Weekly);
+        Layout(fixture.Window);
+        var picker = fixture.View.GetVisualDescendants().OfType<ComboBox>()
+            .Single(x => x.DataContext is DayThemeViewModel { Day: DayOfWeek.Wednesday });
+        picker.BringIntoView();
+        Layout(fixture.Window);
+        Assert.True(picker.IsEffectivelyVisible);
+        var selection = picker.Items.OfType<ThemeOption>().Single(x => x.Theme == BrewTheme.Ibre);
+        var expected = fixture.Appearance.Options;
+        expected.SetDay(DayOfWeek.Wednesday, BrewTheme.Ibre);
+        fixture.Preferences.ClearReceivedCalls();
+
+        // Change the rendered control, so a missing or one-way XAML binding fails this test.
+        picker.SetCurrentValue(ComboBox.SelectedItemProperty, selection);
+        Layout(fixture.Window);
+
+        await fixture.Preferences.Received(1).SaveAppearanceAsync(
+            Arg.Is<AppearanceOptions>(value => value.EquivalentTo(expected)), Arg.Any<CancellationToken>());
+        Assert.Equal(BrewTheme.Ibre, fixture.Appearance.Options.ForDay(DayOfWeek.Wednesday));
+        Assert.Equal(BrewTheme.Ibre, Assert.IsType<ThemeOption>(picker.SelectedItem).Theme);
+    }
+
     [AvaloniaFact]
     public async Task ManualSwitch_UpdatesAnOpenTimerWithoutRestartOrNavigation()
     {
@@ -337,6 +367,7 @@ public sealed class AppearanceLayoutTests
         public MainWindowViewModel Main { get; }
         public IAppearanceService Appearance { get; }
         public IBrewTimerService Timer { get; }
+        public IPreferencesService Preferences { get; } = Substitute.For<IPreferencesService>();
 
         public Fixture(int width, int height)
         {
@@ -352,7 +383,7 @@ public sealed class AppearanceLayoutTests
             });
             services.AddSingleton(profiles);
             services.AddSingleton(history);
-            services.AddSingleton(Substitute.For<IPreferencesService>());
+            services.AddSingleton(Preferences);
             services.AddSingleton<IBrewTimerService, BrewTimerService>();
             services.AddSingleton<BrewProfileService>();
             services.AddSingleton(Monitor(new AppearanceOptions { Mode = "Obsidian" }));
