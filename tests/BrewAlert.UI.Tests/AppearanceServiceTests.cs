@@ -20,6 +20,37 @@ public sealed class AppearanceServiceTests
         monitor.CurrentValue.Returns(options ?? new AppearanceOptions());
         return new AppearanceService(monitor, preferences ?? Substitute.For<IPreferencesService>(), clock);
     }
+    [Theory]
+    [InlineData(DayOfWeek.Monday, BrewTheme.Obsidian)]
+    [InlineData(DayOfWeek.Tuesday, BrewTheme.Porcelain)]
+    [InlineData(DayOfWeek.Wednesday, BrewTheme.Sumi)]
+    [InlineData(DayOfWeek.Thursday, BrewTheme.Ibre)]
+    [InlineData(DayOfWeek.Friday, BrewTheme.Aizome)]
+    [InlineData(DayOfWeek.Saturday, BrewTheme.Porcelain)]
+    [InlineData(DayOfWeek.Sunday, BrewTheme.Obsidian)]
+    public void DefaultWeek_UsesTheApprovedFiveThemes(DayOfWeek day, BrewTheme expected) =>
+        Assert.Equal(expected, new AppearanceOptions().Resolve(day));
+
+    [AvaloniaTheory]
+    [InlineData("sumi", BrewTheme.Sumi)]
+    [InlineData("IBRE", BrewTheme.Ibre)]
+    [InlineData("aizome", BrewTheme.Aizome)]
+    public async Task NewManualThemes_AreSavedCanonicallyAndRemainSelectedAcrossDays(string mode, BrewTheme expected)
+    {
+        var clock = new Clock();
+        var preferences = Substitute.For<IPreferencesService>();
+        using var service = Create(clock, preferences);
+        await service.SaveAsync(new AppearanceOptions { Mode = mode, Friday = "Porcelain" });
+        Assert.Equal(expected, service.CurrentTheme);
+        Assert.Equal(expected.ToString(), service.Options.Mode);
+        clock.Now = clock.Now.AddDays(4);
+        service.Refresh(false, true);
+        Assert.Equal(expected, service.CurrentTheme);
+        Assert.Equal(BrewTheme.Porcelain, service.Options.ForDay(DayOfWeek.Friday));
+        await preferences.Received(1).SaveAppearanceAsync(
+            Arg.Is<AppearanceOptions>(x => x.Mode == expected.ToString()), Arg.Any<CancellationToken>());
+    }
+
     [AvaloniaFact]
     public void Midnight_UsesLocalDay_AndWaitsForIdleHome()
     {

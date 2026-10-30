@@ -50,9 +50,12 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     private DateTime _lastRefreshUtc;
 
     public bool ShowPending => _showPending;
+    internal bool IsModeRotationRunning => _modeTimer.IsEnabled;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSilkAnimationActive))]
+    [NotifyPropertyChangedFor(nameof(IsThemeBackdropActive))]
+    [NotifyPropertyChangedFor(nameof(IsLegacyAnimationActive))]
     private bool _isVisible;
     [ObservableProperty] private int _animationPhase;
     [ObservableProperty] private double _modeTransitionOpacity = 1.0;
@@ -104,32 +107,37 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(DvdDimOpacity))]
     private AmbientMode _mode = AmbientMode.Card;
 
-    public bool IsCardMode => Mode == AmbientMode.Card;
-    public bool IsDvdMode => Mode == AmbientMode.Dvd;
-    public bool IsOrbitMode => Mode == AmbientMode.Orbit;
-    public bool IsAuroraMode => Mode == AmbientMode.Aurora;
-    public bool IsBrewRainMode => Mode == AmbientMode.BrewRain;
-    public bool IsKaleidoscopeMode => Mode == AmbientMode.Kaleidoscope;
-    public bool IsMeteorMode => Mode == AmbientMode.Meteor;
-    public bool IsLiquidMode => Mode == AmbientMode.Liquid;
-    public bool IsHyperspaceMode => Mode == AmbientMode.Hyperspace;
-    public bool IsRadarMode => Mode == AmbientMode.Radar;
-    public bool IsFirefliesMode => Mode == AmbientMode.Fireflies;
-    public bool IsPrismMode => Mode == AmbientMode.Prism;
-    public bool IsSilkMode => Mode == AmbientMode.Silk;
+    public BrewTheme AppearanceTheme => _appearance;
+    public bool HasThemeBackdrop => _appearance is BrewTheme.Sumi or BrewTheme.Ibre or BrewTheme.Aizome;
+    public bool IsThemeBackdropActive => IsVisible && HasThemeBackdrop;
+    public bool IsLegacyAnimationActive => IsVisible && !HasThemeBackdrop;
+
+    public bool IsCardMode => !HasThemeBackdrop && Mode == AmbientMode.Card;
+    public bool IsDvdMode => !HasThemeBackdrop && Mode == AmbientMode.Dvd;
+    public bool IsOrbitMode => !HasThemeBackdrop && Mode == AmbientMode.Orbit;
+    public bool IsAuroraMode => !HasThemeBackdrop && Mode == AmbientMode.Aurora;
+    public bool IsBrewRainMode => !HasThemeBackdrop && Mode == AmbientMode.BrewRain;
+    public bool IsKaleidoscopeMode => !HasThemeBackdrop && Mode == AmbientMode.Kaleidoscope;
+    public bool IsMeteorMode => !HasThemeBackdrop && Mode == AmbientMode.Meteor;
+    public bool IsLiquidMode => !HasThemeBackdrop && Mode == AmbientMode.Liquid;
+    public bool IsHyperspaceMode => !HasThemeBackdrop && Mode == AmbientMode.Hyperspace;
+    public bool IsRadarMode => !HasThemeBackdrop && Mode == AmbientMode.Radar;
+    public bool IsFirefliesMode => !HasThemeBackdrop && Mode == AmbientMode.Fireflies;
+    public bool IsPrismMode => !HasThemeBackdrop && Mode == AmbientMode.Prism;
+    public bool IsSilkMode => !HasThemeBackdrop && Mode == AmbientMode.Silk;
     public bool IsSilkAnimationActive => IsVisible && IsSilkMode;
-    public bool IsOrganicBackdrop => Mode is AmbientMode.Card
+    public bool IsOrganicBackdrop => !HasThemeBackdrop && (Mode is AmbientMode.Card
         or AmbientMode.Dvd
         or AmbientMode.BrewRain
         or AmbientMode.Liquid
-        or AmbientMode.Fireflies;
-    public bool IsCosmicBackdrop => Mode is AmbientMode.Orbit
+        or AmbientMode.Fireflies);
+    public bool IsCosmicBackdrop => !HasThemeBackdrop && (Mode is AmbientMode.Orbit
         or AmbientMode.Meteor
         or AmbientMode.Hyperspace
-        or AmbientMode.Radar;
-    public bool IsPrismaticBackdrop => Mode is AmbientMode.Aurora
+        or AmbientMode.Radar);
+    public bool IsPrismaticBackdrop => !HasThemeBackdrop && (Mode is AmbientMode.Aurora
         or AmbientMode.Kaleidoscope
-        or AmbientMode.Prism;
+        or AmbientMode.Prism);
 
     /// <summary>Card text is only shown in card mode; other modes fade it out (Opacity, not
     /// IsVisible) so the always-on clock above never shifts when the mode flips.</summary>
@@ -188,7 +196,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         _animationTimer.Start();
         _sceneTimer.Start();
         _modeTimer.Interval = PeriodFor(Mode);
-        _modeTimer.Start();
+        if (!HasThemeBackdrop) _modeTimer.Start();
         PickNextPalette();
         ApplyScene(0);
         UpdateClock();
@@ -215,9 +223,10 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     // now rather than after another full old-interval tick.
     private async void OnModeTick(object? sender, EventArgs e)
     {
-        if (_disposed || !IsVisible) return;
+        if (_disposed || !IsVisible || HasThemeBackdrop) return;
 
         var requestId = _showRequestId;
+        var appearance = _appearance;
         _modeTimer.Stop();
         ModeTransitionOpacity = 0.08;
 
@@ -230,7 +239,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (_disposed || !IsVisible || requestId != _showRequestId)
+        if (_disposed || !IsVisible || requestId != _showRequestId || HasThemeBackdrop || appearance != _appearance)
         {
             if (!_disposed)
                 ModeTransitionOpacity = 1.0;
@@ -239,7 +248,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
 
         Mode = PickNextMode();
         _modeTimer.Interval = PeriodFor(Mode);
-        _modeTimer.Start();
+        if (!HasThemeBackdrop) _modeTimer.Start();
         PickNextPalette();
         ModeTransitionOpacity = 1.0;
     }
@@ -280,9 +289,24 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
     {
         if (_appearance == theme) return;
         _appearance = theme;
+        ModeTransitionOpacity = 1.0;
+        foreach (var property in new[] { nameof(AppearanceTheme), nameof(HasThemeBackdrop),
+            nameof(IsThemeBackdropActive), nameof(IsLegacyAnimationActive), nameof(IsCardMode), nameof(IsDvdMode),
+            nameof(IsOrbitMode), nameof(IsAuroraMode), nameof(IsBrewRainMode), nameof(IsKaleidoscopeMode),
+            nameof(IsMeteorMode), nameof(IsLiquidMode), nameof(IsHyperspaceMode), nameof(IsRadarMode),
+            nameof(IsFirefliesMode), nameof(IsPrismMode), nameof(IsSilkMode), nameof(IsSilkAnimationActive),
+            nameof(IsOrganicBackdrop), nameof(IsCosmicBackdrop), nameof(IsPrismaticBackdrop),
+            nameof(CardOpacity), nameof(DvdDimOpacity) })
+            OnPropertyChanged(property);
         _palettes = AmbientPalette.ForAppearance(theme);
         _currentPalette = _palettes[0];
         ApplyPalette();
+        _modeTimer.Stop();
+        if (IsVisible && !HasThemeBackdrop)
+        {
+            _modeTimer.Interval = PeriodFor(Mode);
+            _modeTimer.Start();
+        }
     }
 
     private void ApplyPalette()

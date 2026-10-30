@@ -67,10 +67,10 @@ public sealed class AppearanceLayoutTests
     }
 
     [AvaloniaFact]
-    public async Task BothAppearances_RenderRealViewsAtPiAndNarrowSizes()
+    public async Task AllAppearances_RenderRealViewsAtPiAndNarrowSizes()
     {
         foreach (var width in new[] { 800, 320 })
-        foreach (var theme in new[] { BrewTheme.Obsidian, BrewTheme.Porcelain })
+        foreach (var theme in Enum.GetValues<BrewTheme>())
         {
             using var fixture = new Fixture(width, 480);
             await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
@@ -82,10 +82,16 @@ public sealed class AppearanceLayoutTests
             Assert.All(choices, choice =>
             {
                 Assert.True(choice.Bounds.Width >= 100);
-                Assert.True(choice.Bounds.Height >= 100);
+                Assert.True(choice.Bounds.Height >= 88);
+                foreach (var text in choice.GetVisualDescendants().OfType<TextBlock>().Where(x => x.IsEffectivelyVisible))
+                {
+                    var origin = text.TranslatePoint(new Point(0, 0), choice)!.Value;
+                    Assert.InRange(origin.X, -0.5, choice.Bounds.Width);
+                    Assert.True(origin.X + text.Bounds.Width <= choice.Bounds.Width + 0.5, theme + " profile text overflows.");
+                }
             });
             var background = Assert.IsAssignableFrom<ISolidColorBrush>(fixture.View.Background);
-            Assert.Equal(Color.Parse(theme == BrewTheme.Porcelain ? "#eeede8" : "#0d0e0f"), background.Color);
+            Assert.Equal(Color.Parse(theme switch { BrewTheme.Porcelain => "#eeede8", BrewTheme.Sumi => "#eceee5", BrewTheme.Ibre => "#171d1c", BrewTheme.Aizome => "#152a38", _ => "#0d0e0f" }), background.Color);
             Capture(fixture.Window, theme + "-home-" + width);
             home.SelectProfileCommand.Execute(home.Profiles[0]);
             home.SelectProfileCommand.Execute(home.Profiles[1]);
@@ -111,8 +117,44 @@ public sealed class AppearanceLayoutTests
             await settings.Appearance.SetModeCommand.ExecuteAsync(AppearanceOptions.Weekly);
             Layout(fixture.Window);
             Assert.True(settings.Appearance.IsWeekly);
+            var appearanceView = fixture.View.GetVisualDescendants().OfType<AppearanceSettingsView>().Single();
+            appearanceView.GetVisualDescendants().OfType<TextBlock>().First(x => x.Text == settings.Appearance.Title).BringIntoView();
+            Layout(fixture.Window);
+            var dayPickers = appearanceView.GetVisualDescendants().OfType<ComboBox>().ToArray();
+            Assert.Equal(7, dayPickers.Length);
+            Assert.All(dayPickers, picker => Assert.Equal(5, picker.ItemCount));
             Capture(fixture.Window, theme + "-schedule-" + width);
         }
+    }
+
+    [AvaloniaTheory]
+    [InlineData(800)]
+    [InlineData(320)]
+    public async Task WeeklyPicker_SelectionSavesSelectedDay(int width)
+    {
+        using var fixture = new Fixture(width, 480);
+        fixture.Main.NavigateToSettingsCommand.Execute(null);
+        var settings = Assert.IsType<SettingsViewModel>(fixture.Main.CurrentView);
+        await settings.Appearance.SetModeCommand.ExecuteAsync(AppearanceOptions.Weekly);
+        Layout(fixture.Window);
+        var picker = fixture.View.GetVisualDescendants().OfType<ComboBox>()
+            .Single(x => x.DataContext is DayThemeViewModel { Day: DayOfWeek.Wednesday });
+        picker.BringIntoView();
+        Layout(fixture.Window);
+        Assert.True(picker.IsEffectivelyVisible);
+        var selection = picker.Items.OfType<ThemeOption>().Single(x => x.Theme == BrewTheme.Ibre);
+        var expected = fixture.Appearance.Options;
+        expected.SetDay(DayOfWeek.Wednesday, BrewTheme.Ibre);
+        fixture.Preferences.ClearReceivedCalls();
+
+        // Change the rendered control, so a missing or one-way XAML binding fails this test.
+        picker.SetCurrentValue(ComboBox.SelectedItemProperty, selection);
+        Layout(fixture.Window);
+
+        await fixture.Preferences.Received(1).SaveAppearanceAsync(
+            Arg.Is<AppearanceOptions>(value => value.EquivalentTo(expected)), Arg.Any<CancellationToken>());
+        Assert.Equal(BrewTheme.Ibre, fixture.Appearance.Options.ForDay(DayOfWeek.Wednesday));
+        Assert.Equal(BrewTheme.Ibre, Assert.IsType<ThemeOption>(picker.SelectedItem).Theme);
     }
 
     [AvaloniaFact]
@@ -124,13 +166,15 @@ public sealed class AppearanceLayoutTests
         Layout(fixture.Window);
         var timerView = fixture.Main.CurrentView;
         var session = Assert.Single(fixture.Timer.GetActiveSessions());
-        await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = "Porcelain" });
-        Layout(fixture.Window);
-        Assert.Same(timerView, fixture.Main.CurrentView);
-        Assert.Equal(session.Id, Assert.Single(fixture.Timer.GetActiveSessions()).Id);
-        Assert.Contains("porcelain", fixture.View.Classes);
-        var brush = Assert.IsAssignableFrom<ISolidColorBrush>(fixture.View.Background);
-        Assert.Equal(Color.Parse("#eeede8"), brush.Color);
+        foreach (var theme in Enum.GetValues<BrewTheme>())
+        {
+            await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
+            Layout(fixture.Window);
+            Assert.Same(timerView, fixture.Main.CurrentView);
+            Assert.Equal(session.Id, Assert.Single(fixture.Timer.GetActiveSessions()).Id);
+            if (theme != BrewTheme.Obsidian) Assert.Contains(theme.ToString().ToLowerInvariant(), fixture.View.Classes);
+            Assert.Equal(BrewThemeVariants.For(theme), Application.Current!.RequestedThemeVariant);
+        }
     }
 
     [AvaloniaFact]
@@ -168,9 +212,9 @@ public sealed class AppearanceLayoutTests
     }
 
     [AvaloniaFact]
-    public async Task EveryAmbientMode_RendersInBothAppearances()
+    public async Task EveryAmbientMode_RendersInAllAppearances()
     {
-        foreach (var theme in new[] { BrewTheme.Obsidian, BrewTheme.Porcelain })
+        foreach (var theme in Enum.GetValues<BrewTheme>())
         {
             using var fixture = new Fixture(800, 480);
             await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
@@ -192,6 +236,34 @@ public sealed class AppearanceLayoutTests
                 Capture(fixture.Window, theme + "-ambient-" + mode);
             }
         }
+    }
+
+    [AvaloniaTheory]
+    [InlineData(BrewTheme.Sumi)]
+    [InlineData(BrewTheme.Ibre)]
+    [InlineData(BrewTheme.Aizome)]
+    public async Task SignatureAmbient_KeepsFreshnessAndWakeHintSeparateOnNarrowScreens(BrewTheme theme)
+    {
+        using var fixture = new Fixture(320, 480);
+        await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
+        await fixture.Main.ShowAmbientCommand.ExecuteAsync(null);
+        Layout(fixture.Window);
+        var summary = fixture.View.GetVisualDescendants().OfType<StackPanel>()
+            .Single(x => x.Classes.Contains("signature-summary"));
+        var hint = fixture.View.GetVisualDescendants().OfType<TextBlock>()
+            .Single(x => x.Text == fixture.Main.Ambient.TapHint);
+        var origin = summary.TranslatePoint(new Point(), fixture.Window)!.Value;
+        var hintOrigin = hint.TranslatePoint(new Point(), fixture.Window)!.Value;
+        Assert.True(summary.IsEffectivelyVisible);
+        Assert.InRange(origin.X, 0, 320 - summary.Bounds.Width);
+        Assert.True(origin.Y + summary.Bounds.Height < hintOrigin.Y);
+        var clock = fixture.View.GetVisualDescendants().OfType<AnimatedClock>().Single();
+        var clockOrigin = clock.TranslatePoint(new Point(), fixture.Window)!.Value;
+        Assert.InRange(clockOrigin.X, 0, 320 - clock.Bounds.Width);
+        Assert.True(clockOrigin.Y + clock.Bounds.Height < origin.Y);
+        if (Environment.GetEnvironmentVariable("BREWALERT_RENDER_DIR") is not null) await Task.Delay(900);
+        Layout(fixture.Window);
+        Capture(fixture.Window, theme + "-ambient-narrow");
     }
 
     [AvaloniaFact]
@@ -295,6 +367,7 @@ public sealed class AppearanceLayoutTests
         public MainWindowViewModel Main { get; }
         public IAppearanceService Appearance { get; }
         public IBrewTimerService Timer { get; }
+        public IPreferencesService Preferences { get; } = Substitute.For<IPreferencesService>();
 
         public Fixture(int width, int height)
         {
@@ -310,7 +383,7 @@ public sealed class AppearanceLayoutTests
             });
             services.AddSingleton(profiles);
             services.AddSingleton(history);
-            services.AddSingleton(Substitute.For<IPreferencesService>());
+            services.AddSingleton(Preferences);
             services.AddSingleton<IBrewTimerService, BrewTimerService>();
             services.AddSingleton<BrewProfileService>();
             services.AddSingleton(Monitor(new AppearanceOptions { Mode = "Obsidian" }));
@@ -349,7 +422,7 @@ public sealed class AppearanceLayoutTests
         private void ThemeChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(IAppearanceService.CurrentTheme))
-                Application.Current!.RequestedThemeVariant = Appearance.IsPorcelain ? ThemeVariant.Light : ThemeVariant.Dark;
+                Application.Current!.RequestedThemeVariant = BrewThemeVariants.For(Appearance.CurrentTheme);
         }
         public void Dispose()
         {

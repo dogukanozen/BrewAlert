@@ -1,6 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BrewAlert.UI.ViewModels" xmlns:media="using:BrewAlert.UI.Media"
-             xmlns:conv="using:BrewAlert.UI.Converters" x:Class="BrewAlert.UI.Views.ProfileListView"
+             xmlns:views="using:BrewAlert.UI.Views" xmlns:conv="using:BrewAlert.UI.Converters" x:Class="BrewAlert.UI.Views.ProfileListView"
              x:DataType="vm:ProfileListViewModel" Classes="profile-page">
     <UserControl.Resources><conv:TimeSpanToStringConverter x:Key="Duration" /></UserControl.Resources>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
@@ -19,18 +19,17 @@
                     <DataTemplate>
                         <Button Classes="profile-choice" Command="{Binding $parent[ItemsControl].((vm:ProfileListViewModel)DataContext).SelectProfileCommand}"
                                 CommandParameter="{Binding}">
-                            <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,Auto" RowSpacing="10">
-                                <TextBlock Text="{Binding Description}" Classes="brew-subtitle" FontSize="11" TextTrimming="CharacterEllipsis" />
-                                <Viewbox Grid.Column="1" Width="22" Height="22" Margin="10,0,0,0">
+                            <views:ProfileChoiceGrid Classes="profile-content">
+                                <TextBlock Text="{Binding Description}" Classes="brew-subtitle profile-description" TextTrimming="CharacterEllipsis" />
+                                <Viewbox Classes="profile-icon">
                                     <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}" Classes="brew-icon" />
                                 </Viewbox>
-                                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Name}" FontSize="26"
-                                           LetterSpacing="-0.5" VerticalAlignment="Center" TextWrapping="Wrap" />
-                                <TextBlock Grid.Row="2" Text="{Binding BrewDuration, Converter={StaticResource Duration}}" Classes="brew-subtitle" />
-                                <Viewbox Grid.Row="2" Grid.Column="1" Width="17" Height="17">
+                                <TextBlock Text="{Binding Name}" Classes="profile-name" />
+                                <TextBlock Text="{Binding BrewDuration, Converter={StaticResource Duration}}" Classes="brew-subtitle profile-duration" />
+                                <Viewbox Classes="profile-arrow">
                                     <Path Data="{x:Static media:BrewIconGeometry.Arrow}" Classes="brew-icon" />
                                 </Viewbox>
-                            </Grid>
+                            </views:ProfileChoiceGrid>
                         </Button>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

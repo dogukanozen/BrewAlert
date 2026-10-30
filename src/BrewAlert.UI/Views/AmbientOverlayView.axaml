@@ -14,6 +14,12 @@
     <!-- Smooth, compositor-driven idle motion (transform/opacity only, Pi-friendly). These
          run independently of the 500ms VM tick, so they never stutter with it. -->
     <UserControl.Styles>
+        <Style Selector="StackPanel.signature-summary">
+            <Setter Property="Margin" Value="28,0,28,26" />
+        </Style>
+        <Style Selector=":is(UserControl).compact StackPanel.signature-summary">
+            <Setter Property="Margin" Value="28,0,28,74" />
+        </Style>
         <!-- Concentric rings that slowly rotate around the hero icon. -->
         <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.ambient-ring-cw">
             <Style.Animations>
@@ -541,7 +547,7 @@
         </Style>
     </UserControl.Styles>
 
-    <Panel ClipToBounds="True" Classes.ambient-live="{Binding IsVisible}" Opacity="{Binding ModeTransitionOpacity}">
+    <Panel ClipToBounds="True" Classes.ambient-live="{Binding IsLegacyAnimationActive}" Opacity="{Binding ModeTransitionOpacity}">
         <Panel.Transitions>
             <Transitions>
                 <DoubleTransition Property="Opacity" Duration="0:0:0.45" />
@@ -552,6 +558,17 @@
         <Border Background="{Binding BackgroundBrush}">
 
         </Border>
+
+        <views:ThemeBackdrop x:Name="ThemeBackdrop" IsVisible="{Binding HasThemeBackdrop}"
+                             IsActive="{Binding IsThemeBackdropActive}" Appearance="{Binding AppearanceTheme}"
+                             Stroke="{DynamicResource BrewAccentBrush}" IsHitTestVisible="False" />
+        <StackPanel Classes="signature-summary" IsVisible="{Binding HasThemeBackdrop}" Spacing="4"
+                    HorizontalAlignment="Left" VerticalAlignment="Bottom" MaxWidth="264">
+            <TextBlock Text="{Binding Headline}" FontSize="12" Foreground="{DynamicResource BrewTextSecondaryBrush}"
+                       TextTrimming="CharacterEllipsis" MaxWidth="250" />
+            <TextBlock Text="{Binding Subheadline}" FontSize="11" Foreground="{DynamicResource BrewTextSecondaryBrush}"
+                       TextWrapping="Wrap" MaxWidth="264" />
+        </StackPanel>
 
         <!-- Silk has no additional glow/backdrop. Its timer is gated by mode and visibility. -->
         <Panel Classes="ambient-layer" IsVisible="{Binding IsSilkMode}" IsHitTestVisible="False">
@@ -1115,7 +1132,7 @@
 
         <!-- Pulsing halo: soft radial glow placed BELOW center so it hugs the hero
              icon, never the clock numbers. Recolours with the palette. -->
-        <Ellipse Classes="ambient-pulse"
+        <Ellipse Classes="ambient-pulse" IsVisible="{Binding !HasThemeBackdrop}"
                  Width="320" Height="320"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center"

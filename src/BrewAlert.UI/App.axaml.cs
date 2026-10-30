@@ -182,8 +182,8 @@ public partial class App : Application
         if (e.PropertyName == nameof(IAppearanceService.CurrentTheme)) ApplyAppearance();
     }
 
-    private void ApplyAppearance() => RequestedThemeVariant = _appearance?.IsPorcelain == true
-        ? ThemeVariant.Light : ThemeVariant.Dark;
+    private void ApplyAppearance() => RequestedThemeVariant =
+        BrewThemeVariants.For(_appearance?.CurrentTheme ?? BrewTheme.Obsidian);
 
     private static void DisableAvaloniaDataAnnotationValidation()
     {

@@ -1,7 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BrewAlert.UI.ViewModels" xmlns:views="using:BrewAlert.UI.Views"
              xmlns:media="using:BrewAlert.UI.Media" x:Class="BrewAlert.UI.Views.MainView"
-             x:DataType="vm:MainWindowViewModel" Classes="brew-shell" Classes.porcelain="{Binding Appearance.IsPorcelain}">
+             x:DataType="vm:MainWindowViewModel" Classes="brew-shell" Classes.porcelain="{Binding Appearance.IsPorcelain}"
+             Classes.sumi="{Binding Appearance.IsSumi}" Classes.ibre="{Binding Appearance.IsIbre}"
+             Classes.aizome="{Binding Appearance.IsAizome}">
     <Grid>
         <DockPanel>
             <Border DockPanel.Dock="Top" Classes="app-chrome" BorderBrush="{DynamicResource BrewLineBrush}"

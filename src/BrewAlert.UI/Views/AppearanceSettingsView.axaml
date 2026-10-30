@@ -8,6 +8,12 @@
                     Command="{Binding SetModeCommand}" CommandParameter="Obsidian" Margin="0,0,8,8" />
             <Button Content="{Binding PorcelainText}" Classes="theme-option" Classes.selected="{Binding IsPorcelain}"
                     Command="{Binding SetModeCommand}" CommandParameter="Porcelain" Margin="0,0,8,8" />
+            <Button Content="{Binding SumiText}" Classes="theme-option" Classes.selected="{Binding IsSumi}"
+                    Command="{Binding SetModeCommand}" CommandParameter="Sumi" Margin="0,0,8,8" />
+            <Button Content="{Binding IbreText}" Classes="theme-option" Classes.selected="{Binding IsIbre}"
+                    Command="{Binding SetModeCommand}" CommandParameter="Ibre" Margin="0,0,8,8" />
+            <Button Content="{Binding AizomeText}" Classes="theme-option" Classes.selected="{Binding IsAizome}"
+                    Command="{Binding SetModeCommand}" CommandParameter="Aizome" Margin="0,0,8,8" />
             <Button Content="{Binding WeeklyText}" Classes="theme-option" Classes.selected="{Binding IsWeekly}"
                     Command="{Binding SetModeCommand}" CommandParameter="Weekly" Margin="0,0,0,8" />
         </WrapPanel>
@@ -16,12 +22,14 @@
         <ItemsControl ItemsSource="{Binding Days}" IsVisible="{Binding IsWeekly}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:DayThemeViewModel">
-                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,8">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,0,0,8">
                         <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="14" TextTrimming="CharacterEllipsis" />
-                        <Button Grid.Column="1" Content="{Binding ObsidianText}" Classes="theme-option" Classes.selected="{Binding IsObsidian}"
-                                Command="{Binding SetThemeCommand}" CommandParameter="Obsidian" />
-                        <Button Grid.Column="2" Content="{Binding PorcelainText}" Classes="theme-option" Classes.selected="{Binding IsPorcelain}"
-                                Command="{Binding SetThemeCommand}" CommandParameter="Porcelain" />
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
+                                  MinWidth="132" AutomationProperties.Name="{Binding Name}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ThemeOption"><TextBlock Text="{Binding Name}" /></DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                     </Grid>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

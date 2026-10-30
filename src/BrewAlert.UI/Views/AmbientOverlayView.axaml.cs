@@ -68,6 +68,7 @@ public partial class AmbientOverlayView : UserControl
     {
         if (Bounds.Width <= 0 || Bounds.Height <= 0) return;
         var compact = Bounds.Width < 480;
+        Classes.Set("compact", compact);
         var iconSize = compact ? 24 : 32;
         var diameter = Math.Max(160, Math.Min(388, Math.Min(Bounds.Width - 16, Bounds.Height - 72)));
         OrbitStage.Width = OrbitStage.Height = diameter;

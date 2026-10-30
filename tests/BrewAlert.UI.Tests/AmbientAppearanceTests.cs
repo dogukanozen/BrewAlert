@@ -16,7 +16,7 @@ public sealed class AmbientAppearanceTests
     [AvaloniaFact]
     public void PaletteFamilies_AreNeutralAndCached()
     {
-        foreach (var theme in Enum.GetValues<BrewTheme>())
+        foreach (var theme in new[] { BrewTheme.Obsidian, BrewTheme.Porcelain })
         {
             var palettes = AmbientPalette.ForAppearance(theme);
             Assert.Same(palettes, AmbientPalette.ForAppearance(theme));
@@ -29,6 +29,33 @@ public sealed class AmbientAppearanceTests
                 else Assert.True(background.Color.R < 30);
             }
         }
+    }
+
+    [AvaloniaTheory]
+    [InlineData(BrewTheme.Sumi, "#eceee5")]
+    [InlineData(BrewTheme.Ibre, "#171d1c")]
+    [InlineData(BrewTheme.Aizome, "#152a38")]
+    public void ThemePalette_MatchesSignatureAndDisablesHiddenLegacyMotion(BrewTheme theme, string background)
+    {
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
+        using var vm = new AmbientOverlayViewModel(Substitute.For<IBrewHistoryService>(), loc);
+        vm.Mode = AmbientMode.Orbit;
+        vm.SetAppearance(theme);
+        Assert.True(vm.HasThemeBackdrop);
+        Assert.False(vm.IsThemeBackdropActive);
+        vm.IsVisible = true;
+        Assert.True(vm.IsThemeBackdropActive);
+        Assert.False(vm.IsLegacyAnimationActive);
+        Assert.False(vm.IsOrbitMode || vm.IsSilkAnimationActive || vm.IsCosmicBackdrop);
+        Assert.Equal(Color.Parse(background), Assert.IsAssignableFrom<ISolidColorBrush>(vm.BackgroundBrush).Color);
+        Assert.Same(AmbientPalette.ForAppearance(theme), AmbientPalette.ForAppearance(theme));
+        vm.SetAppearance(BrewTheme.Obsidian);
+        Assert.True(vm.IsLegacyAnimationActive);
+        Assert.True(vm.IsOrbitMode);
+        Assert.False(vm.IsThemeBackdropActive);
+        vm.IsVisible = false;
+        Assert.False(vm.IsLegacyAnimationActive);
     }
 
     [AvaloniaFact]
@@ -46,6 +73,15 @@ public sealed class AmbientAppearanceTests
         Assert.True(vm.IsVisible);
         Assert.Equal(AmbientMode.Orbit, vm.Mode);
         Assert.Same(AmbientPalette.Porcelain[0].Background, vm.BackgroundBrush);
+        Assert.True(vm.IsModeRotationRunning);
+        foreach (var theme in new[] { BrewTheme.Sumi, BrewTheme.Ibre, BrewTheme.Aizome })
+        {
+            vm.SetAppearance(theme);
+            Assert.False(vm.IsModeRotationRunning);
+            Assert.Equal(AmbientMode.Orbit, vm.Mode);
+            vm.SetAppearance(BrewTheme.Porcelain);
+            Assert.True(vm.IsModeRotationRunning);
+        }
         var brush = vm.BackgroundBrush;
         vm.SetAppearance(BrewTheme.Porcelain);
         Assert.Same(brush, vm.BackgroundBrush);

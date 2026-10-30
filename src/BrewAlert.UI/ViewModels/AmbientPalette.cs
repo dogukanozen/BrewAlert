@@ -43,6 +43,16 @@ public sealed class AmbientPalette
         new AmbientPalette("#eae9e4", "#242624", 14),
         new AmbientPalette("#f1f0eb", "#242624", 12),
     };
-    public static IReadOnlyList<AmbientPalette> ForAppearance(BrewTheme theme) =>
-        theme == BrewTheme.Porcelain ? Porcelain : All;
+    private static readonly IReadOnlyList<AmbientPalette> Sumi = [new("#eceee5", "#657a4a", 14)];
+    private static readonly IReadOnlyList<AmbientPalette> Ibre = [new("#171d1c", "#a6b9ac", 14)];
+    private static readonly IReadOnlyList<AmbientPalette> Aizome = [new("#152a38", "#9cbac1", 14)];
+
+    public static IReadOnlyList<AmbientPalette> ForAppearance(BrewTheme theme) => theme switch
+    {
+        BrewTheme.Porcelain => Porcelain,
+        BrewTheme.Sumi => Sumi,
+        BrewTheme.Ibre => Ibre,
+        BrewTheme.Aizome => Aizome,
+        _ => All,
+    };
 }

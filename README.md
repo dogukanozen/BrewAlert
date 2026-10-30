@@ -13,9 +13,9 @@ Built with [Avalonia UI](https://avaloniaui.net/) for cross-platform support —
 - Microsoft Teams Adaptive Card notifications (Power Automate webhook or Graph API), retried when the network drops
 - Settings shows the device's network name and IPv4 address, so a kiosk Pi can be reached over SSH
 - TR / EN language toggle in Settings (no restart required)
-- Obsidian and Porcelain appearances, selectable instantly in Settings or by a seven-day schedule
+- Obsidian, Porcelain, Sumi, Ibre and Aizome appearances, selectable instantly in Settings or by a seven-day schedule
 - Touch-friendly layouts for Raspberry Pi 3 kiosk screens; bundled Inter text and font-independent vector icons
-- Neutral ambient palettes follow the selected appearance across all 12 animation modes
+- Sumi silk lines, Ibre orbits and Aizome waves; Obsidian/Porcelain retain their rotating ambient modes
 - No secrets in the repository
 
 ## Architecture
