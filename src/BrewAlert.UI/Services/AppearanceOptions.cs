@@ -1,6 +1,6 @@
 namespace BrewAlert.UI.Services;
 
-public enum BrewTheme { Obsidian, Porcelain }
+public enum BrewTheme { Obsidian, Porcelain, Sumi, Ibre, Aizome }
 
 /// <summary>Stored names stay independent of the current UI language.</summary>
 public sealed class AppearanceOptions
@@ -10,18 +10,14 @@ public sealed class AppearanceOptions
     public string Mode { get; set; } = Weekly;
     public string Monday { get; set; } = nameof(BrewTheme.Obsidian);
     public string Tuesday { get; set; } = nameof(BrewTheme.Porcelain);
-    public string Wednesday { get; set; } = nameof(BrewTheme.Obsidian);
-    public string Thursday { get; set; } = nameof(BrewTheme.Porcelain);
-    public string Friday { get; set; } = nameof(BrewTheme.Obsidian);
+    public string Wednesday { get; set; } = nameof(BrewTheme.Sumi);
+    public string Thursday { get; set; } = nameof(BrewTheme.Ibre);
+    public string Friday { get; set; } = nameof(BrewTheme.Aizome);
     public string Saturday { get; set; } = nameof(BrewTheme.Porcelain);
     public string Sunday { get; set; } = nameof(BrewTheme.Obsidian);
 
-    public BrewTheme Resolve(DayOfWeek day) => Mode switch
-    {
-        nameof(BrewTheme.Obsidian) => BrewTheme.Obsidian,
-        nameof(BrewTheme.Porcelain) => BrewTheme.Porcelain,
-        _ => ForDay(day),
-    };
+    public BrewTheme Resolve(DayOfWeek day) =>
+        string.Equals(Mode, Weekly, StringComparison.OrdinalIgnoreCase) ? ForDay(day) : Parse(Mode);
 
     public BrewTheme ForDay(DayOfWeek day) => Parse(day switch
     {
@@ -49,15 +45,13 @@ public sealed class AppearanceOptions
     public AppearanceOptions Normalized()
     {
         var result = Copy();
-        result.Mode = string.Equals(Mode, Weekly, StringComparison.OrdinalIgnoreCase) ? Weekly
-            : string.Equals(Mode, nameof(BrewTheme.Porcelain), StringComparison.OrdinalIgnoreCase)
-                ? nameof(BrewTheme.Porcelain) : nameof(BrewTheme.Obsidian);
+        result.Mode = string.Equals(Mode, Weekly, StringComparison.OrdinalIgnoreCase)
+            ? Weekly : Parse(Mode).ToString();
         foreach (var day in Enum.GetValues<DayOfWeek>()) result.SetDay(day, ForDay(day));
         return result;
     }
     public bool EquivalentTo(AppearanceOptions other) => Mode == other.Mode
         && Enum.GetValues<DayOfWeek>().All(day => ForDay(day) == other.ForDay(day));
-    private static BrewTheme Parse(string? value) =>
-        string.Equals(value, nameof(BrewTheme.Porcelain), StringComparison.OrdinalIgnoreCase)
-            ? BrewTheme.Porcelain : BrewTheme.Obsidian;
+    private static BrewTheme Parse(string? value) => Enum.GetValues<BrewTheme>()
+        .FirstOrDefault(theme => string.Equals(value, theme.ToString(), StringComparison.OrdinalIgnoreCase));
 }

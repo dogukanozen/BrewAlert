@@ -14,6 +14,9 @@ public sealed class AppearanceService : ObservableObject, IAppearanceService, ID
     private bool _disposed;
     public BrewTheme CurrentTheme => _currentTheme;
     public bool IsPorcelain => _currentTheme == BrewTheme.Porcelain;
+    public bool IsSumi => _currentTheme == BrewTheme.Sumi;
+    public bool IsIbre => _currentTheme == BrewTheme.Ibre;
+    public bool IsAizome => _currentTheme == BrewTheme.Aizome;
     public AppearanceOptions Options => _options.Copy();
 
     public AppearanceService(IOptionsMonitor<AppearanceOptions> options,
@@ -63,6 +66,9 @@ public sealed class AppearanceService : ObservableObject, IAppearanceService, ID
     {
         if (!SetProperty(ref _currentTheme, theme, nameof(CurrentTheme))) return;
         OnPropertyChanged(nameof(IsPorcelain));
+        OnPropertyChanged(nameof(IsSumi));
+        OnPropertyChanged(nameof(IsIbre));
+        OnPropertyChanged(nameof(IsAizome));
     }
     public void Dispose() { _disposed = true; _subscription?.Dispose(); }
 }

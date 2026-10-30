@@ -18,6 +18,33 @@ namespace BrewAlert.UI.Tests;
 
 public sealed class AmbientMotionTests
 {
+    [AvaloniaTheory]
+    [InlineData(BrewTheme.Sumi)]
+    [InlineData(BrewTheme.Ibre)]
+    [InlineData(BrewTheme.Aizome)]
+    public void ThemeBackdrop_StopsWhenHiddenInactiveOrDetached(BrewTheme appearance)
+    {
+        var backdrop = new ThemeBackdrop { Appearance = appearance, Stroke = Brushes.Gray, IsActive = true };
+        Assert.False(backdrop.IsRunning);
+        var window = new Window { Width = 800, Height = 480, Content = backdrop };
+        try
+        {
+            window.Show();
+            Assert.True(backdrop.IsRunning);
+            backdrop.IsActive = false;
+            Assert.False(backdrop.IsRunning);
+            backdrop.IsActive = true;
+            Assert.True(backdrop.IsRunning);
+            backdrop.IsVisible = false;
+            Assert.False(backdrop.IsRunning);
+            backdrop.IsVisible = true;
+            Assert.True(backdrop.IsRunning);
+            window.Content = null;
+            Assert.False(backdrop.IsRunning);
+        }
+        finally { window.Close(); }
+    }
+
     [AvaloniaFact]
     public void Silk_StopsWhenInactiveAndDetached_ResumesWhenShown()
     {

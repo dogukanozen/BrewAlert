@@ -15,13 +15,19 @@ public partial class AppearanceSettingsViewModel : ObservableObject, IDisposable
     public bool IsWeekly => _appearance.Options.Mode == AppearanceOptions.Weekly;
     public bool IsObsidian => _appearance.Options.Mode == nameof(BrewTheme.Obsidian);
     public bool IsPorcelain => _appearance.Options.Mode == nameof(BrewTheme.Porcelain);
+    public bool IsSumi => _appearance.Options.Mode == nameof(BrewTheme.Sumi);
+    public bool IsIbre => _appearance.Options.Mode == nameof(BrewTheme.Ibre);
+    public bool IsAizome => _appearance.Options.Mode == nameof(BrewTheme.Aizome);
     public string Title => _loc.Get("AppearanceTitle");
     public string Hint => _loc.Get("AppearanceHint");
     public string WeeklyText => _loc.Get("WeeklyTheme");
     public string ObsidianText => _loc.Get("ThemeObsidian");
     public string PorcelainText => _loc.Get("ThemePorcelain");
+    public string SumiText => _loc.Get("ThemeSumi");
+    public string IbreText => _loc.Get("ThemeIbre");
+    public string AizomeText => _loc.Get("ThemeAizome");
     public string ActiveText => string.Format(_loc.Get("CurrentAppearance"),
-        _loc.Get(_appearance.IsPorcelain ? "ThemePorcelain" : "ThemeObsidian"));
+        _loc.Get("Theme" + _appearance.CurrentTheme));
 
     public AppearanceSettingsViewModel(IAppearanceService appearance, ILocalizationService loc)
     {
@@ -52,9 +58,9 @@ public partial class AppearanceSettingsViewModel : ObservableObject, IDisposable
     {
         IsSaving = true;
         Error = "";
-        try { await _appearance.SaveAsync(options); Refresh(); }
+        try { await _appearance.SaveAsync(options); }
         catch (Exception ex) { Error = string.Format(_loc.Get("SaveFailed"), ex.Message); }
-        finally { IsSaving = false; }
+        finally { Refresh(); IsSaving = false; }
     }
     private void OnAppearanceChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -64,7 +70,9 @@ public partial class AppearanceSettingsViewModel : ObservableObject, IDisposable
     private void Refresh()
     {
         foreach (var property in new[] { nameof(Title), nameof(Hint), nameof(WeeklyText), nameof(ObsidianText),
-            nameof(PorcelainText), nameof(ActiveText), nameof(IsWeekly), nameof(IsObsidian), nameof(IsPorcelain) })
+            nameof(PorcelainText), nameof(SumiText), nameof(IbreText), nameof(AizomeText),
+            nameof(ActiveText), nameof(IsWeekly), nameof(IsObsidian), nameof(IsPorcelain),
+            nameof(IsSumi), nameof(IsIbre), nameof(IsAizome) })
             OnPropertyChanged(property);
         var options = _appearance.Options;
         foreach (var day in Days) day.Refresh(options.ForDay(day.Day), _loc);
@@ -76,21 +84,33 @@ public partial class AppearanceSettingsViewModel : ObservableObject, IDisposable
     }
 }
 
+public sealed record ThemeOption(BrewTheme Theme, string Name);
+
 public partial class DayThemeViewModel(DayOfWeek day, Func<DayOfWeek, BrewTheme, Task> save) : ObservableObject
 {
+    private bool _refreshing;
     public DayOfWeek Day { get; } = day;
     [ObservableProperty] private string _name = "";
-    [ObservableProperty] private string _obsidianText = "";
-    [ObservableProperty] private string _porcelainText = "";
-    [ObservableProperty] private bool _isObsidian;
-    public bool IsPorcelain => !IsObsidian;
+    [ObservableProperty] private ThemeOption? _selectedTheme;
+    public IReadOnlyList<ThemeOption> Themes { get; private set; } = [];
+
+    partial void OnSelectedThemeChanged(ThemeOption? value)
+    {
+        if (!_refreshing && value is not null) _ = save(Day, value.Theme);
+    }
+
     [RelayCommand] private Task SetTheme(string theme) => save(Day, Enum.Parse<BrewTheme>(theme));
+
     public void Refresh(BrewTheme theme, ILocalizationService loc)
     {
-        Name = loc.CurrentCulture.DateTimeFormat.GetDayName(Day);
-        ObsidianText = loc.Get("ThemeObsidian");
-        PorcelainText = loc.Get("ThemePorcelain");
-        IsObsidian = theme == BrewTheme.Obsidian;
-        OnPropertyChanged(nameof(IsPorcelain));
+        _refreshing = true;
+        try
+        {
+            Name = loc.CurrentCulture.DateTimeFormat.GetDayName(Day);
+            Themes = Enum.GetValues<BrewTheme>().Select(value => new ThemeOption(value, loc.Get("Theme" + value))).ToArray();
+            OnPropertyChanged(nameof(Themes));
+            SelectedTheme = Themes.Single(value => value.Theme == theme);
+        }
+        finally { _refreshing = false; }
     }
 }

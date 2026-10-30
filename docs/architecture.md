@@ -139,23 +139,27 @@ Environment variables prefixed BREWALERT__
 ### 2.8 Appearance and kiosk rendering
 
 `AppearanceService` reads `BrewAlert:Appearance` and uses `TimeProvider.GetLocalNow()`.
-The default schedule alternates Obsidian/Porcelain from Monday, with each weekday editable.
+The default week is Monday Obsidian, Tuesday Porcelain, Wednesday Sumi, Thursday Ibre,
+Friday Aizome, Saturday Porcelain, Sunday Obsidian. Each day is editable; saved schedules are preserved.
 A fixed choice applies immediately, including during an active brew. Calendar changes are checked
 on the existing 30-second idle tick and on navigation; they wait for the profile screen with no active sessions.
 Changing appearance does not navigate or recreate the timer service.
 
-`App` selects the Avalonia Light/Dark theme variant; DynamicResource brushes and the shell's
-`porcelain` class update colors and layout together. `PreferencesService` merges individual JSON
+`App` selects an Avalonia theme variant through `BrewThemeVariants`: Sumi inherits Light,
+Ibre/Aizome inherit Dark, and the original appearances still use Light/Dark directly.
+DynamicResource brushes and shell theme classes update colors and layout together. `PreferencesService` merges individual JSON
 settings atomically, so saving language/provider/webhook does not discard the weekly schedule or unknown fields.
 
 UI text uses the bundled Inter font, and icons use Avalonia Geometry paths rather than emoji
-or icon fonts. Ambient colors are cached neutral brushes for both appearances; DVD edge feedback
-changes opacity. All existing motion modes remain, with no added blur, shaders, browser rendering,
-or per-frame brush creation. Orbit sizing protects the clock/date on narrow screens.
+or icon fonts. Sumi, Ibre and Aizome use their cached palettes and `ThemeBackdrop` signatures
+(silk, orbit, seigaiha waves). Its 30 fps timer runs only while visible, active and attached;
+legacy animation styles are disabled while a signature is displayed. Obsidian and Porcelain
+retain their rotating modes and neutral palettes; switching appearances preserves the mode.
+There is no added blur, shader, browser rendering or per-frame brush creation.
 
 Avalonia does not pause style animations on hidden controls, and the overlay stays in the tree.
 Every ambient animation selector is therefore prefixed with `Panel.ambient-live :is(Control).ambient-layer[IsVisible=True]`:
-the root panel carries `ambient-live` only while the idle screen is shown, and each mode/backdrop panel
+the root panel carries `ambient-live` only while the idle screen shows a legacy animation, and each mode/backdrop panel
 carries `ambient-layer`, so only the visible mode animates and nothing animates during normal use.
 
 ### 2.9 Persistence and failure handling
