@@ -211,12 +211,14 @@ public sealed class AppearanceLayoutTests
         Assert.Empty(fixture.Timer.GetActiveSessions());
     }
 
-    [AvaloniaFact]
-    public async Task EveryAmbientMode_RendersInAllAppearances()
+    [AvaloniaTheory]
+    [InlineData(800)]
+    [InlineData(320)]
+    public async Task EveryAmbientMode_RendersInAllAppearances(int width)
     {
         foreach (var theme in Enum.GetValues<BrewTheme>())
         {
-            using var fixture = new Fixture(800, 480);
+            using var fixture = new Fixture(width, 480);
             await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
             await fixture.Main.ShowAmbientCommand.ExecuteAsync(null);
             foreach (var mode in Enum.GetValues<AmbientMode>())
@@ -228,12 +230,25 @@ public sealed class AppearanceLayoutTests
                     await Task.Delay(650);
                 Layout(fixture.Window);
                 Assert.True(fixture.Main.Ambient.IsVisible);
+                var tag = mode is AmbientMode.SilkWeave or AmbientMode.OrbitalDots or AmbientMode.MoonWaves
+                    ? "ThemeBackdrop" : mode.ToString();
+                var layers = fixture.View.GetVisualDescendants().OfType<Control>()
+                    .Where(x => x.Tag is string value && value == tag).ToArray();
+                Assert.NotEmpty(layers);
+                Assert.All(layers, layer => Assert.True(layer.IsEffectivelyVisible, $"{theme}/{mode} layer is hidden."));
+                var overlay = fixture.View.GetVisualDescendants().OfType<AmbientOverlayView>().Single();
+                var root = Assert.IsType<Panel>(overlay.Content);
+                Assert.Contains("ambient-live", root.Classes);
+                var backdrop = overlay.FindControl<ThemeBackdrop>("ThemeBackdrop")!;
+                Assert.Equal(fixture.Main.Ambient.IsThemeBackdropMode, backdrop.IsRunning);
+                Assert.Equal(mode, backdrop.Mode);
+                Assert.Equal(mode == AmbientMode.Silk, overlay.FindControl<SilkBackdrop>("SilkBackdrop")!.IsRunning);
                 var clock = fixture.View.GetVisualDescendants().OfType<AnimatedClock>()
                     .Single(text => text.Text == fixture.Main.Ambient.ClockTime);
                 var position = clock.TranslatePoint(new Point(0, 0), fixture.Window)!.Value;
                 Assert.InRange(position.X, 0, fixture.Window.Width - clock.Bounds.Width);
                 Assert.InRange(position.Y, 0, fixture.Window.Height - clock.Bounds.Height);
-                Capture(fixture.Window, theme + "-ambient-" + mode);
+                Capture(fixture.Window, theme + "-ambient-" + mode + "-" + width);
             }
         }
     }
@@ -247,6 +262,7 @@ public sealed class AppearanceLayoutTests
         using var fixture = new Fixture(320, 480);
         await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
         await fixture.Main.ShowAmbientCommand.ExecuteAsync(null);
+        fixture.Main.Ambient.Mode = AmbientMode.MoonWaves;
         Layout(fixture.Window);
         var summary = fixture.View.GetVisualDescendants().OfType<StackPanel>()
             .Single(x => x.Classes.Contains("signature-summary"));
@@ -292,30 +308,86 @@ public sealed class AppearanceLayoutTests
         }
     }
 
-    [AvaloniaFact]
-    public async Task AmbientAnimations_RunOnlyWhileTheirModeIsOnScreen()
+    [AvaloniaTheory]
+    [InlineData(BrewTheme.Obsidian)]
+    [InlineData(BrewTheme.Porcelain)]
+    [InlineData(BrewTheme.Sumi)]
+    [InlineData(BrewTheme.Ibre)]
+    [InlineData(BrewTheme.Aizome)]
+    public async Task AmbientAnimations_RunOnlyWhileTheirModeIsOnScreen(BrewTheme theme)
     {
         using var fixture = new Fixture(800, 480);
+        await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
         var aurora = fixture.View.GetLogicalDescendants().OfType<Avalonia.Controls.Shapes.Ellipse>()
             .Single(x => x.Classes.Contains("aurora-a"));
         double Angle() => ((RotateTransform)aurora.RenderTransform!).Angle;
 
-        Assert.False(fixture.Main.Ambient.IsVisible);
-        Assert.False(IsAnimating(fixture.Window, Angle), "Aurora animates while the ambient screen is hidden.");
-
+        Assert.False(IsAnimating(fixture.Window, Angle), "Aurora animates while hidden.");
         await fixture.Main.ShowAmbientCommand.ExecuteAsync(null);
         fixture.Main.Ambient.Mode = AmbientMode.Aurora;
-        Assert.True(IsAnimating(fixture.Window, Angle), "Aurora does not animate in aurora mode.");
-
-        fixture.Main.Ambient.Mode = AmbientMode.Radar;
+        Assert.True(IsAnimating(fixture.Window, Angle), $"Aurora does not animate in {theme}.");
+        fixture.Main.Ambient.Mode = AmbientMode.MoonWaves;
         Assert.False(IsAnimating(fixture.Window, Angle), "Aurora keeps animating in another mode.");
-
         fixture.Main.Ambient.Mode = AmbientMode.Aurora;
-        Assert.True(IsAnimating(fixture.Window, Angle), "Aurora does not resume in aurora mode.");
-
+        Assert.True(IsAnimating(fixture.Window, Angle), "Aurora does not resume.");
+        foreach (var nextTheme in Enum.GetValues<BrewTheme>())
+        {
+            await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = nextTheme.ToString() });
+            Assert.True(IsAnimating(fixture.Window, Angle), $"Theme switch to {nextTheme} stopped Aurora.");
+        }
         fixture.Main.DismissAmbientCommand.Execute(null);
-        Assert.False(fixture.Main.Ambient.IsVisible);
-        Assert.False(IsAnimating(fixture.Window, Angle), "Aurora keeps animating after the ambient screen is dismissed.");
+        Assert.False(IsAnimating(fixture.Window, Angle), "Aurora keeps animating after dismissal.");
+    }
+
+    [AvaloniaTheory]
+    [InlineData(BrewTheme.Obsidian)]
+    [InlineData(BrewTheme.Porcelain)]
+    [InlineData(BrewTheme.Sumi)]
+    [InlineData(BrewTheme.Ibre)]
+    [InlineData(BrewTheme.Aizome)]
+    public async Task EveryLegacyMotion_MovesOnlyInItsVisibleMode(BrewTheme theme)
+    {
+        using var fixture = new Fixture(800, 480);
+        await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
+        await fixture.Main.ShowAmbientCommand.ExecuteAsync(null);
+        foreach (var (mode, name) in new[] {
+            (AmbientMode.Card, "ambient-ring-cw"), (AmbientMode.Dvd, "DvdLogo"),
+            (AmbientMode.Orbit, "OrbitStage"), (AmbientMode.Aurora, "aurora-a"),
+            (AmbientMode.BrewRain, "brew-rain-a"), (AmbientMode.Kaleidoscope, "kaleido-a"),
+            (AmbientMode.Meteor, "meteor-a"), (AmbientMode.Liquid, "liquid-wave-a"),
+            (AmbientMode.Hyperspace, "warp-streak-a"), (AmbientMode.Radar, "radar-ring-a"),
+            (AmbientMode.Fireflies, "firefly-a"), (AmbientMode.Prism, "prism-a") })
+        {
+            var control = fixture.View.GetLogicalDescendants().OfType<Control>()
+                .First(x => x.Name == name || x.Classes.Contains(name));
+            double Motion()
+            {
+                var matrix = control.RenderTransform!.Value;
+                return matrix.M11 + matrix.M12 + matrix.M21 + matrix.M22 + matrix.M31 + matrix.M32;
+            }
+            fixture.Main.Ambient.Mode = mode;
+            Assert.True(IsAnimating(fixture.Window, Motion), $"{theme}/{mode} does not move.");
+            fixture.Main.Ambient.Mode = AmbientMode.MoonWaves;
+            Assert.False(IsAnimating(fixture.Window, Motion), $"{theme}/{mode} keeps moving while inactive.");
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task AmbientEffectColours_FollowThemeAndKeepTheirAlpha()
+    {
+        using var fixture = new Fixture(800, 480);
+        await fixture.Main.ShowAmbientCommand.ExecuteAsync(null);
+        fixture.Main.Ambient.Mode = AmbientMode.Fireflies;
+        var particle = fixture.View.GetLogicalDescendants().OfType<Avalonia.Controls.Shapes.Ellipse>()
+            .First(x => x.Classes.Contains("firefly-a"));
+        foreach (var (theme, expected) in new[] {
+            (BrewTheme.Obsidian, "#ffd3d3d3"), (BrewTheme.Porcelain, "#ff2c2c2c"),
+            (BrewTheme.Sumi, "#ff395239"), (BrewTheme.Ibre, "#ffcfd8cf"), (BrewTheme.Aizome, "#ffccd6d0") })
+        {
+            await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
+            Layout(fixture.Window);
+            Assert.Equal(Color.Parse(expected), Assert.IsAssignableFrom<ISolidColorBrush>(particle.Fill).Color);
+        }
     }
 
     private static bool IsAnimating(Window window, Func<double> value)

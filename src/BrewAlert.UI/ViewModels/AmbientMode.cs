@@ -43,5 +43,14 @@ public enum AmbientMode
     Prism,
 
     /// <summary>Six fine, continuous silk-like lines moving beneath the clock.</summary>
-    Silk
+    Silk,
+
+    /// <summary>Layered woven lines, independent of the selected colour theme.</summary>
+    SilkWeave,
+
+    /// <summary>Three dots slowly orbiting concentric ellipses.</summary>
+    OrbitalDots,
+
+    /// <summary>A moon above gently drifting rows of semicircular waves.</summary>
+    MoonWaves
 }

@@ -15,7 +15,7 @@ Built with [Avalonia UI](https://avaloniaui.net/) for cross-platform support —
 - TR / EN language toggle in Settings (no restart required)
 - Obsidian, Porcelain, Sumi, Ibre and Aizome appearances, selectable instantly in Settings or by a seven-day schedule
 - Touch-friendly layouts for Raspberry Pi 3 kiosk screens; bundled Inter text and font-independent vector icons
-- Sumi silk lines, Ibre orbits and Aizome waves; Obsidian/Porcelain retain their rotating ambient modes
+- All 16 ambient modes rotate in every appearance using its colours, including silk lines, orbital dots and moon waves
 - No secrets in the repository
 
 ## Architecture

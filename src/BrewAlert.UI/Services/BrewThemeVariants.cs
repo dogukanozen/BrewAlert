@@ -2,7 +2,7 @@ using Avalonia.Styling;
 
 namespace BrewAlert.UI.Services;
 
-/// <summary>Named palettes inherit the matching Fluent and ambient light/dark resources.</summary>
+/// <summary>Named palettes inherit matching Fluent light/dark resources and define their own ambient colours.</summary>
 public static class BrewThemeVariants
 {
     public static readonly ThemeVariant Sumi = new(nameof(BrewTheme.Sumi), ThemeVariant.Light);

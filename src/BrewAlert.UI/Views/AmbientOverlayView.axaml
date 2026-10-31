@@ -130,7 +130,7 @@
                 </Animation>
             </Style.Animations>
         </Style>
-        <Style Selector="Panel.ambient-live Ellipse.ambient-pulse">
+        <Style Selector="Panel.ambient-live :is(Control).ambient-layer[IsVisible=True] Ellipse.ambient-pulse">
             <Style.Animations>
                 <Animation Duration="0:0:6" IterationCount="INFINITE" Easing="SineEaseInOut">
                     <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.22" /></KeyFrame>
@@ -547,22 +547,22 @@
         </Style>
     </UserControl.Styles>
 
-    <Panel ClipToBounds="True" Classes.ambient-live="{Binding IsLegacyAnimationActive}" Opacity="{Binding ModeTransitionOpacity}">
+    <Panel ClipToBounds="True" Classes.ambient-live="{Binding IsVisible}" Opacity="{Binding ModeTransitionOpacity}">
         <Panel.Transitions>
             <Transitions>
                 <DoubleTransition Property="Opacity" Duration="0:0:0.45" />
             </Transitions>
         </Panel.Transitions>
         <!-- Layer 1: vertical gradient base. Bound to the rotating palette so the whole
-             backdrop uses cached neutral tones from the active appearance. -->
+             backdrop uses cached colours from the active appearance. -->
         <Border Background="{Binding BackgroundBrush}">
 
         </Border>
 
-        <views:ThemeBackdrop x:Name="ThemeBackdrop" IsVisible="{Binding HasThemeBackdrop}"
-                             IsActive="{Binding IsThemeBackdropActive}" Appearance="{Binding AppearanceTheme}"
+        <views:ThemeBackdrop x:Name="ThemeBackdrop" Tag="ThemeBackdrop" IsVisible="{Binding IsThemeBackdropMode}"
+                             IsActive="{Binding IsThemeBackdropActive}" Mode="{Binding Mode}"
                              Stroke="{DynamicResource BrewAccentBrush}" IsHitTestVisible="False" />
-        <StackPanel Classes="signature-summary" IsVisible="{Binding HasThemeBackdrop}" Spacing="4"
+        <StackPanel Classes="signature-summary" Tag="ThemeBackdrop" IsVisible="{Binding IsThemeBackdropMode}" Spacing="4"
                     HorizontalAlignment="Left" VerticalAlignment="Bottom" MaxWidth="264">
             <TextBlock Text="{Binding Headline}" FontSize="12" Foreground="{DynamicResource BrewTextSecondaryBrush}"
                        TextTrimming="CharacterEllipsis" MaxWidth="250" />
@@ -571,7 +571,7 @@
         </StackPanel>
 
         <!-- Silk has no additional glow/backdrop. Its timer is gated by mode and visibility. -->
-        <Panel Classes="ambient-layer" IsVisible="{Binding IsSilkMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" Tag="Silk" IsVisible="{Binding IsSilkMode}" IsHitTestVisible="False">
             <views:SilkBackdrop x:Name="SilkBackdrop"
                                 IsActive="{Binding IsSilkAnimationActive}"
                                 Stroke="{DynamicResource BrewTextSecondaryBrush}" />
@@ -663,7 +663,7 @@
         <!-- Floating brew icons & particles — font-independent vector line art (orbit-like
              drift, transform-only). Grouped so they vanish cleanly when the DVD bounce takes
              the stage. -->
-        <Panel IsVisible="{Binding IsCardMode}">
+        <Panel Tag="Card" IsVisible="{Binding IsCardMode}">
         <Viewbox Width="52" Height="52"
                  Opacity="0.35"
                  HorizontalAlignment="Left"
@@ -776,7 +776,7 @@
         </Panel>
 
         <!-- Aurora: broad luminous ribbons sweep through each other behind the clock. -->
-        <Panel Classes="ambient-layer" IsVisible="{Binding IsAuroraMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" Tag="Aurora" IsVisible="{Binding IsAuroraMode}" IsHitTestVisible="False">
             <Ellipse Classes="aurora-a"
                      Width="1100" Height="230"
                      HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -835,7 +835,7 @@
         </Panel>
 
         <!-- Brew rain: vector brew glyphs fall on independent depth lanes. -->
-        <Panel Classes="ambient-layer" IsVisible="{Binding IsBrewRainMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" Tag="BrewRain" IsVisible="{Binding IsBrewRainMode}" IsHitTestVisible="False">
             <Viewbox Classes="brew-rain-a" Width="48" Height="48" HorizontalAlignment="Left" VerticalAlignment="Top"
                      Margin="70,0,0,0"><Viewbox.RenderTransform><TranslateTransform /></Viewbox.RenderTransform>
                 <Path Data="{Binding FloatIconA, Converter={StaticResource AmbientIcon}}" Stroke="{DynamicResource BrewTextPrimaryBrush}"
@@ -874,7 +874,7 @@
         </Panel>
 
         <!-- Kaleidoscope: a neon geometric tunnel folds behind the fixed clock. -->
-        <Panel Classes="ambient-layer" IsVisible="{Binding IsKaleidoscopeMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" Tag="Kaleidoscope" IsVisible="{Binding IsKaleidoscopeMode}" IsHitTestVisible="False">
             <Border Classes="kaleido-a" Width="560" Height="560" BorderBrush="{DynamicResource AmbientBrush44B4}" BorderThickness="3"
                     CornerRadius="90" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="50%,50%">
                 <Border.RenderTransform><RotateTransform /></Border.RenderTransform>
@@ -906,7 +906,7 @@
         </Panel>
 
         <!-- Meteor shower: bright streaks fly diagonally across different screen lanes. -->
-        <Panel Classes="ambient-layer" IsVisible="{Binding IsMeteorMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" Tag="Meteor" IsVisible="{Binding IsMeteorMode}" IsHitTestVisible="False">
             <Grid Classes="meteor-a" Width="280" Height="24" HorizontalAlignment="Left" VerticalAlignment="Top"
                   Margin="20,80,0,0"><Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
                 <Grid RenderTransform="rotate(24deg)">
@@ -949,7 +949,7 @@
         </Panel>
 
         <!-- Liquid: overlapping brew-coloured wave bodies roll while bubbles rise. -->
-        <Panel Classes="ambient-layer" IsVisible="{Binding IsLiquidMode}" IsHitTestVisible="False" ClipToBounds="True">
+        <Panel Classes="ambient-layer" Tag="Liquid" IsVisible="{Binding IsLiquidMode}" IsHitTestVisible="False" ClipToBounds="True">
             <Ellipse Classes="liquid-wave-b" Width="1300" Height="640"
                      HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,-410" Opacity="0.42">
                 <Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform>
@@ -995,7 +995,7 @@
         </Panel>
 
         <!-- Hyperspace: radial streaks accelerate away from the clock in layered colours. -->
-        <Panel Classes="ambient-layer" IsVisible="{Binding IsHyperspaceMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" Tag="Hyperspace" IsVisible="{Binding IsHyperspaceMode}" IsHitTestVisible="False">
             <Ellipse Width="600" Height="600" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
@@ -1033,7 +1033,7 @@
         </Panel>
 
         <!-- Radar pulse: expanding rings, crosshairs, and a rotating spectral scan arm. -->
-        <Panel Classes="ambient-layer" IsVisible="{Binding IsRadarMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" Tag="Radar" IsVisible="{Binding IsRadarMode}" IsHitTestVisible="False">
             <Ellipse Width="520" Height="520" HorizontalAlignment="Center" VerticalAlignment="Center"
                      Stroke="{DynamicResource AmbientBrush22B4}" StrokeThickness="1" StrokeDashArray="3,8" />
             <Ellipse Width="360" Height="360" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -1070,7 +1070,7 @@
         </Panel>
 
         <!-- Fireflies: warm particles drift on different paths and pulse independently. -->
-        <Panel Classes="ambient-layer" IsVisible="{Binding IsFirefliesMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" Tag="Fireflies" IsVisible="{Binding IsFirefliesMode}" IsHitTestVisible="False">
             <Ellipse Classes="firefly-a" Width="12" Height="12" HorizontalAlignment="Left" VerticalAlignment="Top"
                      Margin="100,100,0,0" Fill="{DynamicResource AmbientBrushFFD3}"><Ellipse.RenderTransform><TranslateTransform /></Ellipse.RenderTransform></Ellipse>
             <Ellipse Classes="firefly-b" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Center"
@@ -1097,7 +1097,7 @@
         </Panel>
 
         <!-- Prism: spectral triangular echoes counter-rotate around a pulsing core. -->
-        <Panel Classes="ambient-layer" IsVisible="{Binding IsPrismMode}" IsHitTestVisible="False">
+        <Panel Classes="ambient-layer" Tag="Prism" IsVisible="{Binding IsPrismMode}" IsHitTestVisible="False">
             <Ellipse Classes="prism-glow" Width="500" Height="500" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
@@ -1132,19 +1132,19 @@
 
         <!-- Pulsing halo: soft radial glow placed BELOW center so it hugs the hero
              icon, never the clock numbers. Recolours with the palette. -->
-        <Ellipse Classes="ambient-pulse" IsVisible="{Binding !HasThemeBackdrop}"
-                 Width="320" Height="320"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center"
-                 Margin="0,80,0,0"
-                 IsHitTestVisible="False"
-                 Fill="{Binding HaloBrush}">
-
-        </Ellipse>
+        <Panel Classes="ambient-layer" IsVisible="{Binding IsCardMode}" IsHitTestVisible="False">
+            <Ellipse Classes="ambient-pulse"
+                     Width="320" Height="320"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     Margin="0,80,0,0"
+                     IsHitTestVisible="False"
+                     Fill="{Binding HaloBrush}" />
+        </Panel>
 
         <!-- Slowly counter-rotating dashed rings + rising steam wisps encircle the hero icon.
              Card mode only; pure compositor transforms so the Pi stays smooth. -->
-        <Panel Classes="ambient-layer" IsVisible="{Binding IsCardMode}">
+        <Panel Classes="ambient-layer" Tag="Card" IsVisible="{Binding IsCardMode}">
             <Ellipse Classes="ambient-ring-cw"
                      Width="208" Height="208"
                      HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -1225,7 +1225,7 @@
         </Border>
 
         <!-- Orbit stays outside the clock/date clearance region, including on narrow screens. -->
-        <Grid x:Name="OrbitStage" Classes="orbit-spin ambient-layer"
+        <Grid x:Name="OrbitStage" Classes="orbit-spin ambient-layer" Tag="Orbit"
               IsVisible="{Binding IsOrbitMode}"
               Width="388" Height="388"
               HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -1298,7 +1298,7 @@
             <!-- The whole layer fades during mode changes. Reclaim this slot outside card
                  mode so the clock is centered inside the orbit instead of meeting its icons. -->
             <StackPanel Classes="ambient-layer" Spacing="12"
-                        HorizontalAlignment="Center"
+                        HorizontalAlignment="Center" Tag="Card"
                         IsVisible="{Binding IsCardMode}"
                         Opacity="{Binding CardOpacity}">
                 <StackPanel.Transitions>
@@ -1337,7 +1337,7 @@
         <!-- Retro DVD-screensaver bounce. Position + edge opacity changes are driven from
              code-behind (needs live panel/text bounds); the VM only toggles visibility. -->
         <TextBlock x:Name="DvdLogo"
-                   Text="{Binding DvdLogoText}"
+                   Text="{Binding DvdLogoText}" Tag="Dvd"
                    IsVisible="{Binding IsDvdMode}"
                    FontSize="46"
                    FontWeight="Bold"

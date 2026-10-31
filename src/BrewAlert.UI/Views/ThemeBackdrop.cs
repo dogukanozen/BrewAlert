@@ -2,17 +2,17 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
-using BrewAlert.UI.Services;
+using BrewAlert.UI.ViewModels;
 
 namespace BrewAlert.UI.Views;
 
-/// <summary>Quiet theme signatures. No shaders or per-frame brushes; hidden views stop ticking.</summary>
+/// <summary>Shared ambient signature motions. No shaders or per-frame brushes; hidden views stop ticking.</summary>
 public sealed class ThemeBackdrop : Control
 {
     public static readonly StyledProperty<bool> IsActiveProperty =
         AvaloniaProperty.Register<ThemeBackdrop, bool>(nameof(IsActive));
-    public static readonly StyledProperty<BrewTheme> AppearanceProperty =
-        AvaloniaProperty.Register<ThemeBackdrop, BrewTheme>(nameof(Appearance), BrewTheme.Sumi);
+    public static readonly StyledProperty<AmbientMode> ModeProperty =
+        AvaloniaProperty.Register<ThemeBackdrop, AmbientMode>(nameof(Mode), AmbientMode.SilkWeave);
     public static readonly StyledProperty<IBrush?> StrokeProperty =
         AvaloniaProperty.Register<ThemeBackdrop, IBrush?>(nameof(Stroke));
 
@@ -35,7 +35,7 @@ public sealed class ThemeBackdrop : Control
     }
 
     public bool IsActive { get => GetValue(IsActiveProperty); set => SetValue(IsActiveProperty, value); }
-    public BrewTheme Appearance { get => GetValue(AppearanceProperty); set => SetValue(AppearanceProperty, value); }
+    public AmbientMode Mode { get => GetValue(ModeProperty); set => SetValue(ModeProperty, value); }
     public IBrush? Stroke { get => GetValue(StrokeProperty); set => SetValue(StrokeProperty, value); }
     internal bool IsRunning => _timer.IsEnabled;
 
@@ -60,8 +60,8 @@ public sealed class ThemeBackdrop : Control
         if (change.Property == IsActiveProperty || change.Property == IsVisibleProperty)
             SyncTimer();
         if (change.Property == StrokeProperty) _pen = new Pen(Stroke, 1);
-        if (change.Property == AppearanceProperty) UpdateSilk();
-        if (change.Property == AppearanceProperty || change.Property == StrokeProperty) InvalidateVisual();
+        if (change.Property == ModeProperty) UpdateSilk();
+        if (change.Property == ModeProperty || change.Property == StrokeProperty) InvalidateVisual();
     }
 
     private void SyncTimer()
@@ -80,7 +80,7 @@ public sealed class ThemeBackdrop : Control
         var now = _time.GetTimestamp();
         _seconds += _time.GetElapsedTime(_timestamp, now).TotalSeconds;
         _timestamp = now;
-        if (Appearance == BrewTheme.Sumi) UpdateSilk();
+        if (Mode == AmbientMode.SilkWeave) UpdateSilk();
         InvalidateVisual();
     }
 
@@ -135,14 +135,14 @@ public sealed class ThemeBackdrop : Control
         using (context.PushClip(new Rect(Bounds.Size)))
         using (context.PushTransform(Matrix.CreateScale(Bounds.Width / 800, Bounds.Height / 480)))
         {
-            switch (Appearance)
+            switch (Mode)
             {
-                case BrewTheme.Sumi:
+                case AmbientMode.SilkWeave:
                     for (var i = 0; i < _silk.Length; i++)
                         using (context.PushOpacity(.1 + i * .013))
                             context.DrawGeometry(null, _pen, _silk[i]);
                     break;
-                case BrewTheme.Ibre:
+                case AmbientMode.OrbitalDots:
                     using (context.PushOpacity(.13))
                     {
                         context.DrawEllipse(null, _pen, new Point(400, 231), 265, 157);
@@ -156,7 +156,7 @@ public sealed class ThemeBackdrop : Control
                                 new Point(400 + 265 * Math.Cos(angle), 231 + 157 * Math.Sin(angle)), 2, 2);
                     }
                     break;
-                case BrewTheme.Aizome:
+                case AmbientMode.MoonWaves:
                     // Preserve the moon's circle when a narrow display compresses the wave grid.
                     var moonRadiusX = 35 * (Bounds.Height / 480) / (Bounds.Width / 800);
                     using (context.PushOpacity(.08))

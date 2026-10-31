@@ -1,4 +1,7 @@
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Markup.Xaml.Styling;
+using Avalonia.Styling;
 using Avalonia.Media;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
@@ -32,60 +35,93 @@ public sealed class AmbientAppearanceTests
     }
 
     [AvaloniaTheory]
-    [InlineData(BrewTheme.Sumi, "#eceee5")]
-    [InlineData(BrewTheme.Ibre, "#171d1c")]
-    [InlineData(BrewTheme.Aizome, "#152a38")]
-    public void ThemePalette_MatchesSignatureAndDisablesHiddenLegacyMotion(BrewTheme theme, string background)
+    [InlineData(BrewTheme.Obsidian)]
+    [InlineData(BrewTheme.Porcelain)]
+    [InlineData(BrewTheme.Sumi)]
+    [InlineData(BrewTheme.Ibre)]
+    [InlineData(BrewTheme.Aizome)]
+    public async Task EveryTheme_KeepsAllModesAvailableAndRotating(BrewTheme theme)
     {
-        var loc = Substitute.For<ILocalizationService>();
-        loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
-        using var vm = new AmbientOverlayViewModel(Substitute.For<IBrewHistoryService>(), loc);
-        vm.Mode = AmbientMode.Orbit;
+        using var vm = CreateViewModel();
         vm.SetAppearance(theme);
-        Assert.True(vm.HasThemeBackdrop);
+        await vm.ShowAsync();
+        foreach (var mode in Enum.GetValues<AmbientMode>())
+        {
+            vm.Mode = mode;
+            var visibleModes = new[] { vm.IsCardMode, vm.IsDvdMode, vm.IsOrbitMode,
+                vm.IsAuroraMode, vm.IsBrewRainMode, vm.IsKaleidoscopeMode, vm.IsMeteorMode,
+                vm.IsLiquidMode, vm.IsHyperspaceMode, vm.IsRadarMode, vm.IsFirefliesMode,
+                vm.IsPrismMode, vm.IsSilkMode, vm.IsThemeBackdropMode };
+            Assert.Single(visibleModes, active => active);
+            Assert.True(vm.IsModeRotationRunning);
+            Assert.Equal(mode == AmbientMode.Silk, vm.IsSilkAnimationActive);
+            Assert.Equal(mode is AmbientMode.SilkWeave or AmbientMode.OrbitalDots or AmbientMode.MoonWaves,
+                vm.IsThemeBackdropActive);
+        }
+        vm.Hide();
+        Assert.False(vm.IsModeRotationRunning);
         Assert.False(vm.IsThemeBackdropActive);
-        vm.IsVisible = true;
-        Assert.True(vm.IsThemeBackdropActive);
-        Assert.False(vm.IsLegacyAnimationActive);
-        Assert.False(vm.IsOrbitMode || vm.IsSilkAnimationActive || vm.IsCosmicBackdrop);
-        Assert.Equal(Color.Parse(background), Assert.IsAssignableFrom<ISolidColorBrush>(vm.BackgroundBrush).Color);
-        Assert.Same(AmbientPalette.ForAppearance(theme), AmbientPalette.ForAppearance(theme));
-        vm.SetAppearance(BrewTheme.Obsidian);
-        Assert.True(vm.IsLegacyAnimationActive);
-        Assert.True(vm.IsOrbitMode);
-        Assert.False(vm.IsThemeBackdropActive);
-        vm.IsVisible = false;
-        Assert.False(vm.IsLegacyAnimationActive);
+        Assert.False(vm.IsSilkAnimationActive);
     }
 
     [AvaloniaFact]
-    public async Task ThemeSwitch_UpdatesVisibleAmbientWithoutResettingItsMode()
+    public async Task ThemeSwitch_ChangesOnlyColoursWithoutResettingModeOrFade()
+    {
+        using var vm = CreateViewModel();
+        vm.SetAppearance(BrewTheme.Porcelain);
+        await vm.ShowAsync();
+        foreach (var mode in Enum.GetValues<AmbientMode>())
+        {
+            vm.Mode = mode;
+            foreach (var theme in Enum.GetValues<BrewTheme>())
+            {
+                vm.ModeTransitionOpacity = 0.08;
+                vm.SetAppearance(theme);
+                Assert.True(vm.IsVisible);
+                Assert.Equal(mode, vm.Mode);
+                Assert.Equal(0.08, vm.ModeTransitionOpacity);
+                Assert.True(vm.IsModeRotationRunning);
+                Assert.Same(AmbientPalette.ForAppearance(theme)[0].Background, vm.BackgroundBrush);
+                var brush = vm.BackgroundBrush;
+                vm.SetAppearance(theme);
+                Assert.Same(brush, vm.BackgroundBrush);
+            }
+        }
+    }
+
+    [AvaloniaTheory]
+    [InlineData(BrewTheme.Sumi, "#44657a4a")]
+    [InlineData(BrewTheme.Ibre, "#44a6b9ac")]
+    [InlineData(BrewTheme.Aizome, "#449cbac1")]
+    public void ThemeResources_OverrideEveryEffectWithMatchingAlpha(BrewTheme theme, string accent)
+    {
+        var include = new ResourceInclude(new Uri("avares://BrewAlert.UI/"))
+        {
+            Source = new Uri("avares://BrewAlert.UI/Themes/AmbientColors.axaml")
+        };
+        var resources = Assert.IsType<ResourceDictionary>(include.Loaded);
+        var baseline = Assert.IsType<ResourceDictionary>(resources.ThemeDictionaries[ThemeVariant.Dark]);
+        var themed = Assert.IsType<ResourceDictionary>(resources.ThemeDictionaries[BrewThemeVariants.For(theme)]);
+        Assert.Equal(baseline.Keys.OrderBy(key => key.ToString()), themed.Keys.OrderBy(key => key.ToString()));
+        foreach (var key in baseline.Keys.OfType<string>().Where(key => key.StartsWith("AmbientColor")))
+        {
+            var colour = Assert.IsType<Color>(themed[key]);
+            Assert.Equal(Assert.IsType<Color>(baseline[key]).A, colour.A);
+            var brush = Assert.IsAssignableFrom<ISolidColorBrush>(themed[key.Replace("Color", "Brush")]);
+            Assert.Equal(colour, brush.Color);
+        }
+        Assert.Equal(Color.Parse(accent), Assert.IsType<Color>(themed["AmbientColor4484"]));
+        Assert.Equal(Assert.IsAssignableFrom<ISolidColorBrush>(AmbientPalette.ForAppearance(theme)[0].Background).Color,
+            Assert.IsType<Color>(themed["AmbientColorFF00"]));
+    }
+
+    private static AmbientOverlayViewModel CreateViewModel()
     {
         var history = Substitute.For<IBrewHistoryService>();
         history.GetRecentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(Array.Empty<BrewHistoryEntry>());
         var loc = Substitute.For<ILocalizationService>();
         loc.CurrentCulture.Returns(System.Globalization.CultureInfo.GetCultureInfo("tr-TR"));
         loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
-        using var vm = new AmbientOverlayViewModel(history, loc);
-        await vm.ShowAsync();
-        vm.Mode = AmbientMode.Orbit;
-        vm.SetAppearance(BrewTheme.Porcelain);
-        Assert.True(vm.IsVisible);
-        Assert.Equal(AmbientMode.Orbit, vm.Mode);
-        Assert.Same(AmbientPalette.Porcelain[0].Background, vm.BackgroundBrush);
-        Assert.True(vm.IsModeRotationRunning);
-        foreach (var theme in new[] { BrewTheme.Sumi, BrewTheme.Ibre, BrewTheme.Aizome })
-        {
-            vm.SetAppearance(theme);
-            Assert.False(vm.IsModeRotationRunning);
-            Assert.Equal(AmbientMode.Orbit, vm.Mode);
-            vm.SetAppearance(BrewTheme.Porcelain);
-            Assert.True(vm.IsModeRotationRunning);
-        }
-        var brush = vm.BackgroundBrush;
-        vm.SetAppearance(BrewTheme.Porcelain);
-        Assert.Same(brush, vm.BackgroundBrush);
-        vm.SetAppearance(BrewTheme.Obsidian);
-        Assert.Same(AmbientPalette.All[0].Background, vm.BackgroundBrush);
+        return new AmbientOverlayViewModel(history, loc);
     }
 }

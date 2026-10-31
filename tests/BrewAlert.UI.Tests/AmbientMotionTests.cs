@@ -19,12 +19,12 @@ namespace BrewAlert.UI.Tests;
 public sealed class AmbientMotionTests
 {
     [AvaloniaTheory]
-    [InlineData(BrewTheme.Sumi)]
-    [InlineData(BrewTheme.Ibre)]
-    [InlineData(BrewTheme.Aizome)]
-    public void ThemeBackdrop_StopsWhenHiddenInactiveOrDetached(BrewTheme appearance)
+    [InlineData(AmbientMode.SilkWeave)]
+    [InlineData(AmbientMode.OrbitalDots)]
+    [InlineData(AmbientMode.MoonWaves)]
+    public void ThemeBackdrop_StopsWhenHiddenInactiveOrDetached(AmbientMode mode)
     {
-        var backdrop = new ThemeBackdrop { Appearance = appearance, Stroke = Brushes.Gray, IsActive = true };
+        var backdrop = new ThemeBackdrop { Mode = mode, Stroke = Brushes.Gray, IsActive = true };
         Assert.False(backdrop.IsRunning);
         var window = new Window { Width = 800, Height = 480, Content = backdrop };
         try

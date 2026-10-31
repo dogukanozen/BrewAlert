@@ -4,7 +4,7 @@ using BrewAlert.UI.Services;
 
 namespace BrewAlert.UI.ViewModels;
 
-/// <summary>Cached neutral brushes: palette rotation never allocates per-frame brushes.</summary>
+/// <summary>Cached theme brushes: palette rotation never allocates per-frame brushes.</summary>
 public sealed class AmbientPalette
 {
     public IBrush Background { get; }

@@ -151,15 +151,16 @@ DynamicResource brushes and shell theme classes update colors and layout togethe
 settings atomically, so saving language/provider/webhook does not discard the weekly schedule or unknown fields.
 
 UI text uses the bundled Inter font, and icons use Avalonia Geometry paths rather than emoji
-or icon fonts. Sumi, Ibre and Aizome use their cached palettes and `ThemeBackdrop` signatures
-(silk, orbit, seigaiha waves). Its 30 fps timer runs only while visible, active and attached;
-legacy animation styles are disabled while a signature is displayed. Obsidian and Porcelain
-retain their rotating modes and neutral palettes; switching appearances preserves the mode.
+or icon fonts. All five appearances share the same 16 rotating ambient modes. Appearance
+selects cached background/glow palettes and effect colours from `AmbientColors.axaml`;
+switching appearances preserves the current mode, fade and rotation timing. `ThemeBackdrop`
+renders the shared SilkWeave, OrbitalDots and MoonWaves modes using the active accent brush.
+Its 30 fps timer runs only while its mode is visible, active and attached.
 There is no added blur, shader, browser rendering or per-frame brush creation.
 
 Avalonia does not pause style animations on hidden controls, and the overlay stays in the tree.
 Every ambient animation selector is therefore prefixed with `Panel.ambient-live :is(Control).ambient-layer[IsVisible=True]`:
-the root panel carries `ambient-live` only while the idle screen shows a legacy animation, and each mode/backdrop panel
+the root panel carries `ambient-live` only while the idle screen is visible, and each style-animated mode/backdrop panel
 carries `ambient-layer`, so only the visible mode animates and nothing animates during normal use.
 
 ### 2.9 Persistence and failure handling

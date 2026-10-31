@@ -1,4 +1,4 @@
-<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:services="using:BrewAlert.UI.Services">
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Dark">
             <Color x:Key="AmbientColor0021">#00212121</Color>
@@ -230,6 +230,355 @@
             <Color x:Key="AmbientColorFFEE">#ff111111</Color>
             <SolidColorBrush x:Key="AmbientBrushFFEE" Color="{StaticResource AmbientColorFFEE}" />
             <Color x:Key="AmbientColorFFFF">#ff000000</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFFF" Color="{StaticResource AmbientColorFFFF}" />
+        </ResourceDictionary>
+        <!-- Same effect keys and alpha values; each named theme supplies its own colour ramp. -->
+        <ResourceDictionary x:Key="{x:Static services:BrewThemeVariants.Sumi}">
+            <Color x:Key="AmbientColor0021">#00e4e8db</Color>
+            <SolidColorBrush x:Key="AmbientBrush0021" Color="{StaticResource AmbientColor0021}" />
+            <Color x:Key="AmbientColor0084">#00657a4a</Color>
+            <SolidColorBrush x:Key="AmbientBrush0084" Color="{StaticResource AmbientColor0084}" />
+            <Color x:Key="AmbientColor008E">#005f7548</Color>
+            <SolidColorBrush x:Key="AmbientBrush008E" Color="{StaticResource AmbientColor008E}" />
+            <Color x:Key="AmbientColor009A">#00596f45</Color>
+            <SolidColorBrush x:Key="AmbientBrush009A" Color="{StaticResource AmbientColor009A}" />
+            <Color x:Key="AmbientColor00A9">#00516742</Color>
+            <SolidColorBrush x:Key="AmbientBrush00A9" Color="{StaticResource AmbientColor00A9}" />
+            <Color x:Key="AmbientColor00B4">#004a6240</Color>
+            <SolidColorBrush x:Key="AmbientBrush00B4" Color="{StaticResource AmbientColor00B4}" />
+            <Color x:Key="AmbientColor00D3">#00395239</Color>
+            <SolidColorBrush x:Key="AmbientBrush00D3" Color="{StaticResource AmbientColor00D3}" />
+            <Color x:Key="AmbientColor11FF">#11213c30</Color>
+            <SolidColorBrush x:Key="AmbientBrush11FF" Color="{StaticResource AmbientColor11FF}" />
+            <Color x:Key="AmbientColor22B4">#224a6240</Color>
+            <SolidColorBrush x:Key="AmbientBrush22B4" Color="{StaticResource AmbientColor22B4}" />
+            <Color x:Key="AmbientColor338E">#335f7548</Color>
+            <SolidColorBrush x:Key="AmbientBrush338E" Color="{StaticResource AmbientColor338E}" />
+            <Color x:Key="AmbientColor33B4">#334a6240</Color>
+            <SolidColorBrush x:Key="AmbientBrush33B4" Color="{StaticResource AmbientColor33B4}" />
+            <Color x:Key="AmbientColor4484">#44657a4a</Color>
+            <SolidColorBrush x:Key="AmbientBrush4484" Color="{StaticResource AmbientColor4484}" />
+            <Color x:Key="AmbientColor44B4">#444a6240</Color>
+            <SolidColorBrush x:Key="AmbientBrush44B4" Color="{StaticResource AmbientColor44B4}" />
+            <Color x:Key="AmbientColor44D3">#44395239</Color>
+            <SolidColorBrush x:Key="AmbientBrush44D3" Color="{StaticResource AmbientColor44D3}" />
+            <Color x:Key="AmbientColor558E">#555f7548</Color>
+            <SolidColorBrush x:Key="AmbientBrush558E" Color="{StaticResource AmbientColor558E}" />
+            <Color x:Key="AmbientColor559A">#55596f45</Color>
+            <SolidColorBrush x:Key="AmbientBrush559A" Color="{StaticResource AmbientColor559A}" />
+            <Color x:Key="AmbientColor669A">#66596f45</Color>
+            <SolidColorBrush x:Key="AmbientBrush669A" Color="{StaticResource AmbientColor669A}" />
+            <Color x:Key="AmbientColor66FF">#66213c30</Color>
+            <SolidColorBrush x:Key="AmbientBrush66FF" Color="{StaticResource AmbientColor66FF}" />
+            <Color x:Key="AmbientColor77A9">#77516742</Color>
+            <SolidColorBrush x:Key="AmbientBrush77A9" Color="{StaticResource AmbientColor77A9}" />
+            <Color x:Key="AmbientColor77B4">#774a6240</Color>
+            <SolidColorBrush x:Key="AmbientBrush77B4" Color="{StaticResource AmbientColor77B4}" />
+            <Color x:Key="AmbientColor77D3">#77395239</Color>
+            <SolidColorBrush x:Key="AmbientBrush77D3" Color="{StaticResource AmbientColor77D3}" />
+            <Color x:Key="AmbientColor77FF">#77213c30</Color>
+            <SolidColorBrush x:Key="AmbientBrush77FF" Color="{StaticResource AmbientColor77FF}" />
+            <Color x:Key="AmbientColor8821">#88e4e8db</Color>
+            <SolidColorBrush x:Key="AmbientBrush8821" Color="{StaticResource AmbientColor8821}" />
+            <Color x:Key="AmbientColor8884">#88657a4a</Color>
+            <SolidColorBrush x:Key="AmbientBrush8884" Color="{StaticResource AmbientColor8884}" />
+            <Color x:Key="AmbientColor889A">#88596f45</Color>
+            <SolidColorBrush x:Key="AmbientBrush889A" Color="{StaticResource AmbientColor889A}" />
+            <Color x:Key="AmbientColor88B4">#884a6240</Color>
+            <SolidColorBrush x:Key="AmbientBrush88B4" Color="{StaticResource AmbientColor88B4}" />
+            <Color x:Key="AmbientColor88D3">#88395239</Color>
+            <SolidColorBrush x:Key="AmbientBrush88D3" Color="{StaticResource AmbientColor88D3}" />
+            <Color x:Key="AmbientColor88FF">#88213c30</Color>
+            <SolidColorBrush x:Key="AmbientBrush88FF" Color="{StaticResource AmbientColor88FF}" />
+            <Color x:Key="AmbientColor998E">#995f7548</Color>
+            <SolidColorBrush x:Key="AmbientBrush998E" Color="{StaticResource AmbientColor998E}" />
+            <Color x:Key="AmbientColor99B4">#994a6240</Color>
+            <SolidColorBrush x:Key="AmbientBrush99B4" Color="{StaticResource AmbientColor99B4}" />
+            <Color x:Key="AmbientColor99FF">#99213c30</Color>
+            <SolidColorBrush x:Key="AmbientBrush99FF" Color="{StaticResource AmbientColor99FF}" />
+            <Color x:Key="AmbientColorAA8E">#aa5f7548</Color>
+            <SolidColorBrush x:Key="AmbientBrushAA8E" Color="{StaticResource AmbientColorAA8E}" />
+            <Color x:Key="AmbientColorAA9A">#aa596f45</Color>
+            <SolidColorBrush x:Key="AmbientBrushAA9A" Color="{StaticResource AmbientColorAA9A}" />
+            <Color x:Key="AmbientColorAAA9">#aa516742</Color>
+            <SolidColorBrush x:Key="AmbientBrushAAA9" Color="{StaticResource AmbientColorAAA9}" />
+            <Color x:Key="AmbientColorAAB4">#aa4a6240</Color>
+            <SolidColorBrush x:Key="AmbientBrushAAB4" Color="{StaticResource AmbientColorAAB4}" />
+            <Color x:Key="AmbientColorBB2F">#bbe0e5d7</Color>
+            <SolidColorBrush x:Key="AmbientBrushBB2F" Color="{StaticResource AmbientColorBB2F}" />
+            <Color x:Key="AmbientColorBB8E">#bb5f7548</Color>
+            <SolidColorBrush x:Key="AmbientBrushBB8E" Color="{StaticResource AmbientColorBB8E}" />
+            <Color x:Key="AmbientColorCC06">#cceaede3</Color>
+            <SolidColorBrush x:Key="AmbientBrushCC06" Color="{StaticResource AmbientColorCC06}" />
+            <Color x:Key="AmbientColorCC20">#cce4e8db</Color>
+            <SolidColorBrush x:Key="AmbientBrushCC20" Color="{StaticResource AmbientColorCC20}" />
+            <Color x:Key="AmbientColorCCA9">#cc516742</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCA9" Color="{StaticResource AmbientColorCCA9}" />
+            <Color x:Key="AmbientColorCCB4">#cc4a6240</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCB4" Color="{StaticResource AmbientColorCCB4}" />
+            <Color x:Key="AmbientColorCCD3">#cc395239</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCD3" Color="{StaticResource AmbientColorCCD3}" />
+            <Color x:Key="AmbientColorCCFF">#cc213c30</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCFF" Color="{StaticResource AmbientColorCCFF}" />
+            <Color x:Key="AmbientColorDD84">#dd657a4a</Color>
+            <SolidColorBrush x:Key="AmbientBrushDD84" Color="{StaticResource AmbientColorDD84}" />
+            <Color x:Key="AmbientColorDD9A">#dd596f45</Color>
+            <SolidColorBrush x:Key="AmbientBrushDD9A" Color="{StaticResource AmbientColorDD9A}" />
+            <Color x:Key="AmbientColorEE8E">#ee5f7548</Color>
+            <SolidColorBrush x:Key="AmbientBrushEE8E" Color="{StaticResource AmbientColorEE8E}" />
+            <Color x:Key="AmbientColorEEA9">#ee516742</Color>
+            <SolidColorBrush x:Key="AmbientBrushEEA9" Color="{StaticResource AmbientColorEEA9}" />
+            <Color x:Key="AmbientColorFF00">#ffeceee5</Color>
+            <SolidColorBrush x:Key="AmbientBrushFF00" Color="{StaticResource AmbientColorFF00}" />
+            <Color x:Key="AmbientColorFF9A">#ff596f45</Color>
+            <SolidColorBrush x:Key="AmbientBrushFF9A" Color="{StaticResource AmbientColorFF9A}" />
+            <Color x:Key="AmbientColorFFA9">#ff516742</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFA9" Color="{StaticResource AmbientColorFFA9}" />
+            <Color x:Key="AmbientColorFFB0">#ff4d6441</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFB0" Color="{StaticResource AmbientColorFFB0}" />
+            <Color x:Key="AmbientColorFFB4">#ff4a6240</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFB4" Color="{StaticResource AmbientColorFFB4}" />
+            <Color x:Key="AmbientColorFFD3">#ff395239</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFD3" Color="{StaticResource AmbientColorFFD3}" />
+            <Color x:Key="AmbientColorFFDF">#ff334c37</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFDF" Color="{StaticResource AmbientColorFFDF}" />
+            <Color x:Key="AmbientColorFFED">#ff2b4534</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFED" Color="{StaticResource AmbientColorFFED}" />
+            <Color x:Key="AmbientColorFFEE">#ff2a4534</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFEE" Color="{StaticResource AmbientColorFFEE}" />
+            <Color x:Key="AmbientColorFFFF">#ff213c30</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFFF" Color="{StaticResource AmbientColorFFFF}" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="{x:Static services:BrewThemeVariants.Ibre}">
+            <Color x:Key="AmbientColor0021">#00212b26</Color>
+            <SolidColorBrush x:Key="AmbientBrush0021" Color="{StaticResource AmbientColor0021}" />
+            <Color x:Key="AmbientColor0084">#00a6b9ac</Color>
+            <SolidColorBrush x:Key="AmbientBrush0084" Color="{StaticResource AmbientColor0084}" />
+            <Color x:Key="AmbientColor008E">#00abbdb0</Color>
+            <SolidColorBrush x:Key="AmbientBrush008E" Color="{StaticResource AmbientColor008E}" />
+            <Color x:Key="AmbientColor009A">#00b1c2b6</Color>
+            <SolidColorBrush x:Key="AmbientBrush009A" Color="{StaticResource AmbientColor009A}" />
+            <Color x:Key="AmbientColor00A9">#00b9c7bc</Color>
+            <SolidColorBrush x:Key="AmbientBrush00A9" Color="{StaticResource AmbientColor00A9}" />
+            <Color x:Key="AmbientColor00B4">#00bfccc1</Color>
+            <SolidColorBrush x:Key="AmbientBrush00B4" Color="{StaticResource AmbientColor00B4}" />
+            <Color x:Key="AmbientColor00D3">#00cfd8cf</Color>
+            <SolidColorBrush x:Key="AmbientBrush00D3" Color="{StaticResource AmbientColor00D3}" />
+            <Color x:Key="AmbientColor11FF">#11e6e9e2</Color>
+            <SolidColorBrush x:Key="AmbientBrush11FF" Color="{StaticResource AmbientColor11FF}" />
+            <Color x:Key="AmbientColor22B4">#22bfccc1</Color>
+            <SolidColorBrush x:Key="AmbientBrush22B4" Color="{StaticResource AmbientColor22B4}" />
+            <Color x:Key="AmbientColor338E">#33abbdb0</Color>
+            <SolidColorBrush x:Key="AmbientBrush338E" Color="{StaticResource AmbientColor338E}" />
+            <Color x:Key="AmbientColor33B4">#33bfccc1</Color>
+            <SolidColorBrush x:Key="AmbientBrush33B4" Color="{StaticResource AmbientColor33B4}" />
+            <Color x:Key="AmbientColor4484">#44a6b9ac</Color>
+            <SolidColorBrush x:Key="AmbientBrush4484" Color="{StaticResource AmbientColor4484}" />
+            <Color x:Key="AmbientColor44B4">#44bfccc1</Color>
+            <SolidColorBrush x:Key="AmbientBrush44B4" Color="{StaticResource AmbientColor44B4}" />
+            <Color x:Key="AmbientColor44D3">#44cfd8cf</Color>
+            <SolidColorBrush x:Key="AmbientBrush44D3" Color="{StaticResource AmbientColor44D3}" />
+            <Color x:Key="AmbientColor558E">#55abbdb0</Color>
+            <SolidColorBrush x:Key="AmbientBrush558E" Color="{StaticResource AmbientColor558E}" />
+            <Color x:Key="AmbientColor559A">#55b1c2b6</Color>
+            <SolidColorBrush x:Key="AmbientBrush559A" Color="{StaticResource AmbientColor559A}" />
+            <Color x:Key="AmbientColor669A">#66b1c2b6</Color>
+            <SolidColorBrush x:Key="AmbientBrush669A" Color="{StaticResource AmbientColor669A}" />
+            <Color x:Key="AmbientColor66FF">#66e6e9e2</Color>
+            <SolidColorBrush x:Key="AmbientBrush66FF" Color="{StaticResource AmbientColor66FF}" />
+            <Color x:Key="AmbientColor77A9">#77b9c7bc</Color>
+            <SolidColorBrush x:Key="AmbientBrush77A9" Color="{StaticResource AmbientColor77A9}" />
+            <Color x:Key="AmbientColor77B4">#77bfccc1</Color>
+            <SolidColorBrush x:Key="AmbientBrush77B4" Color="{StaticResource AmbientColor77B4}" />
+            <Color x:Key="AmbientColor77D3">#77cfd8cf</Color>
+            <SolidColorBrush x:Key="AmbientBrush77D3" Color="{StaticResource AmbientColor77D3}" />
+            <Color x:Key="AmbientColor77FF">#77e6e9e2</Color>
+            <SolidColorBrush x:Key="AmbientBrush77FF" Color="{StaticResource AmbientColor77FF}" />
+            <Color x:Key="AmbientColor8821">#88212b26</Color>
+            <SolidColorBrush x:Key="AmbientBrush8821" Color="{StaticResource AmbientColor8821}" />
+            <Color x:Key="AmbientColor8884">#88a6b9ac</Color>
+            <SolidColorBrush x:Key="AmbientBrush8884" Color="{StaticResource AmbientColor8884}" />
+            <Color x:Key="AmbientColor889A">#88b1c2b6</Color>
+            <SolidColorBrush x:Key="AmbientBrush889A" Color="{StaticResource AmbientColor889A}" />
+            <Color x:Key="AmbientColor88B4">#88bfccc1</Color>
+            <SolidColorBrush x:Key="AmbientBrush88B4" Color="{StaticResource AmbientColor88B4}" />
+            <Color x:Key="AmbientColor88D3">#88cfd8cf</Color>
+            <SolidColorBrush x:Key="AmbientBrush88D3" Color="{StaticResource AmbientColor88D3}" />
+            <Color x:Key="AmbientColor88FF">#88e6e9e2</Color>
+            <SolidColorBrush x:Key="AmbientBrush88FF" Color="{StaticResource AmbientColor88FF}" />
+            <Color x:Key="AmbientColor998E">#99abbdb0</Color>
+            <SolidColorBrush x:Key="AmbientBrush998E" Color="{StaticResource AmbientColor998E}" />
+            <Color x:Key="AmbientColor99B4">#99bfccc1</Color>
+            <SolidColorBrush x:Key="AmbientBrush99B4" Color="{StaticResource AmbientColor99B4}" />
+            <Color x:Key="AmbientColor99FF">#99e6e9e2</Color>
+            <SolidColorBrush x:Key="AmbientBrush99FF" Color="{StaticResource AmbientColor99FF}" />
+            <Color x:Key="AmbientColorAA8E">#aaabbdb0</Color>
+            <SolidColorBrush x:Key="AmbientBrushAA8E" Color="{StaticResource AmbientColorAA8E}" />
+            <Color x:Key="AmbientColorAA9A">#aab1c2b6</Color>
+            <SolidColorBrush x:Key="AmbientBrushAA9A" Color="{StaticResource AmbientColorAA9A}" />
+            <Color x:Key="AmbientColorAAA9">#aab9c7bc</Color>
+            <SolidColorBrush x:Key="AmbientBrushAAA9" Color="{StaticResource AmbientColorAAA9}" />
+            <Color x:Key="AmbientColorAAB4">#aabfccc1</Color>
+            <SolidColorBrush x:Key="AmbientBrushAAB4" Color="{StaticResource AmbientColorAAB4}" />
+            <Color x:Key="AmbientColorBB2F">#bb25312a</Color>
+            <SolidColorBrush x:Key="AmbientBrushBB2F" Color="{StaticResource AmbientColorBB2F}" />
+            <Color x:Key="AmbientColorBB8E">#bbabbdb0</Color>
+            <SolidColorBrush x:Key="AmbientBrushBB8E" Color="{StaticResource AmbientColorBB8E}" />
+            <Color x:Key="AmbientColorCC06">#cc19201e</Color>
+            <SolidColorBrush x:Key="AmbientBrushCC06" Color="{StaticResource AmbientColorCC06}" />
+            <Color x:Key="AmbientColorCC20">#cc212b26</Color>
+            <SolidColorBrush x:Key="AmbientBrushCC20" Color="{StaticResource AmbientColorCC20}" />
+            <Color x:Key="AmbientColorCCA9">#ccb9c7bc</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCA9" Color="{StaticResource AmbientColorCCA9}" />
+            <Color x:Key="AmbientColorCCB4">#ccbfccc1</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCB4" Color="{StaticResource AmbientColorCCB4}" />
+            <Color x:Key="AmbientColorCCD3">#cccfd8cf</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCD3" Color="{StaticResource AmbientColorCCD3}" />
+            <Color x:Key="AmbientColorCCFF">#cce6e9e2</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCFF" Color="{StaticResource AmbientColorCCFF}" />
+            <Color x:Key="AmbientColorDD84">#dda6b9ac</Color>
+            <SolidColorBrush x:Key="AmbientBrushDD84" Color="{StaticResource AmbientColorDD84}" />
+            <Color x:Key="AmbientColorDD9A">#ddb1c2b6</Color>
+            <SolidColorBrush x:Key="AmbientBrushDD9A" Color="{StaticResource AmbientColorDD9A}" />
+            <Color x:Key="AmbientColorEE8E">#eeabbdb0</Color>
+            <SolidColorBrush x:Key="AmbientBrushEE8E" Color="{StaticResource AmbientColorEE8E}" />
+            <Color x:Key="AmbientColorEEA9">#eeb9c7bc</Color>
+            <SolidColorBrush x:Key="AmbientBrushEEA9" Color="{StaticResource AmbientColorEEA9}" />
+            <Color x:Key="AmbientColorFF00">#ff171d1c</Color>
+            <SolidColorBrush x:Key="AmbientBrushFF00" Color="{StaticResource AmbientColorFF00}" />
+            <Color x:Key="AmbientColorFF9A">#ffb1c2b6</Color>
+            <SolidColorBrush x:Key="AmbientBrushFF9A" Color="{StaticResource AmbientColorFF9A}" />
+            <Color x:Key="AmbientColorFFA9">#ffb9c7bc</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFA9" Color="{StaticResource AmbientColorFFA9}" />
+            <Color x:Key="AmbientColorFFB0">#ffbdcabf</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFB0" Color="{StaticResource AmbientColorFFB0}" />
+            <Color x:Key="AmbientColorFFB4">#ffbfccc1</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFB4" Color="{StaticResource AmbientColorFFB4}" />
+            <Color x:Key="AmbientColorFFD3">#ffcfd8cf</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFD3" Color="{StaticResource AmbientColorFFD3}" />
+            <Color x:Key="AmbientColorFFDF">#ffd5ddd4</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFDF" Color="{StaticResource AmbientColorFFDF}" />
+            <Color x:Key="AmbientColorFFED">#ffdde2da</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFED" Color="{StaticResource AmbientColorFFED}" />
+            <Color x:Key="AmbientColorFFEE">#ffdde2db</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFEE" Color="{StaticResource AmbientColorFFEE}" />
+            <Color x:Key="AmbientColorFFFF">#ffe6e9e2</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFFF" Color="{StaticResource AmbientColorFFFF}" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="{x:Static services:BrewThemeVariants.Aizome}">
+            <Color x:Key="AmbientColor0021">#00203a47</Color>
+            <SolidColorBrush x:Key="AmbientBrush0021" Color="{StaticResource AmbientColor0021}" />
+            <Color x:Key="AmbientColor0084">#009cbac1</Color>
+            <SolidColorBrush x:Key="AmbientBrush0084" Color="{StaticResource AmbientColor0084}" />
+            <Color x:Key="AmbientColor008E">#00a2bec3</Color>
+            <SolidColorBrush x:Key="AmbientBrush008E" Color="{StaticResource AmbientColor008E}" />
+            <Color x:Key="AmbientColor009A">#00a9c2c5</Color>
+            <SolidColorBrush x:Key="AmbientBrush009A" Color="{StaticResource AmbientColor009A}" />
+            <Color x:Key="AmbientColor00A9">#00b2c7c8</Color>
+            <SolidColorBrush x:Key="AmbientBrush00A9" Color="{StaticResource AmbientColor00A9}" />
+            <Color x:Key="AmbientColor00B4">#00b9cbca</Color>
+            <SolidColorBrush x:Key="AmbientBrush00B4" Color="{StaticResource AmbientColor00B4}" />
+            <Color x:Key="AmbientColor00D3">#00ccd6d0</Color>
+            <SolidColorBrush x:Key="AmbientBrush00D3" Color="{StaticResource AmbientColor00D3}" />
+            <Color x:Key="AmbientColor11FF">#11e6e6d9</Color>
+            <SolidColorBrush x:Key="AmbientBrush11FF" Color="{StaticResource AmbientColor11FF}" />
+            <Color x:Key="AmbientColor22B4">#22b9cbca</Color>
+            <SolidColorBrush x:Key="AmbientBrush22B4" Color="{StaticResource AmbientColor22B4}" />
+            <Color x:Key="AmbientColor338E">#33a2bec3</Color>
+            <SolidColorBrush x:Key="AmbientBrush338E" Color="{StaticResource AmbientColor338E}" />
+            <Color x:Key="AmbientColor33B4">#33b9cbca</Color>
+            <SolidColorBrush x:Key="AmbientBrush33B4" Color="{StaticResource AmbientColor33B4}" />
+            <Color x:Key="AmbientColor4484">#449cbac1</Color>
+            <SolidColorBrush x:Key="AmbientBrush4484" Color="{StaticResource AmbientColor4484}" />
+            <Color x:Key="AmbientColor44B4">#44b9cbca</Color>
+            <SolidColorBrush x:Key="AmbientBrush44B4" Color="{StaticResource AmbientColor44B4}" />
+            <Color x:Key="AmbientColor44D3">#44ccd6d0</Color>
+            <SolidColorBrush x:Key="AmbientBrush44D3" Color="{StaticResource AmbientColor44D3}" />
+            <Color x:Key="AmbientColor558E">#55a2bec3</Color>
+            <SolidColorBrush x:Key="AmbientBrush558E" Color="{StaticResource AmbientColor558E}" />
+            <Color x:Key="AmbientColor559A">#55a9c2c5</Color>
+            <SolidColorBrush x:Key="AmbientBrush559A" Color="{StaticResource AmbientColor559A}" />
+            <Color x:Key="AmbientColor669A">#66a9c2c5</Color>
+            <SolidColorBrush x:Key="AmbientBrush669A" Color="{StaticResource AmbientColor669A}" />
+            <Color x:Key="AmbientColor66FF">#66e6e6d9</Color>
+            <SolidColorBrush x:Key="AmbientBrush66FF" Color="{StaticResource AmbientColor66FF}" />
+            <Color x:Key="AmbientColor77A9">#77b2c7c8</Color>
+            <SolidColorBrush x:Key="AmbientBrush77A9" Color="{StaticResource AmbientColor77A9}" />
+            <Color x:Key="AmbientColor77B4">#77b9cbca</Color>
+            <SolidColorBrush x:Key="AmbientBrush77B4" Color="{StaticResource AmbientColor77B4}" />
+            <Color x:Key="AmbientColor77D3">#77ccd6d0</Color>
+            <SolidColorBrush x:Key="AmbientBrush77D3" Color="{StaticResource AmbientColor77D3}" />
+            <Color x:Key="AmbientColor77FF">#77e6e6d9</Color>
+            <SolidColorBrush x:Key="AmbientBrush77FF" Color="{StaticResource AmbientColor77FF}" />
+            <Color x:Key="AmbientColor8821">#88203a47</Color>
+            <SolidColorBrush x:Key="AmbientBrush8821" Color="{StaticResource AmbientColor8821}" />
+            <Color x:Key="AmbientColor8884">#889cbac1</Color>
+            <SolidColorBrush x:Key="AmbientBrush8884" Color="{StaticResource AmbientColor8884}" />
+            <Color x:Key="AmbientColor889A">#88a9c2c5</Color>
+            <SolidColorBrush x:Key="AmbientBrush889A" Color="{StaticResource AmbientColor889A}" />
+            <Color x:Key="AmbientColor88B4">#88b9cbca</Color>
+            <SolidColorBrush x:Key="AmbientBrush88B4" Color="{StaticResource AmbientColor88B4}" />
+            <Color x:Key="AmbientColor88D3">#88ccd6d0</Color>
+            <SolidColorBrush x:Key="AmbientBrush88D3" Color="{StaticResource AmbientColor88D3}" />
+            <Color x:Key="AmbientColor88FF">#88e6e6d9</Color>
+            <SolidColorBrush x:Key="AmbientBrush88FF" Color="{StaticResource AmbientColor88FF}" />
+            <Color x:Key="AmbientColor998E">#99a2bec3</Color>
+            <SolidColorBrush x:Key="AmbientBrush998E" Color="{StaticResource AmbientColor998E}" />
+            <Color x:Key="AmbientColor99B4">#99b9cbca</Color>
+            <SolidColorBrush x:Key="AmbientBrush99B4" Color="{StaticResource AmbientColor99B4}" />
+            <Color x:Key="AmbientColor99FF">#99e6e6d9</Color>
+            <SolidColorBrush x:Key="AmbientBrush99FF" Color="{StaticResource AmbientColor99FF}" />
+            <Color x:Key="AmbientColorAA8E">#aaa2bec3</Color>
+            <SolidColorBrush x:Key="AmbientBrushAA8E" Color="{StaticResource AmbientColorAA8E}" />
+            <Color x:Key="AmbientColorAA9A">#aaa9c2c5</Color>
+            <SolidColorBrush x:Key="AmbientBrushAA9A" Color="{StaticResource AmbientColorAA9A}" />
+            <Color x:Key="AmbientColorAAA9">#aab2c7c8</Color>
+            <SolidColorBrush x:Key="AmbientBrushAAA9" Color="{StaticResource AmbientColorAAA9}" />
+            <Color x:Key="AmbientColorAAB4">#aab9cbca</Color>
+            <SolidColorBrush x:Key="AmbientBrushAAB4" Color="{StaticResource AmbientColorAAB4}" />
+            <Color x:Key="AmbientColorBB2F">#bb24414e</Color>
+            <SolidColorBrush x:Key="AmbientBrushBB2F" Color="{StaticResource AmbientColorBB2F}" />
+            <Color x:Key="AmbientColorBB8E">#bba2bec3</Color>
+            <SolidColorBrush x:Key="AmbientBrushBB8E" Color="{StaticResource AmbientColorBB8E}" />
+            <Color x:Key="AmbientColorCC06">#cc172d3b</Color>
+            <SolidColorBrush x:Key="AmbientBrushCC06" Color="{StaticResource AmbientColorCC06}" />
+            <Color x:Key="AmbientColorCC20">#cc1f3a47</Color>
+            <SolidColorBrush x:Key="AmbientBrushCC20" Color="{StaticResource AmbientColorCC20}" />
+            <Color x:Key="AmbientColorCCA9">#ccb2c7c8</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCA9" Color="{StaticResource AmbientColorCCA9}" />
+            <Color x:Key="AmbientColorCCB4">#ccb9cbca</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCB4" Color="{StaticResource AmbientColorCCB4}" />
+            <Color x:Key="AmbientColorCCD3">#ccccd6d0</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCD3" Color="{StaticResource AmbientColorCCD3}" />
+            <Color x:Key="AmbientColorCCFF">#cce6e6d9</Color>
+            <SolidColorBrush x:Key="AmbientBrushCCFF" Color="{StaticResource AmbientColorCCFF}" />
+            <Color x:Key="AmbientColorDD84">#dd9cbac1</Color>
+            <SolidColorBrush x:Key="AmbientBrushDD84" Color="{StaticResource AmbientColorDD84}" />
+            <Color x:Key="AmbientColorDD9A">#dda9c2c5</Color>
+            <SolidColorBrush x:Key="AmbientBrushDD9A" Color="{StaticResource AmbientColorDD9A}" />
+            <Color x:Key="AmbientColorEE8E">#eea2bec3</Color>
+            <SolidColorBrush x:Key="AmbientBrushEE8E" Color="{StaticResource AmbientColorEE8E}" />
+            <Color x:Key="AmbientColorEEA9">#eeb2c7c8</Color>
+            <SolidColorBrush x:Key="AmbientBrushEEA9" Color="{StaticResource AmbientColorEEA9}" />
+            <Color x:Key="AmbientColorFF00">#ff152a38</Color>
+            <SolidColorBrush x:Key="AmbientBrushFF00" Color="{StaticResource AmbientColorFF00}" />
+            <Color x:Key="AmbientColorFF9A">#ffa9c2c5</Color>
+            <SolidColorBrush x:Key="AmbientBrushFF9A" Color="{StaticResource AmbientColorFF9A}" />
+            <Color x:Key="AmbientColorFFA9">#ffb2c7c8</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFA9" Color="{StaticResource AmbientColorFFA9}" />
+            <Color x:Key="AmbientColorFFB0">#ffb6caca</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFB0" Color="{StaticResource AmbientColorFFB0}" />
+            <Color x:Key="AmbientColorFFB4">#ffb9cbca</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFB4" Color="{StaticResource AmbientColorFFB4}" />
+            <Color x:Key="AmbientColorFFD3">#ffccd6d0</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFD3" Color="{StaticResource AmbientColorFFD3}" />
+            <Color x:Key="AmbientColorFFDF">#ffd3dbd3</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFDF" Color="{StaticResource AmbientColorFFDF}" />
+            <Color x:Key="AmbientColorFFED">#ffdbe0d5</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFED" Color="{StaticResource AmbientColorFFED}" />
+            <Color x:Key="AmbientColorFFEE">#ffdce0d6</Color>
+            <SolidColorBrush x:Key="AmbientBrushFFEE" Color="{StaticResource AmbientColorFFEE}" />
+            <Color x:Key="AmbientColorFFFF">#ffe6e6d9</Color>
             <SolidColorBrush x:Key="AmbientBrushFFFF" Color="{StaticResource AmbientColorFFFF}" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
