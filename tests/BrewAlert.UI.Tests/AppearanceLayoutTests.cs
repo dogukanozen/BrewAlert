@@ -453,6 +453,74 @@ public sealed class AppearanceLayoutTests
         Assert.True(origin.Y + picker.Bounds.Height <= 480 + 0.5, "WhoIsBrewing picker overflows height.");
     }
 
+    [AvaloniaTheory]
+    [InlineData(800)]
+    [InlineData(320)]
+    public async Task OperatorBrewView_RendersInAllThemesAndModesWithoutOverflow(int width)
+    {
+        var teaId = BrewProfileService.DefaultProfiles[0].Id;
+        foreach (var theme in Enum.GetValues<BrewTheme>())
+        {
+            using var fixture = new Fixture(width, 480);
+            await fixture.Appearance.SaveAsync(new AppearanceOptions { Mode = theme.ToString() });
+            fixture.RfidOptions.RequireCardToBrew = true;
+
+            // Mode 2: SetupPrompt (unconfigured operator)
+            var unconfigured = new RfidUser { CardId = "CARD01", Name = "Doğukan", HasConfiguredProfiles = false };
+            fixture.Navigation.NavigateTo<OperatorBrewViewModel>(vm => vm.Initialize(unconfigured));
+            Layout(fixture.Window);
+
+            var opVm = Assert.IsType<OperatorBrewViewModel>(fixture.Main.CurrentView);
+            Assert.True(opVm.IsSetupPrompt);
+            var setupPanel = fixture.View.GetVisualDescendants().OfType<Border>().Single(x => x.Name == "OperatorSetupPanel");
+            Assert.True(setupPanel.IsEffectivelyVisible);
+            AssertControlsFitInWidth(setupPanel, fixture.Window, width, $"{theme}/SetupPrompt/{width}");
+            Capture(fixture.Window, $"{theme}-operator-setup-{width}");
+
+            // Mode 3: EditingDurations
+            opVm.OpenDurationEditorCommand.Execute(null);
+            Layout(fixture.Window);
+            Assert.True(opVm.IsEditingDurations);
+            var editorPanel = fixture.View.GetVisualDescendants().OfType<StackPanel>().Single(x => x.Name == "OperatorDurationEditorPanel");
+            Assert.True(editorPanel.IsEffectivelyVisible);
+            AssertControlsFitInWidth(editorPanel, fixture.Window, width, $"{theme}/EditingDurations/{width}");
+            Capture(fixture.Window, $"{theme}-operator-edit-{width}");
+
+            // Mode 1: BrewSelection (configured operator)
+            var configured = new RfidUser
+            {
+                CardId = "CARD02",
+                Name = "Doğukan",
+                HasConfiguredProfiles = true,
+                ProfileDurationMinutes = new Dictionary<Guid, int> { [teaId] = 20 },
+            };
+            fixture.Navigation.NavigateTo<OperatorBrewViewModel>(vm => vm.Initialize(configured));
+            Layout(fixture.Window);
+
+            opVm = Assert.IsType<OperatorBrewViewModel>(fixture.Main.CurrentView);
+            Assert.True(opVm.IsBrewSelection);
+            var cards = fixture.View.GetVisualDescendants().OfType<Button>().Where(x => x.Classes.Contains("operator-profile-card")).ToArray();
+            Assert.Equal(2, cards.Length);
+            Assert.All(cards, card =>
+            {
+                Assert.True(card.Bounds.Width >= 100);
+                Assert.True(card.Bounds.Height >= 100);
+                AssertControlsFitInWidth(card, fixture.Window, width, $"{theme}/BrewSelection/{width}");
+            });
+            Capture(fixture.Window, $"{theme}-operator-brew-{width}");
+        }
+    }
+
+    private static void AssertControlsFitInWidth(Control container, Window window, int width, string label)
+    {
+        foreach (var text in container.GetVisualDescendants().OfType<TextBlock>().Where(x => x.IsEffectivelyVisible))
+        {
+            var origin = text.TranslatePoint(new Point(0, 0), window)!.Value;
+            Assert.InRange(origin.X, -0.5, width);
+            Assert.True(origin.X + text.Bounds.Width <= width + 0.5, $"{label} text '{text.Text}' overflows width.");
+        }
+    }
+
     private static bool IsAnimating(Window window, Func<double> value)
     {
         Layout(window);
@@ -502,6 +570,7 @@ public sealed class AppearanceLayoutTests
         public MainWindowViewModel Main { get; }
         public IAppearanceService Appearance { get; }
         public IBrewTimerService Timer { get; }
+        public INavigationService Navigation { get; }
         public IPreferencesService Preferences { get; } = Substitute.For<IPreferencesService>();
         public RfidOptions RfidOptions { get; } = new() { RequireCardToBrew = false };
         public List<RfidUser> RfidUsers { get; } = [];
@@ -550,6 +619,7 @@ public sealed class AppearanceLayoutTests
             services.AddSingleton<AmbientOverlayViewModel>();
             services.AddSingleton<MainWindowViewModel>();
             services.AddTransient<ProfileListViewModel>();
+            services.AddTransient<OperatorBrewViewModel>();
             services.AddTransient<ActiveBrewsViewModel>();
             services.AddTransient<SettingsViewModel>();
             services.AddTransient<RfidUsersViewModel>();
@@ -558,6 +628,7 @@ public sealed class AppearanceLayoutTests
             Appearance.PropertyChanged += ThemeChanged;
             ThemeChanged(null, new PropertyChangedEventArgs(nameof(IAppearanceService.CurrentTheme)));
             Timer = _provider.GetRequiredService<IBrewTimerService>();
+            Navigation = _provider.GetRequiredService<INavigationService>();
             Main = _provider.GetRequiredService<MainWindowViewModel>();
             View = new MainView { DataContext = Main };
             Window = new Window { Width = width, Height = height, SystemDecorations = SystemDecorations.None, Content = View };

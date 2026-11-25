@@ -124,4 +124,120 @@ public class RfidUserServiceTests
         await sut.DeleteAsync(id);
         await _repository.Received(1).DeleteAsync(id, Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public void ResolveDuration_ReturnsOverrideWhenValid_AndFallsBackToDefaultOtherwise()
+    {
+        var tea = new BrewProfile
+        {
+            Id = Guid.NewGuid(),
+            Name = "Çay",
+            BrewDuration = TimeSpan.FromMinutes(15),
+        };
+        var user = new RfidUser
+        {
+            Name = "Ahmet",
+            ProfileDurationMinutes = new Dictionary<Guid, int>
+            {
+                [tea.Id] = 20,
+            },
+        };
+
+        Assert.Equal(TimeSpan.FromMinutes(20), RfidUserService.ResolveDuration(user, tea));
+        Assert.True(RfidUserService.HasCustomDuration(user, tea));
+
+        user.ProfileDurationMinutes[tea.Id] = 0;
+        Assert.Equal(TimeSpan.FromMinutes(15), RfidUserService.ResolveDuration(user, tea));
+        Assert.False(RfidUserService.HasCustomDuration(user, tea));
+
+        user.ProfileDurationMinutes[tea.Id] = 999;
+        Assert.Equal(TimeSpan.FromMinutes(15), RfidUserService.ResolveDuration(user, tea));
+        Assert.False(RfidUserService.HasCustomDuration(user, tea));
+
+        user.ProfileDurationMinutes[tea.Id] = 15;
+        Assert.Equal(TimeSpan.FromMinutes(15), RfidUserService.ResolveDuration(user, tea));
+        Assert.False(RfidUserService.HasCustomDuration(user, tea));
+
+        Assert.Equal(TimeSpan.FromMinutes(15), RfidUserService.ResolveDuration(null, tea));
+        Assert.False(RfidUserService.HasCustomDuration(null, tea));
+    }
+
+    [Fact]
+    public void CreatePersonalizedProfile_DoesNotMutateOriginalProfile()
+    {
+        var coffee = new BrewProfile
+        {
+            Id = Guid.NewGuid(),
+            Name = "Filtre Kahve",
+            Type = BrewType.Coffee,
+            BrewDuration = TimeSpan.FromMinutes(4),
+            Icon = "☕",
+            Description = "Filtre kahve",
+        };
+        var user = new RfidUser
+        {
+            Name = "Deniz",
+            HasConfiguredProfiles = true,
+            ProfileDurationMinutes = new Dictionary<Guid, int> { [coffee.Id] = 10 },
+        };
+
+        var personalized = RfidUserService.CreatePersonalizedProfile(coffee, user);
+
+        Assert.NotSame(coffee, personalized);
+        Assert.Equal(coffee.Id, personalized.Id);
+        Assert.Equal(coffee.Name, personalized.Name);
+        Assert.Equal(coffee.Type, personalized.Type);
+        Assert.Equal(coffee.Icon, personalized.Icon);
+        Assert.Equal(coffee.Description, personalized.Description);
+        Assert.Equal(TimeSpan.FromMinutes(10), personalized.BrewDuration);
+        Assert.Equal(TimeSpan.FromMinutes(4), coffee.BrewDuration);
+    }
+
+    [Fact]
+    public async Task SaveProfilePreferencesAndAcceptDefaults_PersistAndValidate()
+    {
+        var sut = new RfidUserService(_repository);
+        var teaId = Guid.NewGuid();
+        var user = new RfidUser { Id = Guid.NewGuid(), Name = "Elif", CardId = "CARD99" };
+        _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns([user]);
+
+        var updated = await sut.SaveProfilePreferencesAsync(user.Id, new Dictionary<Guid, int> { [teaId] = 20 });
+
+        Assert.True(updated.HasConfiguredProfiles);
+        Assert.Equal(20, updated.ProfileDurationMinutes[teaId]);
+        await _repository.Received(1).SaveAsync(user, Arg.Any<CancellationToken>());
+
+        var acceptedDefaults = await sut.AcceptDefaultProfilesAsync(user.Id);
+        Assert.True(acceptedDefaults.HasConfiguredProfiles);
+        Assert.Empty(acceptedDefaults.ProfileDurationMinutes);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            sut.SaveProfilePreferencesAsync(user.Id, new Dictionary<Guid, int> { [teaId] = 0 }));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            sut.SaveProfilePreferencesAsync(user.Id, new Dictionary<Guid, int> { [teaId] = 121 }));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.SaveProfilePreferencesAsync(Guid.NewGuid(), new Dictionary<Guid, int>()));
+    }
+
+    [Fact]
+    public async Task SaveUserAsync_UpdatingExistingOperator_PreservesProfilePreferences()
+    {
+        var sut = new RfidUserService(_repository);
+        var teaId = Guid.NewGuid();
+        var existing = new RfidUser
+        {
+            Id = Guid.NewGuid(),
+            Name = "Selin",
+            CardId = "CARD01",
+            HasConfiguredProfiles = true,
+            ProfileDurationMinutes = new Dictionary<Guid, int> { [teaId] = 22 },
+        };
+        _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns([existing]);
+
+        var updated = await sut.SaveUserAsync("Selin Demir", "CARD02", existing.Id);
+
+        Assert.True(updated.HasConfiguredProfiles);
+        Assert.Equal(22, updated.ProfileDurationMinutes[teaId]);
+    }
 }

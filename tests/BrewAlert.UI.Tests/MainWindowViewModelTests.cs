@@ -4,9 +4,13 @@ using Avalonia.Threading;
 using BrewAlert.Core.Events;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
+using BrewAlert.Core.Services;
+using BrewAlert.Infrastructure.Configuration;
 using BrewAlert.UI.Services;
 using BrewAlert.UI.ViewModels;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Xunit;
 
@@ -453,5 +457,63 @@ public class MainWindowViewModelTests
         _loc.LanguageChanged += Raise.Event<Action<string>>("Turkish");
 
         Assert.Equal("stale", vm.UpdateToastMessage);
+    }
+
+    [AvaloniaFact]
+    public void NavigateFromOperatorBrew_UpdatesTitleForProfileListAndActiveBrews()
+    {
+        _loc.Get("OperatorBrewTitle").Returns("Personal Brew");
+        var vm = CreateVm();
+
+        var profileService = new BrewProfileService(Substitute.For<IProfileRepository>());
+        var rfidUserService = new RfidUserService(Substitute.For<IRfidUserRepository>());
+        var rfidOptions = Substitute.For<IOptionsMonitor<RfidOptions>>();
+        rfidOptions.CurrentValue.Returns(new RfidOptions());
+
+        using var operatorVm = new OperatorBrewViewModel(
+            profileService,
+            rfidUserService,
+            _timerService,
+            _rfidReader,
+            _navigation,
+            _loc,
+            NullLogger<OperatorBrewViewModel>.Instance);
+        using var homeVm = new ProfileListViewModel(
+            profileService,
+            _navigation,
+            _loc,
+            _history,
+            _timerService,
+            _rfidReader,
+            rfidUserService,
+            rfidOptions,
+            NullLogger<ProfileListViewModel>.Instance);
+        using var activeVm = new ActiveBrewsViewModel(
+            _timerService,
+            Substitute.For<IBrewCompletionNotificationService>(),
+            _navigation,
+            _loc);
+
+        _navigation.CurrentViewChanged += Raise.Event<Action<ViewModelBase>>(operatorVm);
+        Assert.Equal("Personal Brew", vm.Title);
+
+        // Returning home from OperatorBrewViewModel must reset title from OperatorBrewTitle.
+        _navigation.CurrentViewChanged += Raise.Event<Action<ViewModelBase>>(homeVm);
+        Assert.Equal("BrewAlert", vm.Title);
+
+        // Starting a brew from OperatorBrewViewModel and navigating to ActiveBrewsViewModel
+        // must update Title and allow subsequent BrewCompleted events to reset it.
+        _navigation.CurrentViewChanged += Raise.Event<Action<ViewModelBase>>(operatorVm);
+        Assert.Equal("Personal Brew", vm.Title);
+
+        var tea = new BrewProfile { Name = "Tea", Icon = "♨", BrewDuration = TimeSpan.FromMinutes(20) };
+        var session = new BrewSession { Profile = tea, State = BrewSessionState.Running };
+        _timerService.GetActiveSessions().Returns([session]);
+        _navigation.CurrentViewChanged += Raise.Event<Action<ViewModelBase>>(activeVm);
+        Assert.Equal("♨ Tea", vm.Title);
+
+        _timerService.GetActiveSessions().Returns(Array.Empty<BrewSession>());
+        _timerService.BrewCompleted += Raise.Event<EventHandler<BrewCompletedEvent>>(this, new BrewCompletedEvent(session));
+        Assert.Equal("BrewAlert", vm.Title);
     }
 }

@@ -44,8 +44,8 @@ public partial class MainView : UserControl
         }
 
         // Desktop / non-evdev fallback: capture keyboard-wedge RFID reader input ONLY when
-        // a view is explicitly awaiting a card scan and no hardware evdev grab is active.
-        if (vm.IsHardwareRfidConnected || vm.CurrentView is not IRfidCardScanAwaiter { IsAwaitingCardScan: true })
+        // a view can accept a card scan and no hardware evdev grab is active.
+        if (vm.IsHardwareRfidConnected || vm.CurrentView is not IRfidCardScanAwaiter { CanAcceptKeyboardCardScan: true })
             return;
 
         if (e.Key is Key.Enter or Key.Return)

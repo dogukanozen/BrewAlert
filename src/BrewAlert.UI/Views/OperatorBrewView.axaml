@@ -1,0 +1,186 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BrewAlert.UI.ViewModels"
+             xmlns:media="using:BrewAlert.UI.Media"
+             x:Class="BrewAlert.UI.Views.OperatorBrewView"
+             x:DataType="vm:OperatorBrewViewModel"
+             Classes="operator-brew-page">
+    <Grid>
+        <!-- Mode 1: Personalized Brew Selection -->
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding IsBrewSelection}">
+            <StackPanel Spacing="16" Margin="24,18,12,16">
+                <Grid Classes="operator-header" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="10">
+                    <StackPanel Classes="operator-greeting" Spacing="6">
+                        <TextBlock Text="{Binding GreetingEyebrow}" Classes="brew-eyebrow" />
+                        <TextBlock x:Name="OperatorGreetingHeading" Text="{Binding GreetingTitle}"
+                                   Classes="home-title operator-greeting-title" />
+                        <TextBlock Text="{Binding GreetingSubtitle}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <WrapPanel Classes="operator-header-actions" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right">
+                        <Button x:Name="EditDurationsButton" Command="{Binding OpenDurationEditorCommand}"
+                                Classes="brew-secondary" Margin="0,0,8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Viewbox Width="16" Height="16">
+                                    <Path Data="{x:Static media:BrewIconGeometry.Sliders}" Classes="brew-icon" />
+                                </Viewbox>
+                                <TextBlock Text="{Binding EditDurationsText}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="OperatorBackButton" Content="{Binding BackHomeText}"
+                                Command="{Binding BackToHomeCommand}" Classes="brew-secondary" Margin="0,0,12,6" />
+                    </WrapPanel>
+                </Grid>
+
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource BrewDangerBrush}"
+                           FontSize="13" TextWrapping="Wrap"
+                           IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <ItemsControl ItemsSource="{Binding ProfileChoices}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Classes="operator-profile-grid" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:OperatorProfileChoiceItem">
+                            <Button Classes="operator-profile-card"
+                                    Command="{Binding $parent[ItemsControl].((vm:OperatorBrewViewModel)DataContext).SelectProfileCommand}"
+                                    CommandParameter="{Binding}">
+                                <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,Auto" RowSpacing="10" ColumnSpacing="10">
+                                    <Viewbox Width="28" Height="28" HorizontalAlignment="Left">
+                                        <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}" Classes="brew-icon" />
+                                    </Viewbox>
+                                    <Border Grid.Column="1" Classes="operator-badge" Classes.custom="{Binding IsCustomDuration}"
+                                            VerticalAlignment="Top" HorizontalAlignment="Right">
+                                        <TextBlock Text="{Binding BadgeText}" FontSize="11" />
+                                    </Border>
+
+                                    <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Name}"
+                                               Classes="operator-card-name" TextTrimming="CharacterEllipsis"
+                                               VerticalAlignment="Center" />
+
+                                    <StackPanel Grid.Row="2" Grid.Column="0" Spacing="2" VerticalAlignment="Bottom">
+                                        <TextBlock Text="{Binding DurationDisplay}" Classes="operator-card-duration" />
+                                        <TextBlock Text="{Binding DefaultHintText}" Classes="brew-subtitle" FontSize="11"
+                                                   IsVisible="{Binding IsCustomDuration}" />
+                                    </StackPanel>
+                                    <Viewbox Grid.Row="2" Grid.Column="1" Width="18" Height="18"
+                                             VerticalAlignment="Bottom" HorizontalAlignment="Right">
+                                        <Path Data="{x:Static media:BrewIconGeometry.Arrow}" Classes="brew-icon" />
+                                    </Viewbox>
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Mode 2: First-Time Setup Prompt -->
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding IsSetupPrompt}">
+            <Border x:Name="OperatorSetupPanel" Classes="brew-panel operator-setup-card"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    MaxWidth="540" Margin="20,16">
+                <StackPanel Spacing="14" HorizontalAlignment="Stretch">
+                    <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                        <Viewbox Width="26" Height="26">
+                            <Path Data="{x:Static media:BrewIconGeometry.User}" Classes="brew-icon" />
+                        </Viewbox>
+                        <TextBlock Text="{Binding GreetingTitle}" Classes="brew-title" FontSize="26"
+                                   VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding SetupTitle}" Classes="brew-section" FontSize="17"
+                               HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding SetupSubtitle}" Classes="brew-subtitle"
+                               HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+
+                    <ItemsControl ItemsSource="{Binding DefaultPreviewPills}" HorizontalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel HorizontalAlignment="Center" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Border Classes="operator-preview-pill">
+                                    <TextBlock Text="{Binding}" FontSize="12" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource BrewDangerBrush}"
+                               FontSize="13" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                               IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                        <Button x:Name="DefineCustomDurationsButton" Content="{Binding DefineCustomText}"
+                                Command="{Binding OpenDurationEditorCommand}"
+                                Classes="brew-primary" Margin="0,0,8,6" />
+                        <Button x:Name="UseDefaultDurationsButton" Content="{Binding UseDefaultsText}"
+                                Command="{Binding UseDefaultsCommand}" IsEnabled="{Binding !IsBusy}"
+                                Classes="brew-secondary" Margin="0,0,8,6" />
+                        <Button Content="{Binding BackHomeText}" Command="{Binding BackToHomeCommand}"
+                                Classes="brew-secondary" Margin="0,0,0,6" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+
+        <!-- Mode 3: Duration Editor -->
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding IsEditingDurations}">
+            <StackPanel x:Name="OperatorDurationEditorPanel" Spacing="14" Margin="24,18,24,16"
+                        MaxWidth="640" HorizontalAlignment="Stretch">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding GreetingEyebrow}" Classes="brew-eyebrow" />
+                    <TextBlock Text="{Binding EditDurationsTitle}" Classes="brew-title" FontSize="24" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding EditDurationsSubtitle}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource BrewDangerBrush}"
+                           FontSize="13" TextWrapping="Wrap"
+                           IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <ItemsControl ItemsSource="{Binding EditableDurations}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:OperatorProfileDurationItem">
+                            <Border Classes="brew-panel operator-duration-row">
+                                <Grid Classes="operator-duration-grid" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                                    <StackPanel Classes="operator-duration-info" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                        <Viewbox Width="22" Height="22" VerticalAlignment="Center">
+                                            <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}" Classes="brew-icon" />
+                                        </Viewbox>
+                                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Medium"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding DefaultHintText}" Classes="brew-subtitle" FontSize="12" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel Classes="operator-duration-stepper" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Button Content="-" Command="{Binding DecreaseCommand}"
+                                                Classes="brew-secondary" Width="44" Padding="0" />
+                                        <TextBlock Text="{Binding DurationText}" MinWidth="62" TextAlignment="Center"
+                                                   VerticalAlignment="Center" FontSize="16" FontWeight="Medium" />
+                                        <Button Content="+" Command="{Binding IncreaseCommand}"
+                                                Classes="brew-secondary" Width="44" Padding="0" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <WrapPanel Orientation="Horizontal">
+                    <Button x:Name="SaveOperatorDurationsButton" Content="{Binding SaveDurationsText}"
+                            Command="{Binding SaveDurationsCommand}" IsEnabled="{Binding !IsBusy}"
+                            Classes="brew-primary" Margin="0,0,8,6" />
+                    <Button Content="{Binding ResetDurationsText}" Command="{Binding ResetDurationsToDefaultCommand}"
+                            IsEnabled="{Binding !IsBusy}" Classes="brew-secondary" Margin="0,0,8,6" />
+                    <Button Content="{Binding CancelText}" Command="{Binding CancelDurationEditorCommand}"
+                            Classes="brew-secondary" Margin="0,0,0,6" />
+                </WrapPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -16,14 +16,18 @@ namespace BrewAlert.UI.Tests;
 public class RfidUsersViewModelTests
 {
     private readonly IRfidUserRepository _repository = Substitute.For<IRfidUserRepository>();
+    private readonly IProfileRepository _profileRepository = Substitute.For<IProfileRepository>();
     private readonly IRfidReaderService _rfidReader = Substitute.For<IRfidReaderService>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
     private readonly ILocalizationService _loc;
     private readonly RfidUserService _userService;
+    private readonly BrewProfileService _profileService;
 
     public RfidUsersViewModelTests()
     {
         _userService = new RfidUserService(_repository);
+        _profileRepository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(BrewProfileService.DefaultProfiles.ToList());
+        _profileService = new BrewProfileService(_profileRepository);
         _loc = Substitute.For<ILocalizationService>();
         _loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
         _loc.CurrentLanguage.Returns("Turkish");
@@ -33,6 +37,7 @@ public class RfidUsersViewModelTests
 
     private RfidUsersViewModel CreateVm() => new(
         _userService,
+        _profileService,
         _rfidReader,
         _navigation,
         _loc,
@@ -170,6 +175,124 @@ public class RfidUsersViewModelTests
         Assert.False(vm.HasScannedCard);
         await vm.SaveUserCommand.ExecuteAsync(null);
         Assert.Null(cardless.CardId);
+    }
+
+    [AvaloniaFact]
+    public async Task EditUserDurations_ModifiesResetsAndPersistsOverrides()
+    {
+        var tea = BrewProfileService.DefaultProfiles[0];
+        var user = new RfidUser
+        {
+            CardId = "445566",
+            Name = "Deniz",
+            HasConfiguredProfiles = true,
+            ProfileDurationMinutes = new Dictionary<Guid, int> { [tea.Id] = 20 },
+        };
+        var list = new List<RfidUser> { user };
+        _repository.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromResult<IReadOnlyList<RfidUser>>(list.ToList()));
+
+        using var vm = CreateVm();
+        await WaitUntilAsync(() => vm.HasUsers);
+
+        await vm.EditUserDurationsCommand.ExecuteAsync(user);
+        Assert.True(vm.IsEditingDurations);
+        var teaRow = vm.EditingDurations.Single(i => i.ProfileId == tea.Id);
+        Assert.Equal(20, teaRow.Minutes);
+
+        teaRow.IncreaseCommand.Execute(null);
+        Assert.Equal(21, teaRow.Minutes);
+
+        await vm.SaveUserDurationsCommand.ExecuteAsync(null);
+        Assert.True(vm.IsListMode);
+        Assert.Equal(21, user.ProfileDurationMinutes[tea.Id]);
+
+        await vm.EditUserDurationsCommand.ExecuteAsync(user);
+        vm.ResetUserDurationsCommand.Execute(null);
+        Assert.Equal(15, vm.EditingDurations.Single(i => i.ProfileId == tea.Id).Minutes);
+        await vm.SaveUserDurationsCommand.ExecuteAsync(null);
+        Assert.Empty(user.ProfileDurationMinutes);
+        Assert.True(user.HasConfiguredProfiles);
+    }
+
+    [AvaloniaFact]
+    public async Task StaleEditUserDurationsAndSave_DoNotClobberNewEditingSession()
+    {
+        var userA = new RfidUser { Id = Guid.NewGuid(), CardId = "A1", Name = "Ahmet" };
+        var userB = new RfidUser { Id = Guid.NewGuid(), CardId = "B2", Name = "Burak" };
+        var list = new List<RfidUser> { userA, userB };
+        _repository.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromResult<IReadOnlyList<RfidUser>>(list.ToList()));
+
+        using var vm = CreateVm();
+        await WaitUntilAsync(() => vm.HasUsers);
+
+        // Case 1: Slow profile load for A completes after user opens EditUser(B).
+        var slowProfiles = new TaskCompletionSource<IReadOnlyList<BrewProfile>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        _profileRepository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(_ => slowProfiles.Task);
+
+        var editATask = vm.EditUserDurationsCommand.ExecuteAsync(userA);
+        vm.EditUserCommand.Execute(userB);
+        Assert.True(vm.IsEnteringName);
+        Assert.Equal("Burak", vm.UserNameInput);
+
+        slowProfiles.SetResult(BrewProfileService.DefaultProfiles.ToList());
+        await editATask;
+
+        Assert.True(vm.IsEnteringName);
+        Assert.Equal("Burak", vm.UserNameInput);
+        Assert.False(vm.IsBusy);
+
+        // Case 2: Slow save for A completes after user cancels and opens EditUserDurations(B).
+        _profileRepository.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(BrewProfileService.DefaultProfiles.ToList());
+        await vm.EditUserDurationsCommand.ExecuteAsync(userA);
+        var slowSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _repository.SaveAsync(Arg.Is<RfidUser>(u => u.Id == userA.Id), Arg.Any<CancellationToken>())
+            .Returns(_ => slowSave.Task);
+
+        var saveATask = vm.SaveUserDurationsCommand.ExecuteAsync(null);
+        vm.CancelRegistrationCommand.Execute(null);
+        await vm.EditUserDurationsCommand.ExecuteAsync(userB);
+        var teaId = BrewProfileService.DefaultProfiles[0].Id;
+        vm.EditingDurations.Single(i => i.ProfileId == teaId).IncreaseCommand.Execute(null);
+        Assert.Equal(16, vm.EditingDurations.Single(i => i.ProfileId == teaId).Minutes);
+
+        slowSave.SetResult();
+        await saveATask;
+
+        Assert.True(vm.IsEditingDurations);
+        Assert.Equal(16, vm.EditingDurations.Single(i => i.ProfileId == teaId).Minutes);
+        Assert.False(vm.IsBusy);
+    }
+
+    [AvaloniaFact]
+    public async Task EditUserDurations_WithGlobalDurationOver120_DoesNotCreateBogusOverride()
+    {
+        var coldBrew = new BrewProfile
+        {
+            Id = Guid.NewGuid(),
+            Name = "Soğuk Demleme",
+            Type = BrewType.Coffee,
+            BrewDuration = TimeSpan.FromMinutes(150),
+        };
+        _profileRepository.GetAllAsync(Arg.Any<CancellationToken>()).Returns([coldBrew]);
+
+        var user = new RfidUser { Id = Guid.NewGuid(), CardId = "C1", Name = "Canan" };
+        _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns([user]);
+
+        using var vm = CreateVm();
+        await WaitUntilAsync(() => vm.HasUsers);
+
+        await vm.EditUserDurationsCommand.ExecuteAsync(user);
+        var row = Assert.Single(vm.EditingDurations, r => r.ProfileId == coldBrew.Id);
+        Assert.Equal(150, row.DefaultMinutes);
+        Assert.Equal(120, row.Minutes);
+        Assert.False(row.IsCustomized);
+
+        await vm.SaveUserDurationsCommand.ExecuteAsync(null);
+        Assert.Empty(user.ProfileDurationMinutes);
     }
 
     [AvaloniaFact]

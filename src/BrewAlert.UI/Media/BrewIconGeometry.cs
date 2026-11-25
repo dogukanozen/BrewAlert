@@ -67,4 +67,8 @@ public static class BrewIconGeometry
     public static Geometry User { get; } = Geometry.Parse(
         "M12,5 A3.5,3.5 0 1 0 12,12 A3.5,3.5 0 1 0 12,5 Z " +
         "M5,20 C5,16.5 8.1,14.5 12,14.5 C15.9,14.5 19,16.5 19,20");
+
+    /// <summary>Sliders icon for editing per-operator brew durations.</summary>
+    public static Geometry Sliders { get; } = Geometry.Parse(
+        "M4,7 H20 M4,17 H20 M9,4 V10 M15,14 V20");
 }

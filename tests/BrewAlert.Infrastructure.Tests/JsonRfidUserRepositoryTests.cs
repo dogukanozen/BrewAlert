@@ -108,6 +108,53 @@ public class JsonRfidUserRepositoryTests : IDisposable
         Assert.Equal("card01", all.Single(u => u.Id == bob.Id).CardId);
     }
 
+    [Fact]
+    public async Task SaveAndLoad_RoundTripsProfileDurationPreferences()
+    {
+        var teaId = Guid.NewGuid();
+        var coffeeId = Guid.NewGuid();
+        var user = new RfidUser
+        {
+            CardId = "PREF01",
+            Name = "Deniz",
+            HasConfiguredProfiles = true,
+            ProfileDurationMinutes = new Dictionary<Guid, int>
+            {
+                [teaId] = 20,
+                [coffeeId] = 10,
+            },
+        };
+        await _sut.SaveAsync(user);
+
+        var loaded = Assert.Single(await _sut.GetAllAsync());
+        Assert.True(loaded.HasConfiguredProfiles);
+        Assert.Equal(20, loaded.ProfileDurationMinutes[teaId]);
+        Assert.Equal(10, loaded.ProfileDurationMinutes[coffeeId]);
+    }
+
+    [Fact]
+    public async Task LegacyJsonWithoutProfileFields_DeserializesCleanly()
+    {
+        Directory.CreateDirectory(_dir);
+        var legacyJson = """
+            [
+              {
+                "id": "11111111-1111-1111-1111-111111111111",
+                "cardId": "LEG01",
+                "name": "Ahmet",
+                "createdAtUtc": "2026-11-25T10:00:00Z"
+              }
+            ]
+            """;
+        await File.WriteAllTextAsync(_path, legacyJson);
+
+        var loaded = Assert.Single(await _sut.GetAllAsync());
+        Assert.Equal("Ahmet", loaded.Name);
+        Assert.False(loaded.HasConfiguredProfiles);
+        Assert.NotNull(loaded.ProfileDurationMinutes);
+        Assert.Empty(loaded.ProfileDurationMinutes);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_dir))

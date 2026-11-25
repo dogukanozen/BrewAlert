@@ -23,21 +23,25 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
         List,
         WaitingForCard,
         EnteringName,
+        EditingDurations,
     }
 
     private readonly RfidUserService _userService;
+    private readonly BrewProfileService _profileService;
     private readonly IRfidReaderService _rfidReader;
     private readonly INavigationService _navigation;
     private readonly ILocalizationService _loc;
     private readonly ILogger<RfidUsersViewModel> _logger;
     private readonly CancellationTokenSource _disposeCts = new();
     private Guid? _editingUserId;
+    private int _editSessionGeneration;
     private bool _disposed;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsListMode))]
     [NotifyPropertyChangedFor(nameof(IsWaitingForCard))]
     [NotifyPropertyChangedFor(nameof(IsEnteringName))]
+    [NotifyPropertyChangedFor(nameof(IsEditingDurations))]
     [NotifyPropertyChangedFor(nameof(IsAwaitingCardScan))]
     private StepMode _step = StepMode.List;
 
@@ -50,14 +54,17 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     [ObservableProperty] private string _userNameInput = string.Empty;
     [ObservableProperty] private string _existingCardNotice = string.Empty;
     [ObservableProperty] private string _statusMessage = string.Empty;
+    [ObservableProperty] private string _editingDurationsTitle = string.Empty;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _hasUsers;
 
     public ObservableCollection<RfidUser> Users { get; } = [];
+    public ObservableCollection<OperatorProfileDurationItem> EditingDurations { get; } = [];
 
     public bool IsListMode => Step == StepMode.List;
     public bool IsWaitingForCard => Step == StepMode.WaitingForCard;
     public bool IsEnteringName => Step == StepMode.EnteringName;
+    public bool IsEditingDurations => Step == StepMode.EditingDurations;
     public bool IsAwaitingCardScan => IsWaitingForCard;
     public bool HasScannedCard => !string.IsNullOrWhiteSpace(ScannedCardId);
 
@@ -75,6 +82,9 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     public string RemoveCardText => _loc.Get("RfidRemoveCard");
     public string SaveText => _loc.Get("RfidSaveUser");
     public string EditText => _loc.Get("RfidEditUser");
+    public string EditDurationsText => _loc.Get("RfidEditDurations");
+    public string EditDurationsSubtitle => _loc.Get("OperatorEditSubtitle");
+    public string ResetDurationsText => _loc.Get("OperatorResetDurations");
     public string DeleteText => _loc.Get("DeleteProfile");
     public string NameWatermark => _loc.Get("RfidNameWatermark");
     public string SpaceLabel => _loc.Get("KeyboardSpace");
@@ -87,12 +97,14 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
 
     public RfidUsersViewModel(
         RfidUserService userService,
+        BrewProfileService profileService,
         IRfidReaderService rfidReader,
         INavigationService navigation,
         ILocalizationService loc,
         ILogger<RfidUsersViewModel> logger)
     {
         _userService = userService;
+        _profileService = profileService;
         _rfidReader = rfidReader;
         _navigation = navigation;
         _loc = loc;
@@ -202,13 +214,17 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
             nameof(Title), nameof(BackText), nameof(AddUserText), nameof(AddCardlessUserText),
             nameof(NoCardBadgeText), nameof(EmptyText), nameof(ScanCardTitle), nameof(ScanCardHint),
             nameof(ContinueWithoutCardText), nameof(CancelText), nameof(CardActionText),
-            nameof(RemoveCardText), nameof(SaveText), nameof(EditText), nameof(DeleteText),
+            nameof(RemoveCardText), nameof(SaveText), nameof(EditText), nameof(EditDurationsText),
+            nameof(EditDurationsSubtitle), nameof(ResetDurationsText), nameof(DeleteText),
             nameof(NameWatermark), nameof(SpaceLabel), nameof(DoneLabel), nameof(CardIdDisplay),
             nameof(ReaderStatusText)
         })
         {
             OnPropertyChanged(prop);
         }
+
+        foreach (var item in EditingDurations)
+            item.RefreshLocalization(_loc);
     }
 
     [RelayCommand]
@@ -217,6 +233,8 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     [RelayCommand]
     private void BeginAdd()
     {
+        _editSessionGeneration++;
+        IsBusy = false;
         _editingUserId = null;
         StatusMessage = string.Empty;
         ScannedCardId = string.Empty;
@@ -228,6 +246,8 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     [RelayCommand]
     private void BeginAddWithoutCard()
     {
+        _editSessionGeneration++;
+        IsBusy = false;
         _editingUserId = null;
         StatusMessage = string.Empty;
         ScannedCardId = string.Empty;
@@ -263,6 +283,8 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     private void EditUser(RfidUser user)
     {
         if (user is null) return;
+        _editSessionGeneration++;
+        IsBusy = false;
         _editingUserId = user.Id;
         StatusMessage = string.Empty;
         ScannedCardId = user.CardId ?? string.Empty;
@@ -274,11 +296,122 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     [RelayCommand]
     private void CancelRegistration()
     {
+        _editSessionGeneration++;
+        IsBusy = false;
         _editingUserId = null;
         ScannedCardId = string.Empty;
         UserNameInput = string.Empty;
         ExistingCardNotice = string.Empty;
+        EditingDurations.Clear();
+        EditingDurationsTitle = string.Empty;
         Step = StepMode.List;
+    }
+
+    [RelayCommand]
+    private async Task EditUserDurationsAsync(RfidUser user)
+    {
+        if (user is null) return;
+
+        var generation = ++_editSessionGeneration;
+        IsBusy = true;
+        StatusMessage = string.Empty;
+        try
+        {
+            var profiles = await _profileService.GetAllProfilesAsync(_disposeCts.Token);
+            if (_disposed || generation != _editSessionGeneration) return;
+
+            _editingUserId = user.Id;
+            EditingDurationsTitle = string.Format(_loc.CurrentCulture, _loc.Get("OperatorEditTitle"), user.Name);
+            EditingDurations.Clear();
+            foreach (var profile in profiles)
+            {
+                var defaultMinutes = Math.Max(
+                    RfidUserService.MinBrewDurationMinutes,
+                    (int)Math.Round(profile.BrewDuration.TotalMinutes));
+                var initialMinutes = Math.Clamp(
+                    (int)Math.Round(RfidUserService.ResolveDuration(user, profile).TotalMinutes),
+                    RfidUserService.MinBrewDurationMinutes,
+                    RfidUserService.MaxBrewDurationMinutes);
+
+                EditingDurations.Add(new OperatorProfileDurationItem(
+                    profile.Id,
+                    profile.Name,
+                    profile.Icon,
+                    defaultMinutes,
+                    initialMinutes,
+                    _loc,
+                    hasCustomOverride: RfidUserService.HasCustomDuration(user, profile)));
+            }
+            Step = StepMode.EditingDurations;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load brew profiles for operator duration editor.");
+            if (!_disposed && generation == _editSessionGeneration)
+                StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ErrorPrefix"), ex.Message);
+        }
+        finally
+        {
+            if (!_disposed && generation == _editSessionGeneration)
+                IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void ResetUserDurations()
+    {
+        foreach (var item in EditingDurations)
+            item.ResetToDefault();
+    }
+
+    [RelayCommand]
+    private async Task SaveUserDurationsAsync()
+    {
+        if (_editingUserId is null) return;
+
+        var generation = _editSessionGeneration;
+        var targetUserId = _editingUserId.Value;
+
+        var overrides = new Dictionary<Guid, int>();
+        foreach (var item in EditingDurations)
+        {
+            if (item.IsCustomized)
+                overrides[item.ProfileId] = item.Minutes;
+        }
+
+        IsBusy = true;
+        StatusMessage = string.Empty;
+        try
+        {
+            var saved = await _userService.SaveProfilePreferencesAsync(targetUserId, overrides, _disposeCts.Token);
+            if (_disposed || generation != _editSessionGeneration) return;
+
+            await LoadUsersAsync();
+            if (_disposed || generation != _editSessionGeneration) return;
+
+            StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("OperatorDurationsSaved"), saved.Name);
+            _editingUserId = null;
+            EditingDurations.Clear();
+            EditingDurationsTitle = string.Empty;
+            Step = StepMode.List;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save durations for operator {UserId}.", targetUserId);
+            if (!_disposed && generation == _editSessionGeneration)
+                StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ErrorPrefix"), ex.Message);
+        }
+        finally
+        {
+            if (!_disposed && generation == _editSessionGeneration)
+                IsBusy = false;
+        }
     }
 
     [RelayCommand]
