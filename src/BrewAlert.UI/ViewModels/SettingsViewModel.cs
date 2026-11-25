@@ -88,19 +88,24 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     public ObservableCollection<EditableProfileViewModel> Profiles { get; } = new();
     public AppearanceSettingsViewModel Appearance { get; }
     public NetworkSettingsViewModel Network { get; }
+    public RfidSettingsViewModel Rfid { get; }
 
     public SettingsViewModel(
         INotificationService notificationService,
         IOptionsMonitor<TeamsGraphOptions> graphOptions,
         IOptionsMonitor<TeamsNotificationOptions> webhookOptions,
         IOptionsMonitor<NotificationProviderOptions> providerOptions,
+        IOptionsMonitor<RfidOptions> rfidOptions,
         BrewProfileService profileService,
         IPreferencesService preferencesService,
         ILocalizationService loc,
         IUpdateService updateService,
         IConfigurationRoot configuration,
         IAppearanceService appearance,
-        INetworkInfoService network)
+        INetworkInfoService network,
+        RfidUserService rfidUserService,
+        IRfidReaderService rfidReader,
+        INavigationService navigation)
     {
         _notificationService = notificationService;
         _graphOptions = graphOptions;
@@ -112,6 +117,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _configuration = configuration;
         Appearance = new AppearanceSettingsViewModel(appearance, loc);
         Network = new NetworkSettingsViewModel(network, loc);
+        Rfid = new RfidSettingsViewModel(rfidUserService, rfidReader, rfidOptions, preferencesService, configuration, navigation, loc);
 
         _selectedProvider = providerOptions.CurrentValue.Provider;
         _currentLanguage = loc.CurrentLanguage;
@@ -434,6 +440,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _loc.LanguageChanged -= OnLanguageChanged;
         Appearance.Dispose();
         Network.Dispose();
+        Rfid.Dispose();
     }
 }
 

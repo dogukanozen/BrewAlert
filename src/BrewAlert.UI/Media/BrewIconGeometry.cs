@@ -47,4 +47,24 @@ public static class BrewIconGeometry
         "M17,12 H20 M15.54,8.46 L17.66,6.34 M12,7 V4 M8.46,8.46 L6.34,6.34 " +
         "M7,12 H4 M8.46,15.54 L6.34,17.66 M12,17 V20 M15.54,15.54 L17.66,17.66 " +
         "M10,12 A2,2 0 1 0 14,12 A2,2 0 1 0 10,12 Z");
+
+    /// <summary>Contactless RFID badge with signal arcs.</summary>
+    public static Geometry RfidCard { get; } = Geometry.Parse(
+        "M3,6 H19 A2,2 0 0 1 21,8 V16 A2,2 0 0 1 19,18 H3 A2,2 0 0 1 1,16 V8 A2,2 0 0 1 3,6 Z " +
+        "M5,11 H9 M5,14 H11 " +
+        "M13,10 A3,3 0 0 1 13,14 M15.5,8.5 A5.5,5.5 0 0 1 15.5,15.5");
+
+    /// <summary>Upward arrow outline for virtual keyboard Shift.</summary>
+    public static Geometry Shift { get; } = Geometry.Parse(
+        "M12,4 L4,12 H9 V20 H15 V12 H20 Z");
+
+    /// <summary>Left-pointing delete key with cross for virtual keyboard Backspace.</summary>
+    public static Geometry Backspace { get; } = Geometry.Parse(
+        "M9,6 H20 A1,1 0 0 1 21,7 V17 A1,1 0 0 1 20,18 H9 L3,12 Z " +
+        "M12,9 L17,15 M17,9 L12,15");
+
+    /// <summary>Person silhouette for brewer attribution.</summary>
+    public static Geometry User { get; } = Geometry.Parse(
+        "M12,5 A3.5,3.5 0 1 0 12,12 A3.5,3.5 0 1 0 12,5 Z " +
+        "M5,20 C5,16.5 8.1,14.5 12,14.5 C15.9,14.5 19,16.5 19,20");
 }

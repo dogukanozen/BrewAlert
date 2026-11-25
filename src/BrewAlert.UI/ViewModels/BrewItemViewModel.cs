@@ -18,12 +18,14 @@ public partial class BrewItemViewModel : ViewModelBase, IDisposable
     private readonly IBrewCompletionNotificationService _notificationCoordinator;
     private readonly ILocalizationService _loc;
     private readonly Action<BrewItemViewModel> _onRemoveRequested;
+    private readonly string? _brewerName;
     private bool _disposed;
 
     public Guid SessionId { get; }
 
     [ObservableProperty] private string _profileName = string.Empty;
     [ObservableProperty] private string _profileIcon = string.Empty;
+    [ObservableProperty] private string _brewerText = string.Empty;
     [ObservableProperty] private TimeSpan _remaining;
     [ObservableProperty] private TimeSpan _totalDuration;
     [ObservableProperty] private double _progress;
@@ -53,6 +55,7 @@ public partial class BrewItemViewModel : ViewModelBase, IDisposable
         SessionId = session.Id;
         ProfileName = session.Profile.Name;
         ProfileIcon = session.Profile.Icon;
+        _brewerName = string.IsNullOrWhiteSpace(session.BrewerName) ? null : session.BrewerName.Trim();
         TotalDuration = session.Profile.BrewDuration;
         ApplySessionState(session);
 
@@ -69,6 +72,7 @@ public partial class BrewItemViewModel : ViewModelBase, IDisposable
         ResumeButtonText = _loc.Get("ResumeButton");
         CancelButtonText = _loc.Get("CancelButton");
         DismissButtonText = _loc.Get("DismissButton");
+        BrewerText = _brewerName is null ? string.Empty : string.Format(_loc.Get("BrewedBy"), _brewerName);
         if (IsCompleted) StatusText = _loc.Get("Ready");
         else if (IsPaused) StatusText = _loc.Get("Paused");
         else if (IsRunning) StatusText = _loc.Get("Brewing");

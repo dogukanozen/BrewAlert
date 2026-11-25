@@ -1,11 +1,14 @@
 using Avalonia.Threading;
+using BrewAlert.Core.Events;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Models;
 using BrewAlert.Core.Services;
+using BrewAlert.Infrastructure.Configuration;
 using BrewAlert.UI.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -16,18 +19,23 @@ namespace BrewAlert.UI.ViewModels;
 /// ViewModel for the profile selection screen.
 /// Uses <see cref="INavigationService"/> to navigate — no service locator.
 /// </summary>
-public partial class ProfileListViewModel : ViewModelBase, IDisposable
+public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter, IDisposable
 {
     private const int RecentBrewLimit = 30;
     private static readonly TimeSpan RecentBrewRefreshInterval = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan CardScanPromptTimeout = TimeSpan.FromSeconds(30);
 
     private readonly BrewProfileService _profileService;
     private readonly INavigationService _navigation;
     private readonly ILocalizationService _loc;
     private readonly IBrewHistoryService _history;
     private readonly IBrewTimerService _timerService;
+    private readonly IRfidReaderService _rfidReader;
+    private readonly RfidUserService _rfidUserService;
+    private readonly IOptionsMonitor<RfidOptions> _rfidOptions;
     private readonly ILogger<ProfileListViewModel> _logger;
     private readonly DispatcherTimer _recentRefreshTimer;
+    private readonly DispatcherTimer _scanTimeoutTimer;
     private readonly CancellationTokenSource _disposeCts = new();
     private bool _isLoadingRecentBrews;
     private bool _reloadRecentBrewsRequested;
@@ -41,12 +49,43 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _hasRecentBrews;
     [ObservableProperty] private int _recentBrewsCount;
 
+    [ObservableProperty] private BrewProfile? _pendingProfile;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCardScanStep))]
+    private bool _isAwaitingCardScan;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCardScanStep))]
+    private bool _isChoosingBrewer;
+
+    [ObservableProperty] private bool _hasAvailableBrewers;
+    [ObservableProperty] private string _scanErrorMessage = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasUnregisteredCard))]
+    private string? _unregisteredCardId;
+
+    public bool IsCardScanStep => IsAwaitingCardScan && !IsChoosingBrewer;
+    public bool HasUnregisteredCard => !string.IsNullOrEmpty(UnregisteredCardId);
+
     public ObservableCollection<BrewProfile> Profiles { get; } = [];
     public ObservableCollection<RecentBrewItem> RecentBrews { get; } = [];
+    public ObservableCollection<RfidUser> AvailableBrewers { get; } = [];
     public string HomeTitle => _loc.Get("HomeTitle");
     public string HomeEyebrow => _loc.Get("HomeEyebrow");
     public string HomeSubtitle => _loc.Get("HomeSubtitle");
     public string StartText => _loc.Get("BrewStart");
+    public string ScanPromptTitle => _loc.Get("RfidScanPromptTitle");
+    public string ScanPromptSubtitle => _loc.Get("RfidScanPromptSubtitle");
+    public string CancelText => _loc.Get("CancelButton");
+    public string RegisterThisCardText => _loc.Get("RfidRegisterThisCard");
+    public string BrewWithoutCardText => _loc.Get("BrewWithoutCard");
+    public string WhoIsBrewingTitle => _loc.Get("WhoIsBrewingTitle");
+    public string WhoIsBrewingSubtitle => _loc.Get("WhoIsBrewingSubtitle");
+    public string BackToCardScanText => _loc.Get("BackToCardScan");
+    public string NoOperatorsText => _loc.Get("NoOperatorsToPick");
+    public string AddOperatorQuickText => _loc.Get("AddOperatorQuick");
     public string HistoryToggleText => _loc.Get(ShowAllHistory ? "ShowLessHistory" : "ShowMoreHistory");
     public bool CanExpandHistory => RecentBrews.Count > 3;
     public IEnumerable<RecentBrewItem> DisplayedRecentBrews => ShowAllHistory ? RecentBrews : RecentBrews.Take(3);
@@ -64,6 +103,9 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
         ILocalizationService loc,
         IBrewHistoryService history,
         IBrewTimerService timerService,
+        IRfidReaderService rfidReader,
+        RfidUserService rfidUserService,
+        IOptionsMonitor<RfidOptions> rfidOptions,
         ILogger<ProfileListViewModel> logger)
     {
         _profileService = profileService;
@@ -71,15 +113,22 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
         _loc = loc;
         _history = history;
         _timerService = timerService;
+        _rfidReader = rfidReader;
+        _rfidUserService = rfidUserService;
+        _rfidOptions = rfidOptions;
         _logger = logger;
 
         _loc.LanguageChanged += OnLanguageChanged;
         _history.HistoryUpdated += OnHistoryUpdated;
+        _rfidReader.CardScanned += OnCardScanned;
         RefreshLocalizedStrings();
 
         _recentRefreshTimer = new DispatcherTimer { Interval = RecentBrewRefreshInterval };
         _recentRefreshTimer.Tick += OnRecentRefreshTimerTick;
         _recentRefreshTimer.Start();
+
+        _scanTimeoutTimer = new DispatcherTimer { Interval = CardScanPromptTimeout };
+        _scanTimeoutTimer.Tick += OnScanTimeoutTick;
 
         _ = LoadProfilesAsync();
         _ = LoadRecentBrewsAsync();
@@ -87,11 +136,22 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
 
     private void RefreshLocalizedStrings()
     {
-        foreach (var name in new[] { nameof(HomeTitle), nameof(HomeEyebrow), nameof(HomeSubtitle), nameof(StartText), nameof(HistoryToggleText) })
+        foreach (var name in new[]
+        {
+            nameof(HomeTitle), nameof(HomeEyebrow), nameof(HomeSubtitle), nameof(StartText),
+            nameof(HistoryToggleText), nameof(ScanPromptTitle), nameof(ScanPromptSubtitle),
+            nameof(CancelText), nameof(RegisterThisCardText), nameof(BrewWithoutCardText),
+            nameof(WhoIsBrewingTitle), nameof(WhoIsBrewingSubtitle), nameof(BackToCardScanText),
+            nameof(NoOperatorsText), nameof(AddOperatorQuickText)
+        })
+        {
             OnPropertyChanged(name);
+        }
         PageTitle = _loc.Get("SelectYourBrew");
         LoadingText = _loc.Get("Loading");
         RecentBrewsLabel = _loc.Get("RecentBrews");
+        if (HasUnregisteredCard)
+            ScanErrorMessage = string.Format(CultureInfo.CurrentCulture, _loc.Get("RfidUnknownCard"), UnregisteredCardId);
     }
 
     private void OnLanguageChanged(string language)
@@ -114,6 +174,55 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
     {
         if (!_disposed)
             _ = LoadRecentBrewsAsync();
+    }
+
+    private void OnScanTimeoutTick(object? sender, EventArgs e)
+    {
+        CancelCardScan();
+    }
+
+    private void OnCardScanned(object? sender, RfidCardScannedEvent e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed)
+                _ = HandleCardScannedAsync(e.CardId);
+        });
+    }
+
+    private async Task HandleCardScannedAsync(string cardId)
+    {
+        if (_disposed || !IsAwaitingCardScan || PendingProfile is null) return;
+
+        var normalized = RfidUserService.NormalizeCardId(cardId);
+        if (normalized is null) return;
+
+        try
+        {
+            var user = await _rfidUserService.FindByCardIdAsync(normalized, _disposeCts.Token);
+            if (_disposed || !IsAwaitingCardScan || PendingProfile is null) return;
+
+            if (user is not null)
+            {
+                var profile = PendingProfile;
+                ClearScanPrompt();
+                _timerService.Start(profile, user.Name, user.CardId);
+                _navigation.NavigateTo<ActiveBrewsViewModel>();
+            }
+            else
+            {
+                RestartScanTimeout();
+                UnregisteredCardId = normalized;
+                ScanErrorMessage = string.Format(CultureInfo.CurrentCulture, _loc.Get("RfidUnknownCard"), normalized);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to look up RFID card {CardId}.", normalized);
+        }
     }
 
     private async Task LoadProfilesAsync()
@@ -169,7 +278,8 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
                         Icon: entry.Icon,
                         Name: entry.ProfileName,
                         RelativeTime: FormatRelative(now - entry.CompletedAtUtc),
-                        DurationText: FormatDuration(entry.DurationSeconds)));
+                        DurationText: FormatDuration(entry.DurationSeconds),
+                        BrewerName: entry.BrewerName));
                 }
                 RecentBrewsCount = RecentBrews.Count;
                 HasRecentBrews = RecentBrews.Count > 0;
@@ -212,10 +322,104 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void SelectProfile(BrewProfile profile)
     {
-        // Start the brew first so the ActiveBrews VM picks it up via GetActiveSessions()
-        // when it constructs, regardless of whether BrewStarted fires before/after the nav.
-        _timerService.Start(profile);
+        if (!_rfidOptions.CurrentValue.RequireCardToBrew)
+        {
+            // Start the brew first so the ActiveBrews VM picks it up via GetActiveSessions()
+            // when it constructs, regardless of whether BrewStarted fires before/after the nav.
+            _timerService.Start(profile);
+            _navigation.NavigateTo<ActiveBrewsViewModel>();
+            return;
+        }
+
+        PendingProfile = profile;
+        ScanErrorMessage = string.Empty;
+        UnregisteredCardId = null;
+        IsChoosingBrewer = false;
+        IsAwaitingCardScan = true;
+        RestartScanTimeout();
+    }
+
+    [RelayCommand]
+    private async Task ChooseBrewerWithoutCardAsync()
+    {
+        if (_disposed || !IsAwaitingCardScan || PendingProfile is null) return;
+
+        try
+        {
+            var users = await _rfidUserService.GetAllAsync(_disposeCts.Token);
+            if (_disposed || !IsAwaitingCardScan || PendingProfile is null) return;
+
+            AvailableBrewers.Clear();
+            foreach (var user in users)
+                AvailableBrewers.Add(user);
+            HasAvailableBrewers = AvailableBrewers.Count > 0;
+            IsChoosingBrewer = true;
+            RestartScanTimeout();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load operators for cardless brew selection.");
+        }
+    }
+
+    [RelayCommand]
+    private void BackToCardScan()
+    {
+        if (!IsAwaitingCardScan) return;
+        IsChoosingBrewer = false;
+        RestartScanTimeout();
+    }
+
+    [RelayCommand]
+    private void SelectBrewer(RfidUser user)
+    {
+        if (PendingProfile is null || user is null) return;
+
+        var profile = PendingProfile;
+        ClearScanPrompt();
+        _timerService.Start(profile, user.Name, user.CardId);
         _navigation.NavigateTo<ActiveBrewsViewModel>();
+    }
+
+    [RelayCommand]
+    private void OpenAddOperator()
+    {
+        ClearScanPrompt();
+        _navigation.NavigateTo<RfidUsersViewModel>(vm => vm.StartCardlessRegistration());
+    }
+
+    [RelayCommand]
+    private void CancelCardScan() => ClearScanPrompt();
+
+    [RelayCommand]
+    private void RegisterUnregisteredCard()
+    {
+        var cardId = UnregisteredCardId;
+        if (string.IsNullOrEmpty(cardId)) return;
+
+        ClearScanPrompt();
+        _navigation.NavigateTo<RfidUsersViewModel>(vm => vm.StartRegistrationWithCard(cardId));
+    }
+
+    private void ClearScanPrompt()
+    {
+        _scanTimeoutTimer.Stop();
+        IsAwaitingCardScan = false;
+        IsChoosingBrewer = false;
+        PendingProfile = null;
+        ScanErrorMessage = string.Empty;
+        UnregisteredCardId = null;
+        AvailableBrewers.Clear();
+        HasAvailableBrewers = false;
+    }
+
+    private void RestartScanTimeout()
+    {
+        _scanTimeoutTimer.Stop();
+        _scanTimeoutTimer.Start();
     }
 
     [RelayCommand]
@@ -233,7 +437,10 @@ public partial class ProfileListViewModel : ViewModelBase, IDisposable
         _disposeCts.Dispose();
         _recentRefreshTimer.Stop();
         _recentRefreshTimer.Tick -= OnRecentRefreshTimerTick;
+        _scanTimeoutTimer.Stop();
+        _scanTimeoutTimer.Tick -= OnScanTimeoutTick;
         _loc.LanguageChanged -= OnLanguageChanged;
         _history.HistoryUpdated -= OnHistoryUpdated;
+        _rfidReader.CardScanned -= OnCardScanned;
     }
 }

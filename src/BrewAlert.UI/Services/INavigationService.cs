@@ -13,6 +13,9 @@ public interface INavigationService
     /// <summary>Navigate to a new instance of the specified ViewModel type.</summary>
     void NavigateTo<T>() where T : ViewModelBase;
 
+    /// <summary>Navigate to a new instance of <typeparamref name="T"/> after configuring it.</summary>
+    void NavigateTo<T>(Action<T> configure) where T : ViewModelBase;
+
     /// <summary>Navigate to an existing ViewModel instance.</summary>
     void NavigateTo(ViewModelBase viewModel);
 

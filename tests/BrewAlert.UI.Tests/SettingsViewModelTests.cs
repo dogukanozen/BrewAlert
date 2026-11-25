@@ -24,6 +24,10 @@ public class SettingsViewModelTests
     private readonly ILocalizationService _loc = CreateEnglishLoc();
     private readonly IConfigurationRoot _configurationRoot = Substitute.For<IConfigurationRoot>();
     private readonly INetworkInfoService _network = Substitute.For<INetworkInfoService>();
+    private readonly IRfidUserRepository _rfidUserRepo = Substitute.For<IRfidUserRepository>();
+    private readonly IRfidReaderService _rfidReader = Substitute.For<IRfidReaderService>();
+    private readonly INavigationService _navigation = Substitute.For<INavigationService>();
+    private readonly RfidUserService _rfidUserService;
     private readonly BrewProfileService _profileService;
 
     private static IOptionsMonitor<T> CreateMonitor<T>(T value) where T : class, new()
@@ -55,16 +59,42 @@ public class SettingsViewModelTests
     private readonly IOptionsMonitor<NotificationProviderOptions> DefaultProviderOptions =
         CreateMonitor(new NotificationProviderOptions { Provider = NotificationProvider.Graph });
 
+    private readonly IOptionsMonitor<RfidOptions> DefaultRfidOptions =
+        CreateMonitor(new RfidOptions { RequireCardToBrew = true });
+
     public SettingsViewModelTests()
     {
         _profileService = new BrewProfileService(_repository);
+        _rfidUserService = new RfidUserService(_rfidUserRepo);
+        _rfidUserRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<RfidUser>());
         _updateService.CurrentVersion.Returns("1.0.0");
     }
+
+    private SettingsViewModel CreateVm(
+        IOptionsMonitor<TeamsGraphOptions>? graph = null,
+        IOptionsMonitor<TeamsNotificationOptions>? webhook = null,
+        IOptionsMonitor<NotificationProviderOptions>? provider = null,
+        ILocalizationService? loc = null) =>
+        new(
+            _notificationService,
+            graph ?? CreateMonitor(new TeamsGraphOptions()),
+            webhook ?? DefaultWebhookOptions,
+            provider ?? DefaultProviderOptions,
+            DefaultRfidOptions,
+            _profileService,
+            _preferencesService,
+            loc ?? _loc,
+            _updateService,
+            _configurationRoot,
+            CreateAppearance(),
+            _network,
+            _rfidUserService,
+            _rfidReader,
+            _navigation);
 
     [Fact]
     public void Constructor_MasksSensitiveInformation()
     {
-        // Arrange
         var graphOptions = CreateMonitor(new TeamsGraphOptions
         {
             TenantId = "12345678-90ab-cdef-1234-567890abcdef",
@@ -72,15 +102,10 @@ public class SettingsViewModelTests
             ChatId = "19:abc@thread.v2"
         });
 
-        // Act
-        var vm = new SettingsViewModel(
-            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var vm = CreateVm(graph: graphOptions);
 
-        // Assert
         Assert.StartsWith("12345678", vm.TenantId);
         Assert.Contains("••••••••", vm.TenantId);
-        // ChatId is now also masked — verify masking applied
         Assert.StartsWith("19:abc@t", vm.ChatId);
         Assert.Contains("••••••••", vm.ChatId);
     }
@@ -88,7 +113,6 @@ public class SettingsViewModelTests
     [Fact]
     public async Task TestConnection_SetsResult_WhenGraphConfigured()
     {
-        // Arrange
         var graphOptions = CreateMonitor(new TeamsGraphOptions
         {
             TenantId = "T",
@@ -97,14 +121,10 @@ public class SettingsViewModelTests
             ChatId = "CH"
         });
         _notificationService.TestConnectionAsync().Returns(true);
-        var vm = new SettingsViewModel(
-            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var vm = CreateVm(graph: graphOptions);
 
-        // Act
         await vm.TestConnectionCommand.ExecuteAsync(null);
 
-        // Assert — loc mock returns the key as value, so result is "ConnectionSuccess"
         Assert.Contains("ConnectionSuccess", vm.TestResult);
     }
 
@@ -118,9 +138,7 @@ public class SettingsViewModelTests
             ClientSecret = "S",
             ChatId = "CH"
         });
-        var vm = new SettingsViewModel(
-            _notificationService, graphOptions, DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var vm = CreateVm(graph: graphOptions);
 
         Assert.True(vm.IsGraphConfigured);
     }
@@ -133,9 +151,7 @@ public class SettingsViewModelTests
             WebhookUrl = "https://example.webhook.office.com/xxx"
         });
         var providerOptions = CreateMonitor(new NotificationProviderOptions { Provider = NotificationProvider.Webhook });
-        var vm = new SettingsViewModel(
-            _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, providerOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var vm = CreateVm(webhook: webhookOptions, provider: providerOptions);
 
         Assert.True(vm.IsWebhookConfigured);
         Assert.True(vm.IsConfigured);
@@ -147,9 +163,7 @@ public class SettingsViewModelTests
         var url = "https://prod.webhook.office.com/abc";
         var webhookOptions = CreateMonitor(new TeamsNotificationOptions { WebhookUrl = url });
 
-        var vm = new SettingsViewModel(
-            _notificationService, CreateMonitor(new TeamsGraphOptions()), webhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var vm = CreateVm(webhook: webhookOptions);
 
         Assert.Equal(url, vm.WebhookUrlInput);
     }
@@ -157,9 +171,7 @@ public class SettingsViewModelTests
     [Fact]
     public async Task SaveWebhookUrlCommand_CallsPreferencesServiceAndSetsResult()
     {
-        var vm = new SettingsViewModel(
-            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var vm = CreateVm();
 
         vm.WebhookUrlInput = "https://example.com/hook";
         await vm.SaveWebhookUrlCommand.ExecuteAsync(null);
@@ -171,17 +183,10 @@ public class SettingsViewModelTests
     [Fact]
     public async Task SetLanguageCommand_ReloadsConfigurationBeforeApplyingLanguage()
     {
-        // Arrange — configuration must reload before _loc.SetLanguage so any
-        // IOptionsMonitor<LanguageOptions> consumer sees the new value at the
-        // moment LanguageChanged fires (e.g. Teams notifiers).
-        var vm = new SettingsViewModel(
-            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var vm = CreateVm();
 
-        // Act
         await vm.SetLanguageCommand.ExecuteAsync("Turkish");
 
-        // Assert
         await _preferencesService.Received(1).SaveLanguageAsync("Turkish", Arg.Any<CancellationToken>());
         _configurationRoot.Received(1).Reload();
         _loc.Received(1).SetLanguage("Turkish");
@@ -190,11 +195,8 @@ public class SettingsViewModelTests
     [Fact]
     public void Constructor_SetsLocalizedProfileNameWatermark()
     {
-        var vm = new SettingsViewModel(
-            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var vm = CreateVm();
 
-        // Mock returns key as value, so the watermark is the key itself.
         Assert.Equal("ProfileNameLabel", vm.ProfileNameWatermark);
     }
 
@@ -233,9 +235,7 @@ public class SettingsViewModelTests
     public async Task CheckForUpdates_WhenUpdateFound_SetsUpdateAvailableStatus()
     {
         _updateService.CheckForUpdatesAsync().Returns(true);
-        var vm = new SettingsViewModel(
-            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var vm = CreateVm();
 
         await vm.CheckForUpdatesCommand.ExecuteAsync(null);
 
@@ -247,9 +247,7 @@ public class SettingsViewModelTests
     public async Task CheckForUpdates_WhenNoUpdate_SetsUpToDateStatus()
     {
         _updateService.CheckForUpdatesAsync().Returns(false);
-        var vm = new SettingsViewModel(
-            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var vm = CreateVm();
 
         await vm.CheckForUpdatesCommand.ExecuteAsync(null);
 
@@ -261,20 +259,13 @@ public class SettingsViewModelTests
     public void Dispose_UnsubscribesFromLanguageChanged()
     {
         // Invariant (AGENT.md §4.3): subscribers unsubscribe on Dispose.
-        // Verify the -= call directly so the test fails if Dispose ever stops
-        // unsubscribing — a state-based check would mask the regression.
-        var loc = Substitute.For<ILocalizationService>();
-        loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
-        loc.CurrentLanguage.Returns("English");
-        loc.CurrentCulture.Returns(System.Globalization.CultureInfo.GetCultureInfo("en-US"));
-        var vm = new SettingsViewModel(
-            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var loc = CreateEnglishLoc();
+        var vm = CreateVm(loc: loc);
 
         vm.Dispose();
 
-        // Settings and its appearance and network children release their language subscriptions.
-        loc.Received(3).LanguageChanged -= Arg.Any<Action<string>>();
+        // Settings and its appearance, network, and rfid children release their language subscriptions.
+        loc.Received(4).LanguageChanged -= Arg.Any<Action<string>>();
     }
 
     [Fact]
@@ -284,12 +275,26 @@ public class SettingsViewModelTests
             .SaveWebhookUrlAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new IOException("disk full")));
 
-        var vm = new SettingsViewModel(
-            _notificationService, CreateMonitor(new TeamsGraphOptions()), DefaultWebhookOptions, DefaultProviderOptions,
-            _profileService, _preferencesService, _loc, _updateService, _configurationRoot, CreateAppearance(), _network);
+        var vm = CreateVm();
 
         await vm.SaveWebhookUrlCommand.ExecuteAsync(null);
 
         Assert.Contains("SaveFailed", vm.TestResult);
+    }
+
+    [Fact]
+    public async Task RfidSettings_TogglesRequireCardAndNavigatesToUsers()
+    {
+        var vm = CreateVm();
+        Assert.True(vm.Rfid.RequireCardToBrew);
+
+        await vm.Rfid.DisableRequireCardCommand.ExecuteAsync(null);
+
+        await _preferencesService.Received(1).SaveRequireCardToBrewAsync(false, Arg.Any<CancellationToken>());
+        _configurationRoot.Received(1).Reload();
+        Assert.False(vm.Rfid.RequireCardToBrew);
+
+        vm.Rfid.OpenRfidUsersCommand.Execute(null);
+        _navigation.Received(1).NavigateTo<RfidUsersViewModel>();
     }
 }

@@ -390,6 +390,69 @@ public sealed class AppearanceLayoutTests
         }
     }
 
+    [AvaloniaTheory]
+    [InlineData(800)]
+    [InlineData(320)]
+    public async Task RfidOverlayAndUsersKeyboardScreen_RenderInsideBoundsAtPiAndNarrowSizes(int width)
+    {
+        using var fixture = new Fixture(width, 480);
+        fixture.Main.NavigateToSettingsCommand.Execute(null);
+        Layout(fixture.Window);
+        var settings = Assert.IsType<SettingsViewModel>(fixture.Main.CurrentView);
+        settings.Rfid.OpenRfidUsersCommand.Execute(null);
+        Layout(fixture.Window);
+
+        var usersVm = Assert.IsType<RfidUsersViewModel>(fixture.Main.CurrentView);
+        usersVm.BeginAddCommand.Execute(null);
+        Layout(fixture.Window);
+        Assert.True(usersVm.IsWaitingForCard);
+
+        usersVm.StartRegistrationWithCard("0011223344");
+        Layout(fixture.Window);
+        Assert.True(usersVm.IsEnteringName);
+
+        var keyboard = fixture.View.GetVisualDescendants().OfType<VirtualKeyboardControl>().Single();
+        Assert.True(keyboard.IsEffectivelyVisible);
+        var kbOrigin = keyboard.TranslatePoint(new Point(0, 0), fixture.Window)!.Value;
+        Assert.InRange(kbOrigin.X, -0.5, width);
+        Assert.True(kbOrigin.X + keyboard.Bounds.Width <= width + 0.5, "Virtual keyboard overflows width.");
+        Assert.True(kbOrigin.Y + keyboard.Bounds.Height <= 480 + 0.5, "Virtual keyboard overflows 480px height.");
+
+        var doneButton = keyboard.GetVisualDescendants().OfType<Button>()
+            .Single(b => b.Classes.Contains("vk-key-primary"));
+        var doneOrigin = doneButton.TranslatePoint(new Point(0, 0), fixture.Window)!.Value;
+        Assert.True(doneOrigin.Y + doneButton.Bounds.Height <= 480 + 0.5);
+        await Task.CompletedTask;
+    }
+
+    [AvaloniaTheory]
+    [InlineData(800)]
+    [InlineData(320)]
+    public async Task WhoIsBrewingPicker_RendersWithinBoundsAtPiAndNarrowSizes(int width)
+    {
+        using var fixture = new Fixture(width, 480);
+        fixture.RfidOptions.RequireCardToBrew = true;
+        fixture.RfidUsers.Add(new RfidUser { CardId = null, Name = "Deniz" });
+        fixture.RfidUsers.Add(new RfidUser { CardId = "00112233", Name = "Ahmet" });
+
+        var home = Assert.IsType<ProfileListViewModel>(fixture.Main.CurrentView);
+        home.SelectProfileCommand.Execute(home.Profiles[0]);
+        Layout(fixture.Window);
+        Assert.True(home.IsCardScanStep);
+
+        await home.ChooseBrewerWithoutCardCommand.ExecuteAsync(null);
+        Layout(fixture.Window);
+        Assert.True(home.IsChoosingBrewer);
+
+        var picker = fixture.View.GetVisualDescendants().OfType<StackPanel>()
+            .Single(x => x.Name == "WhoIsBrewingPanel");
+        Assert.True(picker.IsEffectivelyVisible);
+        var origin = picker.TranslatePoint(new Point(0, 0), fixture.Window)!.Value;
+        Assert.InRange(origin.X, -0.5, width);
+        Assert.True(origin.X + picker.Bounds.Width <= width + 0.5, "WhoIsBrewing picker overflows width.");
+        Assert.True(origin.Y + picker.Bounds.Height <= 480 + 0.5, "WhoIsBrewing picker overflows height.");
+    }
+
     private static bool IsAnimating(Window window, Func<double> value)
     {
         Layout(window);
@@ -440,6 +503,8 @@ public sealed class AppearanceLayoutTests
         public IAppearanceService Appearance { get; }
         public IBrewTimerService Timer { get; }
         public IPreferencesService Preferences { get; } = Substitute.For<IPreferencesService>();
+        public RfidOptions RfidOptions { get; } = new() { RequireCardToBrew = false };
+        public List<RfidUser> RfidUsers { get; } = [];
 
         public Fixture(int width, int height)
         {
@@ -463,6 +528,13 @@ public sealed class AppearanceLayoutTests
             services.AddSingleton(Monitor(new TeamsGraphOptions()));
             services.AddSingleton(Monitor(new TeamsNotificationOptions()));
             services.AddSingleton(Monitor(new NotificationProviderOptions()));
+            services.AddSingleton(Monitor(RfidOptions));
+            var rfidRepo = Substitute.For<IRfidUserRepository>();
+            rfidRepo.GetAllAsync(Arg.Any<CancellationToken>())
+                .Returns(_ => Task.FromResult<IReadOnlyList<RfidUser>>(RfidUsers.ToList()));
+            services.AddSingleton(rfidRepo);
+            services.AddSingleton<RfidUserService>();
+            services.AddSingleton(Substitute.For<IRfidReaderService>());
             services.AddSingleton(TimeProvider.System);
             services.AddSingleton<IAppearanceService, AppearanceService>();
             services.AddSingleton<ILocalizationService, LocalizationService>();
@@ -480,6 +552,7 @@ public sealed class AppearanceLayoutTests
             services.AddTransient<ProfileListViewModel>();
             services.AddTransient<ActiveBrewsViewModel>();
             services.AddTransient<SettingsViewModel>();
+            services.AddTransient<RfidUsersViewModel>();
             _provider = services.BuildServiceProvider();
             Appearance = _provider.GetRequiredService<IAppearanceService>();
             Appearance.PropertyChanged += ThemeChanged;

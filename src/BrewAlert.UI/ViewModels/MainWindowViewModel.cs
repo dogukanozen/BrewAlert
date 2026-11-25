@@ -28,6 +28,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _loc;
     private readonly IUpdateService _updateService;
     private readonly AmbientOverlayViewModel _ambient;
+    private readonly IRfidReaderService _rfidReader;
     private readonly CancellationTokenSource _updateCts = new();
     private readonly DispatcherTimer _clockTimer;
     private readonly DispatcherTimer _idleTimer;
@@ -61,6 +62,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public AmbientOverlayViewModel Ambient => _ambient;
     public IAppearanceService Appearance { get; }
+    public bool IsHardwareRfidConnected => _rfidReader.IsHardwareReaderConnected;
     public string HomeNavText => _loc.Get("BrewsNavButton");
     public string ActiveNavText => string.Format(_loc.Get("ActiveNavCount"), _timerService.GetActiveSessions().Count);
     public string SettingsNavText => _loc.Get("SettingsTitle");
@@ -74,7 +76,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ILocalizationService loc,
         IUpdateService updateService,
         AmbientOverlayViewModel ambient,
-        IAppearanceService appearance)
+        IAppearanceService appearance,
+        IRfidReaderService rfidReader)
     {
         _navigation = navigation;
         _timerService = timerService;
@@ -82,6 +85,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _updateService = updateService;
         _ambient = ambient;
         Appearance = appearance;
+        _rfidReader = rfidReader;
         Appearance.PropertyChanged += OnAppearanceChanged;
         _ambient.SetAppearance(Appearance.CurrentTheme);
 
@@ -91,6 +95,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _timerService.BrewCancelled += OnBrewCancelled;
         _loc.LanguageChanged += OnLanguageChanged;
         _updateService.UpdateAvailable += OnUpdateAvailable;
+        _rfidReader.CardScanned += OnRfidCardScanned;
 
         BrewsNavText = _loc.Get("BrewsNavButton");
 
@@ -275,10 +280,24 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Title = ComposeBrewTitle(active);
     }
 
+    public void SubmitKeyboardCardScan(string cardId) => _rfidReader.SubmitCardScan(cardId);
+
+    private void OnRfidCardScanned(object? sender, RfidCardScannedEvent e) => RecordUserActivity();
+
     private void OnNavigationOrActivity(ViewModelBase viewModel)
     {
         RecordUserActivity();
         CurrentView = viewModel;
+        if (viewModel is RfidUsersViewModel)
+        {
+            _currentTitleKey = "RfidUsersTitle";
+            Title = _loc.Get("RfidUsersTitle");
+        }
+        else if (viewModel is SettingsViewModel)
+        {
+            _currentTitleKey = "SettingsTitle";
+            Title = _loc.Get("SettingsTitle");
+        }
         Appearance.Refresh(_timerService.GetActiveSessions().Count > 0, viewModel is ProfileListViewModel);
     }
 
@@ -350,6 +369,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _timerService.BrewCancelled -= OnBrewCancelled;
         _loc.LanguageChanged -= OnLanguageChanged;
         _updateService.UpdateAvailable -= OnUpdateAvailable;
+        _rfidReader.CardScanned -= OnRfidCardScanned;
         Appearance.PropertyChanged -= OnAppearanceChanged;
         _ambient.Dispose();
     }

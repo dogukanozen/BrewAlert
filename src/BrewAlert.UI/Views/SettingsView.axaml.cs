@@ -13,7 +13,7 @@ public partial class SettingsView : UserControl
             if (Classes.Contains("compact") == compact) return;
             Classes.Set("compact", compact);
             SettingsLayout.ColumnDefinitions = ColumnDefinitions.Parse(compact ? "*" : "*,*");
-            SettingsLayout.RowDefinitions = RowDefinitions.Parse(compact ? "Auto,Auto,Auto,Auto" : "Auto,Auto");
+            SettingsLayout.RowDefinitions = RowDefinitions.Parse(compact ? "Auto,Auto,Auto,Auto,Auto" : "Auto,Auto,Auto");
         };
     }
 }

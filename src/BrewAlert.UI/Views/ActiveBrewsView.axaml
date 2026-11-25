@@ -21,6 +21,11 @@
                                     <TextBlock Grid.Column="1" Text="{Binding ProfileName}" FontSize="14" TextTrimming="CharacterEllipsis" />
                                     <TextBlock Grid.Column="2" Text="{Binding StatusText}" Classes="brew-subtitle" FontSize="11" />
                                 </Grid>
+                                <StackPanel Orientation="Horizontal" Spacing="6"
+                                            IsVisible="{Binding BrewerText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <Viewbox Width="13" Height="13"><Path Data="{x:Static media:BrewIconGeometry.User}" Classes="brew-icon" /></Viewbox>
+                                    <TextBlock Text="{Binding BrewerText}" Classes="brew-subtitle" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
                                 <TextBlock Text="{Binding Remaining, Converter={StaticResource Duration}}" FontSize="68"
                                            FontWeight="Light" LetterSpacing="-3" HorizontalAlignment="Center" />
                                 <ProgressBar Value="{Binding Progress}" Maximum="1" Height="3" CornerRadius="0"

@@ -179,4 +179,22 @@ public class BrewItemViewModelTests
         _notificationCoordinator.Received(1).NotificationCompleted -= Arg.Any<EventHandler<BrewNotificationResult>>();
         loc.Received(1).LanguageChanged -= Arg.Any<Action<string>>();
     }
+
+    [AvaloniaFact]
+    public void Constructor_WithBrewerName_FormatsBrewerText()
+    {
+        var loc = Substitute.For<ILocalizationService>();
+        loc.Get("BrewedBy").Returns("{0} demledi");
+        loc.Get(Arg.Is<string>(k => k != "BrewedBy")).Returns(x => x.Arg<string>());
+        var session = new BrewSession
+        {
+            Profile = new BrewProfile { Name = "Çay", Icon = "♨", BrewDuration = TimeSpan.FromMinutes(10) },
+            Remaining = TimeSpan.FromMinutes(10),
+            BrewerName = "Ayşe",
+        };
+
+        var vm = new BrewItemViewModel(session, _timerService, _notificationCoordinator, loc, _ => { });
+
+        Assert.Equal("Ayşe demledi", vm.BrewerText);
+    }
 }

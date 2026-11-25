@@ -1,0 +1,113 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BrewAlert.UI.ViewModels"
+             xmlns:views="using:BrewAlert.UI.Views"
+             xmlns:media="using:BrewAlert.UI.Media"
+             xmlns:models="using:BrewAlert.Core.Models"
+             x:Class="BrewAlert.UI.Views.RfidUsersView"
+             x:DataType="vm:RfidUsersViewModel"
+             Classes="rfid-users-page">
+    <Grid Margin="20,12,20,10" RowDefinitions="Auto,*">
+        <!-- List Mode -->
+        <Grid Grid.RowSpan="2" RowDefinitions="Auto,Auto,*" RowSpacing="10" IsVisible="{Binding IsListMode}">
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="{Binding BackText}" Command="{Binding BackToSettingsCommand}" Classes="brew-secondary" Margin="0,0,10,4" />
+                <TextBlock Text="{Binding Title}" Classes="brew-title" FontSize="22"
+                           VerticalAlignment="Center" Margin="0,0,14,4" />
+                <Button x:Name="AddRfidUserButton" Content="{Binding AddUserText}"
+                        Command="{Binding BeginAddCommand}" Classes="brew-primary" Margin="0,0,8,4" />
+                <Button x:Name="AddCardlessUserButton" Content="{Binding AddCardlessUserText}"
+                        Command="{Binding BeginAddWithoutCardCommand}" Classes="brew-secondary" Margin="0,0,0,4" />
+            </WrapPanel>
+
+            <StackPanel Grid.Row="1" Spacing="4">
+                <TextBlock Text="{Binding ReaderStatusText}" Classes="brew-subtitle" />
+                <TextBlock Text="{Binding StatusMessage}" FontSize="13" TextWrapping="Wrap"
+                           IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+
+            <TextBlock Grid.Row="2" Text="{Binding EmptyText}" Classes="brew-subtitle" TextWrapping="Wrap"
+                       VerticalAlignment="Center" HorizontalAlignment="Center" IsVisible="{Binding !HasUsers}" />
+
+            <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasUsers}">
+                <ItemsControl ItemsSource="{Binding Users}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:RfidUser">
+                            <Border Classes="brew-panel" Padding="14,10" Margin="0,0,0,8">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding CardId}" Classes="brew-subtitle" FontSize="12"
+                                                   IsVisible="{Binding CardId, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                        <TextBlock Text="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).NoCardBadgeText}"
+                                                   Classes="brew-subtitle" FontSize="12"
+                                                   IsVisible="{Binding CardId, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).EditText}"
+                                            Command="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).EditUserCommand}"
+                                            CommandParameter="{Binding}" Classes="brew-secondary" />
+                                    <Button Grid.Column="2" Content="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).DeleteText}"
+                                            Command="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).DeleteUserCommand}"
+                                            CommandParameter="{Binding}" Classes="brew-secondary" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Waiting For Card Step -->
+        <Border Grid.RowSpan="2" Classes="brew-panel" HorizontalAlignment="Center" VerticalAlignment="Center"
+                MaxWidth="460" MinWidth="260" IsVisible="{Binding IsWaitingForCard}">
+            <StackPanel Spacing="14" HorizontalAlignment="Stretch">
+                <Viewbox Width="40" Height="40" HorizontalAlignment="Center">
+                    <Path Data="{x:Static media:BrewIconGeometry.RfidCard}" Classes="brew-icon" />
+                </Viewbox>
+                <TextBlock Text="{Binding ScanCardTitle}" Classes="brew-title" FontSize="24"
+                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding ScanCardHint}" Classes="brew-subtitle"
+                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding ReaderStatusText}" Classes="brew-subtitle" FontSize="12"
+                           HorizontalAlignment="Center" />
+                <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                    <Button Content="{Binding ContinueWithoutCardText}" Command="{Binding ContinueWithoutCardCommand}"
+                            Classes="brew-secondary" Margin="0,0,8,4" />
+                    <Button Content="{Binding CancelText}" Command="{Binding CancelRegistrationCommand}"
+                            Classes="brew-secondary" Margin="0,0,0,4" />
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Entering Name + Virtual Keyboard Step -->
+        <Grid Grid.RowSpan="2" RowDefinitions="Auto,*" RowSpacing="6" IsVisible="{Binding IsEnteringName}">
+            <StackPanel Spacing="6">
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding CardIdDisplay}" Classes="brew-section" VerticalAlignment="Center" Margin="0,0,12,4" />
+                    <Button Content="{Binding CardActionText}" Command="{Binding ScanOrChangeCardCommand}"
+                            Classes="brew-secondary" Margin="0,0,6,4" />
+                    <Button Content="{Binding RemoveCardText}" Command="{Binding RemoveCardCommand}"
+                            Classes="brew-secondary" Margin="0,0,6,4" IsVisible="{Binding HasScannedCard}" />
+                    <Button Content="{Binding CancelText}" Command="{Binding CancelRegistrationCommand}"
+                            Classes="brew-secondary" Margin="0,0,0,4" />
+                </WrapPanel>
+
+                <TextBlock Text="{Binding ExistingCardNotice}" Classes="brew-subtitle" FontSize="12" TextWrapping="Wrap"
+                           IsVisible="{Binding ExistingCardNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBox x:Name="UserNameTextBox" Text="{Binding UserNameInput}" Watermark="{Binding NameWatermark}" />
+                    <Button Grid.Column="1" x:Name="SaveRfidUserButton" Content="{Binding SaveText}"
+                            Command="{Binding SaveUserCommand}" IsEnabled="{Binding !IsBusy}" Classes="brew-primary" />
+                </Grid>
+            </StackPanel>
+
+            <views:VirtualKeyboardControl Grid.Row="1"
+                                          VerticalAlignment="Bottom"
+                                          Text="{Binding UserNameInput, Mode=TwoWay}"
+                                          SpaceLabel="{Binding SpaceLabel}"
+                                          DoneLabel="{Binding DoneLabel}"
+                                          DoneCommand="{Binding SaveUserCommand}" />
+        </Grid>
+    </Grid>
+</UserControl>

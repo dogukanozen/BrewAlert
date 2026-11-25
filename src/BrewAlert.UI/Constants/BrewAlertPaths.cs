@@ -15,4 +15,7 @@ public static class BrewAlertPaths
 
     /// <summary>SQLite database file storing completed brew history.</summary>
     public static string History { get; } = System.IO.Path.Combine(AppDataDir, "history.db");
+
+    /// <summary>JSON file storing registered RFID card users.</summary>
+    public static string RfidUsers { get; } = System.IO.Path.Combine(AppDataDir, "rfid-users.json");
 }

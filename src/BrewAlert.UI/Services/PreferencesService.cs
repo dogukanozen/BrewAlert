@@ -26,6 +26,9 @@ public sealed class PreferencesService : IPreferencesService
             foreach (var pair in values) section[pair.Key] = pair.Value?.DeepClone();
         }, ct);
 
+    public Task SaveRequireCardToBrewAsync(bool required, CancellationToken ct = default) =>
+        UpdateAsync(root => Section(root, "Rfid")["RequireCardToBrew"] = required, ct);
+
     private async Task UpdateAsync(Action<JsonObject> update, CancellationToken ct)
     {
         await _fileSemaphore.WaitAsync(ct);
@@ -61,6 +64,7 @@ public sealed class PreferencesService : IPreferencesService
             {
                 ValidateObject(app, "Appearance");
                 ValidateObject(app, "Notifications");
+                ValidateObject(app, "Rfid");
                 if (app["Notifications"] is JsonObject notifications) ValidateObject(notifications, "Teams");
             }
             return root;
