@@ -43,9 +43,14 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
         _time = timeProvider;
     }
 
-    public BrewSession Start(BrewProfile profile)
+    public BrewSession Start(BrewProfile profile) => Start(profile, null, null);
+
+    public BrewSession Start(BrewProfile profile, string? brewerName, string? brewerCardId = null)
     {
         ArgumentNullException.ThrowIfNull(profile);
+
+        var normalizedBrewerName = string.IsNullOrWhiteSpace(brewerName) ? null : brewerName.Trim();
+        var normalizedCardId = string.IsNullOrWhiteSpace(brewerCardId) ? null : brewerCardId.Trim();
 
         BrewSession snapshot;
         SessionEntry entry;
@@ -61,7 +66,9 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
                     StartedAtUtc = now,
                     EndsAtUtc = now.Add(profile.BrewDuration),
                     Remaining = profile.BrewDuration,
-                    State = BrewSessionState.Running
+                    State = BrewSessionState.Running,
+                    BrewerName = normalizedBrewerName,
+                    BrewerCardId = normalizedCardId,
                 },
                 Cts = new CancellationTokenSource(),
                 DeadlineTimestamp = TimestampAfter(profile.BrewDuration)
@@ -229,7 +236,9 @@ public sealed class BrewTimerService : IBrewTimerService, IDisposable
         StartedAtUtc = session.StartedAtUtc,
         EndsAtUtc = session.EndsAtUtc,
         Remaining = session.Remaining,
-        State = session.State
+        State = session.State,
+        BrewerName = session.BrewerName,
+        BrewerCardId = session.BrewerCardId,
     };
 
     public void Dispose()

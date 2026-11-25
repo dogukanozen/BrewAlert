@@ -11,6 +11,8 @@ public sealed class BrewSession
     public DateTime EndsAtUtc { get; set; }
     public TimeSpan Remaining { get; set; }
     public BrewSessionState State { get; set; } = BrewSessionState.Running;
+    public string? BrewerName { get; init; }
+    public string? BrewerCardId { get; init; }
 }
 
 /// <summary>
