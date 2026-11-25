@@ -3,7 +3,7 @@
              xmlns:media="using:BrewAlert.UI.Media" x:Class="BrewAlert.UI.Views.SettingsView"
              x:DataType="vm:SettingsViewModel" Classes="settings-page">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <Grid x:Name="SettingsLayout" Classes="settings-layout" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="30"
+        <Grid x:Name="SettingsLayout" Classes="settings-layout" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="30"
               RowSpacing="28" Margin="24" MaxWidth="1000" HorizontalAlignment="Stretch">
             <Border Classes="settings-section settings-appearance">
                 <views:AppearanceSettingsView DataContext="{Binding Appearance}" />
@@ -95,6 +95,28 @@
                     <TextBlock x:Name="NetworkName" Text="{Binding Network.NetworkText}" Classes="brew-subtitle" TextWrapping="Wrap" />
                     <TextBlock x:Name="NetworkAddress" Text="{Binding Network.AddressText}" Classes="brew-subtitle" TextWrapping="Wrap"
                                IsVisible="{Binding Network.AddressText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </Border>
+            <Border Classes="settings-section settings-rfid">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="{Binding Rfid.Title}" Classes="brew-section" />
+                    <WrapPanel>
+                        <TextBlock Text="{Binding Rfid.ReaderStatusText}" Classes="brew-subtitle" VerticalAlignment="Center" Margin="0,0,16,4" />
+                        <TextBlock Text="{Binding Rfid.UserCountText}" Classes="brew-subtitle" VerticalAlignment="Center" Margin="0,0,0,4" />
+                    </WrapPanel>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding Rfid.RequireCardLabel}" Classes="brew-subtitle" />
+                        <WrapPanel>
+                            <Button Content="{Binding Rfid.OnText}" Command="{Binding Rfid.EnableRequireCardCommand}"
+                                    Classes="theme-option" Classes.selected="{Binding Rfid.RequireCardToBrew}"
+                                    IsEnabled="{Binding !Rfid.IsBusy}" Margin="0,0,8,0" />
+                            <Button Content="{Binding Rfid.OffText}" Command="{Binding Rfid.DisableRequireCardCommand}"
+                                    Classes="theme-option" Classes.selected="{Binding Rfid.RequireCardDisabled}"
+                                    IsEnabled="{Binding !Rfid.IsBusy}" />
+                        </WrapPanel>
+                    </StackPanel>
+                    <Button x:Name="ManageRfidUsersButton" Content="{Binding Rfid.ManageUsersText}"
+                            Command="{Binding Rfid.OpenRfidUsersCommand}" Classes="brew-primary" HorizontalAlignment="Left" />
                 </StackPanel>
             </Border>
         </Grid>

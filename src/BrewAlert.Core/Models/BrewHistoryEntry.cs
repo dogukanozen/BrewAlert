@@ -7,4 +7,5 @@ public sealed record BrewHistoryEntry(
     string ProfileName,
     BrewType Type,
     string Icon,
-    int DurationSeconds);
+    int DurationSeconds,
+    string? BrewerName = null);

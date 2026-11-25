@@ -12,7 +12,8 @@ public sealed class ConsoleNotifier(ILogger<ConsoleNotifier> logger) : INotifica
 {
     public Task<NotificationResult> SendBrewCompletedAsync(BrewSession session, CancellationToken ct = default)
     {
-        var message = $"[BrewAlert] {session.Profile.Icon} {session.Profile.Name} is ready! " +
+        var brewer = string.IsNullOrWhiteSpace(session.BrewerName) ? string.Empty : $" by {session.BrewerName}";
+        var message = $"[BrewAlert] {session.Profile.Icon} {session.Profile.Name} is ready{brewer}! " +
                       $"(Brewed for {session.Profile.BrewDuration.TotalMinutes:F0} min)";
 
         logger.LogInformation("{Message}", message);

@@ -24,6 +24,15 @@ public sealed class NavigationService(IServiceProvider serviceProvider) : INavig
         Show(scope.ServiceProvider.GetRequiredService<T>(), scope);
     }
 
+    public void NavigateTo<T>(Action<T> configure) where T : ViewModelBase
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var scope = serviceProvider.CreateScope();
+        var viewModel = scope.ServiceProvider.GetRequiredService<T>();
+        configure(viewModel);
+        Show(viewModel, scope);
+    }
+
     public void NavigateTo(ViewModelBase viewModel) => Show(viewModel, null);
 
     private void Show(ViewModelBase viewModel, IServiceScope? scope)

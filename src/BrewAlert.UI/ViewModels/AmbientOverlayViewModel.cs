@@ -419,7 +419,7 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
         var age = nowUtc - entry.CompletedAtUtc;
         var level = BrewFreshnessEvaluator.Evaluate(entry.Type, age);
         var relative = FormatRelative(age);
-        return level switch
+        var scene = level switch
         {
             BrewFreshnessLevel.Stale => BuildStaleScene(entry, relative),
             BrewFreshnessLevel.Cooling => BuildWarningScene(entry, relative),
@@ -430,6 +430,9 @@ public partial class AmbientOverlayViewModel : ViewModelBase, IDisposable
                 "fresh",
                 entry)
         };
+        if (string.IsNullOrWhiteSpace(entry.BrewerName))
+            return scene;
+        return scene with { Subheadline = $"{scene.Subheadline} · {entry.BrewerName}" };
     }
 
     private AmbientSceneItem BuildStaleScene(BrewHistoryEntry entry, string relative)

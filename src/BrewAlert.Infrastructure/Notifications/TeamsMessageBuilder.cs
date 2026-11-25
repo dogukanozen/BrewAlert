@@ -39,8 +39,19 @@ public static class TeamsMessageBuilder
             .ToString("HH:mm", CultureInfo.InvariantCulture);
 
         var typeLabel = TeamsCardStrings.Get(language, $"BrewType_{session.Profile.Type}");
-        var headerTemplate = TeamsCardStrings.Get(language, "HeaderReady");
-        var headerText = string.Format(CultureInfo.InvariantCulture, headerTemplate, session.Profile.Icon, typeLabel);
+        var hasBrewer = !string.IsNullOrWhiteSpace(session.BrewerName);
+        var headerText = hasBrewer
+            ? string.Format(CultureInfo.InvariantCulture, TeamsCardStrings.Get(language, "HeaderReadyBy"), session.Profile.Icon, typeLabel, session.BrewerName)
+            : string.Format(CultureInfo.InvariantCulture, TeamsCardStrings.Get(language, "HeaderReady"), session.Profile.Icon, typeLabel);
+
+        var facts = new List<Fact>
+        {
+            new(TeamsCardStrings.Get(language, "FactProfile"), session.Profile.Name),
+        };
+        if (hasBrewer)
+            facts.Add(new(TeamsCardStrings.Get(language, "FactBrewedBy"), session.BrewerName!));
+        facts.Add(new(TeamsCardStrings.Get(language, "FactBrewTime"), duration));
+        facts.Add(new(TeamsCardStrings.Get(language, "FactCompletedAt"), completedAt));
 
         var card = new AdaptiveCard
         {
@@ -55,12 +66,7 @@ public static class TeamsMessageBuilder
                 },
                 new FactSetBlock
                 {
-                    Facts =
-                    [
-                        new Fact(TeamsCardStrings.Get(language, "FactProfile"), session.Profile.Name),
-                        new Fact(TeamsCardStrings.Get(language, "FactBrewTime"), duration),
-                        new Fact(TeamsCardStrings.Get(language, "FactCompletedAt"), completedAt),
-                    ],
+                    Facts = facts,
                 },
                 new TextBlock
                 {

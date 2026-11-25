@@ -104,7 +104,7 @@ public class SqliteBrewHistoryRepositoryTests : IDisposable
     {
         await _sut.GetAllAsync();
 
-        Assert.Equal(1L, await ScalarAsync("PRAGMA user_version;"));
+        Assert.Equal(2L, await ScalarAsync("PRAGMA user_version;"));
     }
 
     [Fact]
@@ -119,7 +119,28 @@ public class SqliteBrewHistoryRepositoryTests : IDisposable
         var entry = Assert.Single(await _sut.GetAllAsync());
 
         Assert.Equal("Çay", entry.ProfileName);
-        Assert.Equal(1L, await ScalarAsync("PRAGMA user_version;"));
+        Assert.Null(entry.BrewerName);
+        Assert.Equal(2L, await ScalarAsync("PRAGMA user_version;"));
+    }
+
+    [Fact]
+    public async Task V1Database_UpgradesToV2AndPersistsBrewerName()
+    {
+        await ExecuteAsync("""
+            CREATE TABLE BrewHistory (Id TEXT PRIMARY KEY, CompletedAtUtc TEXT NOT NULL, ProfileName TEXT NOT NULL,
+                Type INTEGER NOT NULL, Icon TEXT NOT NULL, DurationSeconds INTEGER NOT NULL);
+            INSERT INTO BrewHistory VALUES ('6f1c1a4e-4c1b-4a8e-9a55-1d2f3b4c5d6e', '2026-10-01T08:00:00.0000000Z', 'Çay', 0, '♨', 900);
+            PRAGMA user_version = 1;
+            """);
+
+        await _sut.AppendAsync(new BrewHistoryEntry(
+            Guid.NewGuid(), DateTime.UtcNow, "Filtre Kahve", BrewType.Coffee, "☕", 240, "Mehmet"));
+
+        var all = await _sut.GetAllAsync();
+        Assert.Equal(2, all.Count);
+        Assert.Equal("Mehmet", all[0].BrewerName);
+        Assert.Null(all[1].BrewerName);
+        Assert.Equal(2L, await ScalarAsync("PRAGMA user_version;"));
     }
 
     private async Task ExecuteAsync(string sql)

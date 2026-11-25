@@ -7,4 +7,5 @@ public interface IPreferencesService
     Task SaveLanguageAsync(string language, CancellationToken ct = default);
     Task SaveWebhookUrlAsync(string url, CancellationToken ct = default);
     Task SaveAppearanceAsync(AppearanceOptions appearance, CancellationToken ct = default);
+    Task SaveRequireCardToBrewAsync(bool required, CancellationToken ct = default);
 }

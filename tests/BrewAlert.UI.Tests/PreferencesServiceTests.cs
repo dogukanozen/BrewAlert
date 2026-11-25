@@ -129,4 +129,15 @@ public sealed class PreferencesServiceTests : IDisposable
         Assert.True(File.Exists(backupPath));
         Assert.Contains("this is not valid json", await File.ReadAllTextAsync(backupPath));
     }
+
+    [Fact]
+    public async Task SaveRequireCardToBrew_PersistsAndPreservesOtherSettings()
+    {
+        await _sut.SaveLanguageAsync("Turkish");
+        await _sut.SaveRequireCardToBrewAsync(false);
+
+        var json = JsonNode.Parse(await File.ReadAllTextAsync(_filePath))!;
+        Assert.Equal("Turkish", json["BrewAlert"]!["Language"]!.GetValue<string>());
+        Assert.False(json["BrewAlert"]!["Rfid"]!["RequireCardToBrew"]!.GetValue<bool>());
+    }
 }

@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using BrewAlert.Core.Interfaces;
 using BrewAlert.Core.Services;
 using BrewAlert.Infrastructure.Configuration;
+using BrewAlert.Infrastructure.Hardware;
 using BrewAlert.Infrastructure.Notifications;
 using BrewAlert.Infrastructure.Persistence;
 using BrewAlert.UI.Constants;
@@ -47,6 +48,7 @@ public partial class App : Application
         // the first view that happens to depend on them is created.
         _ = _services.GetRequiredService<IBrewHistoryService>();
         _ = _services.GetRequiredService<IBrewCompletionNotificationService>();
+        _ = _services.GetRequiredService<IRfidReaderService>();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -115,14 +117,19 @@ public partial class App : Application
         services.Configure<LanguageOptions>(
             configuration.GetSection(LanguageOptions.SectionPath));
         services.Configure<AppearanceOptions>(configuration.GetSection(AppearanceOptions.SectionPath));
+        services.Configure<RfidOptions>(configuration.GetSection(RfidOptions.SectionPath));
 
         // Core services
         services.AddSingleton<IBrewTimerService, BrewTimerService>();
         services.AddSingleton<BrewProfileService>();
+        services.AddSingleton<RfidUserService>();
 
         // Infrastructure
         services.AddSingleton<IProfileRepository>(sp =>
             new JsonProfileRepository(sp.GetRequiredService<ILogger<JsonProfileRepository>>()));
+        services.AddSingleton<IRfidUserRepository>(sp =>
+            new JsonRfidUserRepository(sp.GetRequiredService<ILogger<JsonRfidUserRepository>>(), BrewAlertPaths.RfidUsers));
+        services.AddSingleton<IRfidReaderService, EvdevRfidReaderService>();
         services.AddSingleton<IBrewHistoryRepository>(sp =>
             new SqliteBrewHistoryRepository(BrewAlertPaths.History,
                 sp.GetRequiredService<ILogger<SqliteBrewHistoryRepository>>()));
@@ -173,6 +180,7 @@ public partial class App : Application
         services.AddTransient<ActiveBrewsViewModel>();
         services.AddTransient<ProfileListViewModel>();
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<RfidUsersViewModel>();
 
         return services.BuildServiceProvider();
     }

@@ -12,6 +12,9 @@ public interface IBrewTimerService
     /// <summary>Start a new brew session. Multiple concurrent sessions are allowed.</summary>
     BrewSession Start(BrewProfile profile);
 
+    /// <summary>Start a new brew session attributed to a specific brewer.</summary>
+    BrewSession Start(BrewProfile profile, string? brewerName, string? brewerCardId = null);
+
     /// <summary>Cancel a specific brew session.</summary>
     void Cancel(Guid sessionId);
 

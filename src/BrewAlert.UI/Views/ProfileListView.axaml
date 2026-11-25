@@ -1,59 +1,135 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BrewAlert.UI.ViewModels" xmlns:media="using:BrewAlert.UI.Media"
-             xmlns:views="using:BrewAlert.UI.Views" xmlns:conv="using:BrewAlert.UI.Converters" x:Class="BrewAlert.UI.Views.ProfileListView"
+             xmlns:views="using:BrewAlert.UI.Views" xmlns:conv="using:BrewAlert.UI.Converters"
+             xmlns:models="using:BrewAlert.Core.Models"
+             x:Class="BrewAlert.UI.Views.ProfileListView"
              x:DataType="vm:ProfileListViewModel" Classes="profile-page">
     <UserControl.Resources><conv:TimeSpanToStringConverter x:Key="Duration" /></UserControl.Resources>
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <Grid Classes="home-layout" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="24,18,12,10">
-            <StackPanel Classes="home-intro" Spacing="8" Margin="0,0,12,0">
-                <TextBlock Text="{Binding HomeEyebrow}" Classes="brew-eyebrow" />
-                <TextBlock Text="{Binding HomeTitle}" Classes="home-title" />
-                <TextBlock Text="{Binding HomeSubtitle}" Classes="brew-subtitle" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding LoadingText}" Classes="brew-subtitle" IsVisible="{Binding IsLoading}" />
-                <TextBlock Text="{Binding ProfilesErrorText}" Classes="brew-subtitle" TextWrapping="Wrap"
-                           IsVisible="{Binding ProfilesErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-            </StackPanel>
-            <ItemsControl ItemsSource="{Binding Profiles}" Classes="home-choices">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Classes="profile-grid" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Classes="profile-choice" Command="{Binding $parent[ItemsControl].((vm:ProfileListViewModel)DataContext).SelectProfileCommand}"
-                                CommandParameter="{Binding}">
-                            <views:ProfileChoiceGrid Classes="profile-content">
-                                <TextBlock Text="{Binding Description}" Classes="brew-subtitle profile-description" TextTrimming="CharacterEllipsis" />
-                                <Viewbox Classes="profile-icon">
-                                    <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}" Classes="brew-icon" />
-                                </Viewbox>
-                                <TextBlock Text="{Binding Name}" Classes="profile-name" />
-                                <TextBlock Text="{Binding BrewDuration, Converter={StaticResource Duration}}" Classes="brew-subtitle profile-duration" />
-                                <Viewbox Classes="profile-arrow">
-                                    <Path Data="{x:Static media:BrewIconGeometry.Arrow}" Classes="brew-icon" />
-                                </Viewbox>
-                            </views:ProfileChoiceGrid>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Border Classes="home-history" IsVisible="{Binding HasRecentBrews}" Margin="0,0,12,0">
-                <StackPanel Spacing="12">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="{Binding RecentBrewsLabel}" Classes="brew-eyebrow" VerticalAlignment="Center" />
-                        <Button Grid.Column="1" Content="{Binding HistoryToggleText}" Classes="brew-nav-btn"
-                                Command="{Binding ToggleHistoryCommand}" IsVisible="{Binding CanExpandHistory}" />
-                    </Grid>
-                    <ItemsControl ItemsSource="{Binding DisplayedRecentBrews}">
-                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:RecentBrewItem">
-                                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,22,10">
-                                    <TextBlock Text="{Binding Name}" FontSize="12" MaxWidth="150" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Text="{Binding RelativeTime}" Classes="brew-subtitle" FontSize="11" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+    <Grid>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <Grid Classes="home-layout" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="24,18,12,10">
+                <StackPanel Classes="home-intro" Spacing="8" Margin="0,0,12,0">
+                    <TextBlock Text="{Binding HomeEyebrow}" Classes="brew-eyebrow" />
+                    <TextBlock Text="{Binding HomeTitle}" Classes="home-title" />
+                    <TextBlock Text="{Binding HomeSubtitle}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding LoadingText}" Classes="brew-subtitle" IsVisible="{Binding IsLoading}" />
+                    <TextBlock Text="{Binding ProfilesErrorText}" Classes="brew-subtitle" TextWrapping="Wrap"
+                               IsVisible="{Binding ProfilesErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 </StackPanel>
+                <ItemsControl ItemsSource="{Binding Profiles}" Classes="home-choices">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Classes="profile-grid" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Classes="profile-choice" Command="{Binding $parent[ItemsControl].((vm:ProfileListViewModel)DataContext).SelectProfileCommand}"
+                                    CommandParameter="{Binding}">
+                                <views:ProfileChoiceGrid Classes="profile-content">
+                                    <TextBlock Text="{Binding Description}" Classes="brew-subtitle profile-description" TextTrimming="CharacterEllipsis" />
+                                    <Viewbox Classes="profile-icon">
+                                        <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}" Classes="brew-icon" />
+                                    </Viewbox>
+                                    <TextBlock Text="{Binding Name}" Classes="profile-name" />
+                                    <TextBlock Text="{Binding BrewDuration, Converter={StaticResource Duration}}" Classes="brew-subtitle profile-duration" />
+                                    <Viewbox Classes="profile-arrow">
+                                        <Path Data="{x:Static media:BrewIconGeometry.Arrow}" Classes="brew-icon" />
+                                    </Viewbox>
+                                </views:ProfileChoiceGrid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Border Classes="home-history" IsVisible="{Binding HasRecentBrews}" Margin="0,0,12,0">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding RecentBrewsLabel}" Classes="brew-eyebrow" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Content="{Binding HistoryToggleText}" Classes="brew-nav-btn"
+                                    Command="{Binding ToggleHistoryCommand}" IsVisible="{Binding CanExpandHistory}" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding DisplayedRecentBrews}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RecentBrewItem">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,22,10">
+                                        <TextBlock Text="{Binding Name}" FontSize="12" MaxWidth="150" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding BrewerName}" Classes="brew-subtitle" FontSize="11" MaxWidth="110" TextTrimming="CharacterEllipsis"
+                                                   IsVisible="{Binding BrewerName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                        <TextBlock Text="{Binding RelativeTime}" Classes="brew-subtitle" FontSize="11" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+
+        <Border x:Name="RfidScanOverlay" IsVisible="{Binding IsAwaitingCardScan}" ZIndex="50" Background="#A6000000" Padding="20">
+            <Border Classes="brew-panel" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560" MinWidth="260">
+                <Panel>
+                    <StackPanel Spacing="14" HorizontalAlignment="Stretch" IsVisible="{Binding IsCardScanStep}">
+                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                            <Viewbox Width="28" Height="28">
+                                <Path Data="{x:Static media:BrewIconGeometry.RfidCard}" Classes="brew-icon" />
+                            </Viewbox>
+                            <TextBlock Text="{Binding PendingProfile.Name}" Classes="brew-section" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding ScanPromptTitle}" Classes="brew-title" FontSize="24" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ScanPromptSubtitle}" Classes="brew-subtitle" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ScanErrorMessage}" Foreground="{DynamicResource BrewDangerBrush}" FontSize="13"
+                                   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                   IsVisible="{Binding ScanErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <Button Content="{Binding RegisterThisCardText}" Command="{Binding RegisterUnregisteredCardCommand}"
+                                    Classes="brew-primary" Margin="0,0,8,4" IsVisible="{Binding HasUnregisteredCard}" />
+                            <Button x:Name="BrewWithoutCardButton" Content="{Binding BrewWithoutCardText}" Command="{Binding ChooseBrewerWithoutCardCommand}"
+                                    Classes="brew-secondary" Margin="0,0,8,4" />
+                            <Button Content="{Binding CancelText}" Command="{Binding CancelCardScanCommand}"
+                                    Classes="brew-secondary" Margin="0,0,0,4" />
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <StackPanel x:Name="WhoIsBrewingPanel" Spacing="14" HorizontalAlignment="Stretch" IsVisible="{Binding IsChoosingBrewer}">
+                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                            <Viewbox Width="24" Height="24">
+                                <Path Data="{x:Static media:BrewIconGeometry.User}" Classes="brew-icon" />
+                            </Viewbox>
+                            <TextBlock Text="{Binding PendingProfile.Name}" Classes="brew-section" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding WhoIsBrewingTitle}" Classes="brew-title" FontSize="24" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding WhoIsBrewingSubtitle}" Classes="brew-subtitle" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+
+                        <StackPanel Spacing="10" HorizontalAlignment="Center" IsVisible="{Binding !HasAvailableBrewers}">
+                            <TextBlock Text="{Binding NoOperatorsText}" Classes="brew-subtitle" TextAlignment="Center" TextWrapping="Wrap" />
+                            <Button Content="{Binding AddOperatorQuickText}" Command="{Binding OpenAddOperatorCommand}"
+                                    Classes="brew-primary" HorizontalAlignment="Center" />
+                        </StackPanel>
+
+                        <ScrollViewer MaxHeight="190" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasAvailableBrewers}">
+                            <ItemsControl ItemsSource="{Binding AvailableBrewers}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel HorizontalAlignment="Center" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:RfidUser">
+                                        <Button Content="{Binding Name}"
+                                                Command="{Binding $parent[ItemsControl].((vm:ProfileListViewModel)DataContext).SelectBrewerCommand}"
+                                                CommandParameter="{Binding}"
+                                                Classes="brew-secondary" MinWidth="112" Margin="4" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <Button Content="{Binding BackToCardScanText}" Command="{Binding BackToCardScanCommand}"
+                                    Classes="brew-secondary" Margin="0,0,8,4" />
+                            <Button Content="{Binding AddOperatorQuickText}" Command="{Binding OpenAddOperatorCommand}"
+                                    Classes="brew-secondary" Margin="0,0,8,4" IsVisible="{Binding HasAvailableBrewers}" />
+                            <Button Content="{Binding CancelText}" Command="{Binding CancelCardScanCommand}"
+                                    Classes="brew-secondary" Margin="0,0,0,4" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Panel>
             </Border>
-        </Grid>
-    </ScrollViewer>
+        </Border>
+    </Grid>
 </UserControl>

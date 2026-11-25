@@ -258,6 +258,7 @@
     <Style Selector="Border.settings-profiles"><Setter Property="Grid.Column" Value="1" /></Style>
     <Style Selector="Border.settings-notifications"><Setter Property="Grid.Row" Value="1" /></Style>
     <Style Selector="Border.settings-updates"><Setter Property="Grid.Column" Value="1" /><Setter Property="Grid.Row" Value="1" /></Style>
+    <Style Selector="Border.settings-rfid"><Setter Property="Grid.Column" Value="0" /><Setter Property="Grid.ColumnSpan" Value="2" /><Setter Property="Grid.Row" Value="2" /></Style>
     <Style Selector=":is(UserControl).settings-page.compact Border.settings-profiles">
         <Setter Property="Grid.Column" Value="0" /><Setter Property="Grid.Row" Value="1" />
     </Style>
@@ -266,6 +267,63 @@
     </Style>
     <Style Selector=":is(UserControl).settings-page.compact Border.settings-updates">
         <Setter Property="Grid.Column" Value="0" /><Setter Property="Grid.Row" Value="3" />
+    </Style>
+    <Style Selector=":is(UserControl).settings-page.compact Border.settings-rfid">
+        <Setter Property="Grid.Column" Value="0" /><Setter Property="Grid.ColumnSpan" Value="1" /><Setter Property="Grid.Row" Value="4" />
+    </Style>
+
+    <Style Selector="Border.vk-container">
+        <Setter Property="Background" Value="{DynamicResource BrewSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrewLineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="6" />
+    </Style>
+    <Style Selector="Button.vk-key">
+        <Setter Property="Background" Value="{DynamicResource BrewCardBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrewTextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrewLineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Padding" Value="2,0" />
+        <Setter Property="Margin" Value="2" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.vk-key-action">
+        <Setter Property="Background" Value="{DynamicResource BrewSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrewTextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrewLineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Padding" Value="4,0" />
+        <Setter Property="Margin" Value="2" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.vk-key-action.active">
+        <Setter Property="Background" Value="{DynamicResource BrewPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrewPrimaryTextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrewPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.vk-key-action.active Path.brew-icon">
+        <Setter Property="Stroke" Value="{DynamicResource BrewPrimaryTextBrush}" />
+    </Style>
+    <Style Selector="Button.vk-key-primary">
+        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="Margin" Value="2" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
     </Style>
 
     <!-- Template coordinates are styles so new appearances can reflow the same live buttons. -->

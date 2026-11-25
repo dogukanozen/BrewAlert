@@ -28,6 +28,9 @@ public sealed class SqliteBrewHistoryRepository : IBrewHistoryRepository
         CREATE INDEX IF NOT EXISTS IX_BrewHistory_CompletedAt
             ON BrewHistory(CompletedAtUtc DESC);
         """,
+        """
+        ALTER TABLE BrewHistory ADD COLUMN BrewerName TEXT NULL;
+        """,
     ];
 
     private readonly string _connectionString;
@@ -61,8 +64,8 @@ public sealed class SqliteBrewHistoryRepository : IBrewHistoryRepository
             await using var conn = await OpenAsync(ct);
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = """
-                INSERT INTO BrewHistory (Id, CompletedAtUtc, ProfileName, Type, Icon, DurationSeconds)
-                VALUES ($id, $completed, $name, $type, $icon, $duration)
+                INSERT INTO BrewHistory (Id, CompletedAtUtc, ProfileName, Type, Icon, DurationSeconds, BrewerName)
+                VALUES ($id, $completed, $name, $type, $icon, $duration, $brewer)
                 ON CONFLICT(Id) DO NOTHING;
                 """;
             cmd.Parameters.AddWithValue("$id", entry.Id.ToString());
@@ -71,6 +74,7 @@ public sealed class SqliteBrewHistoryRepository : IBrewHistoryRepository
             cmd.Parameters.AddWithValue("$type", (int)entry.Type);
             cmd.Parameters.AddWithValue("$icon", entry.Icon);
             cmd.Parameters.AddWithValue("$duration", entry.DurationSeconds);
+            cmd.Parameters.AddWithValue("$brewer", (object?)entry.BrewerName ?? DBNull.Value);
             await cmd.ExecuteNonQueryAsync(ct);
             _logger.LogDebug("Appended brew history entry {EntryId} ({ProfileName}).", entry.Id, entry.ProfileName);
         }
@@ -89,7 +93,7 @@ public sealed class SqliteBrewHistoryRepository : IBrewHistoryRepository
             await using var conn = await OpenAsync(ct);
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = """
-                SELECT Id, CompletedAtUtc, ProfileName, Type, Icon, DurationSeconds
+                SELECT Id, CompletedAtUtc, ProfileName, Type, Icon, DurationSeconds, BrewerName
                 FROM BrewHistory
                 ORDER BY CompletedAtUtc DESC
                 LIMIT $limit;
@@ -111,7 +115,7 @@ public sealed class SqliteBrewHistoryRepository : IBrewHistoryRepository
             await using var conn = await OpenAsync(ct);
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = """
-                SELECT Id, CompletedAtUtc, ProfileName, Type, Icon, DurationSeconds
+                SELECT Id, CompletedAtUtc, ProfileName, Type, Icon, DurationSeconds, BrewerName
                 FROM BrewHistory
                 ORDER BY CompletedAtUtc DESC;
                 """;
@@ -172,7 +176,8 @@ public sealed class SqliteBrewHistoryRepository : IBrewHistoryRepository
                 ProfileName: reader.GetString(2),
                 Type: (BrewType)reader.GetInt32(3),
                 Icon: reader.GetString(4),
-                DurationSeconds: reader.GetInt32(5)));
+                DurationSeconds: reader.GetInt32(5),
+                BrewerName: reader.IsDBNull(6) ? null : reader.GetString(6)));
         }
         return list;
     }

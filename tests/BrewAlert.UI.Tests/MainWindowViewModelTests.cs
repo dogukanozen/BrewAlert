@@ -19,6 +19,7 @@ public class MainWindowViewModelTests
     private readonly ILocalizationService _loc;
     private readonly IUpdateService _updateService = Substitute.For<IUpdateService>();
     private readonly IBrewHistoryService _history = Substitute.For<IBrewHistoryService>();
+    private readonly IRfidReaderService _rfidReader = Substitute.For<IRfidReaderService>();
     private readonly AmbientOverlayViewModel _ambient;
 
     public MainWindowViewModelTests()
@@ -33,7 +34,7 @@ public class MainWindowViewModelTests
     }
 
     private MainWindowViewModel CreateVm() =>
-        new(_navigation, _timerService, _loc, _updateService, _ambient, Substitute.For<IAppearanceService>());
+        new(_navigation, _timerService, _loc, _updateService, _ambient, Substitute.For<IAppearanceService>(), _rfidReader);
 
     [Fact]
     public void Constructor_NavigatesToProfileList()
@@ -413,12 +414,13 @@ public class MainWindowViewModelTests
         loc.Get(Arg.Any<string>()).Returns(x => x.Arg<string>());
         loc.CurrentLanguage.Returns("English");
         var ambient = new AmbientOverlayViewModel(_history, loc);
-        var vm = new MainWindowViewModel(_navigation, _timerService, loc, _updateService, ambient, Substitute.For<IAppearanceService>());
+        var vm = new MainWindowViewModel(_navigation, _timerService, loc, _updateService, ambient, Substitute.For<IAppearanceService>(), _rfidReader);
 
         vm.Dispose();
 
         // Main window + ambient overlay both subscribe to language changes.
         loc.Received(2).LanguageChanged -= Arg.Any<Action<string>>();
+        _rfidReader.Received(1).CardScanned -= Arg.Any<EventHandler<RfidCardScannedEvent>>();
     }
 
     [Fact]

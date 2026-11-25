@@ -204,5 +204,25 @@ public class BrewTimerServiceTests : IDisposable
         Assert.Empty((await probeResult.Task)!);
     }
 
+    [Fact]
+    public async Task Start_WithBrewerNameAndCard_PreservesAttributionAcrossSnapshotsAndEvents()
+    {
+        BrewStartedEvent? started = null;
+        var completedTcs = new TaskCompletionSource<BrewCompletedEvent>();
+        _sut.BrewStarted += (_, e) => started = e;
+        _sut.BrewCompleted += (_, e) => completedTcs.TrySetResult(e);
+
+        var session = _sut.Start(CreateProfile(seconds: 1), "  Ahmet  ", "00123456");
+
+        Assert.Equal("Ahmet", session.BrewerName);
+        Assert.Equal("00123456", session.BrewerCardId);
+        Assert.Equal("Ahmet", _sut.GetActiveSessions().Single(s => s.Id == session.Id).BrewerName);
+        Assert.Equal("Ahmet", started?.Session.BrewerName);
+
+        var completed = await completedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal("Ahmet", completed.Session.BrewerName);
+        Assert.Equal("00123456", completed.Session.BrewerCardId);
+    }
+
     public void Dispose() => _sut.Dispose();
 }
