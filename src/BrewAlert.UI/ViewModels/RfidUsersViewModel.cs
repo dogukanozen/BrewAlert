@@ -34,6 +34,7 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     private readonly ILogger<RfidUsersViewModel> _logger;
     private readonly CancellationTokenSource _disposeCts = new();
     private Guid? _editingUserId;
+    private int _editSessionGeneration;
     private bool _disposed;
 
     [ObservableProperty]
@@ -232,6 +233,8 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     [RelayCommand]
     private void BeginAdd()
     {
+        _editSessionGeneration++;
+        IsBusy = false;
         _editingUserId = null;
         StatusMessage = string.Empty;
         ScannedCardId = string.Empty;
@@ -243,6 +246,8 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     [RelayCommand]
     private void BeginAddWithoutCard()
     {
+        _editSessionGeneration++;
+        IsBusy = false;
         _editingUserId = null;
         StatusMessage = string.Empty;
         ScannedCardId = string.Empty;
@@ -278,6 +283,8 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     private void EditUser(RfidUser user)
     {
         if (user is null) return;
+        _editSessionGeneration++;
+        IsBusy = false;
         _editingUserId = user.Id;
         StatusMessage = string.Empty;
         ScannedCardId = user.CardId ?? string.Empty;
@@ -289,6 +296,8 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     [RelayCommand]
     private void CancelRegistration()
     {
+        _editSessionGeneration++;
+        IsBusy = false;
         _editingUserId = null;
         ScannedCardId = string.Empty;
         UserNameInput = string.Empty;
@@ -303,22 +312,22 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     {
         if (user is null) return;
 
+        var generation = ++_editSessionGeneration;
         IsBusy = true;
         StatusMessage = string.Empty;
         try
         {
             var profiles = await _profileService.GetAllProfilesAsync(_disposeCts.Token);
-            if (_disposed) return;
+            if (_disposed || generation != _editSessionGeneration) return;
 
             _editingUserId = user.Id;
             EditingDurationsTitle = string.Format(_loc.CurrentCulture, _loc.Get("OperatorEditTitle"), user.Name);
             EditingDurations.Clear();
             foreach (var profile in profiles)
             {
-                var defaultMinutes = Math.Clamp(
-                    (int)Math.Round(profile.BrewDuration.TotalMinutes),
+                var defaultMinutes = Math.Max(
                     RfidUserService.MinBrewDurationMinutes,
-                    RfidUserService.MaxBrewDurationMinutes);
+                    (int)Math.Round(profile.BrewDuration.TotalMinutes));
                 var initialMinutes = Math.Clamp(
                     (int)Math.Round(RfidUserService.ResolveDuration(user, profile).TotalMinutes),
                     RfidUserService.MinBrewDurationMinutes,
@@ -330,7 +339,8 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
                     profile.Icon,
                     defaultMinutes,
                     initialMinutes,
-                    _loc));
+                    _loc,
+                    hasCustomOverride: RfidUserService.HasCustomDuration(user, profile)));
             }
             Step = StepMode.EditingDurations;
         }
@@ -340,11 +350,13 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load brew profiles for operator duration editor.");
-            StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ErrorPrefix"), ex.Message);
+            if (!_disposed && generation == _editSessionGeneration)
+                StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ErrorPrefix"), ex.Message);
         }
         finally
         {
-            IsBusy = false;
+            if (!_disposed && generation == _editSessionGeneration)
+                IsBusy = false;
         }
     }
 
@@ -360,19 +372,25 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
     {
         if (_editingUserId is null) return;
 
+        var generation = _editSessionGeneration;
+        var targetUserId = _editingUserId.Value;
+
         var overrides = new Dictionary<Guid, int>();
         foreach (var item in EditingDurations)
         {
-            if (item.Minutes != item.DefaultMinutes)
+            if (item.IsCustomized)
                 overrides[item.ProfileId] = item.Minutes;
         }
 
         IsBusy = true;
+        StatusMessage = string.Empty;
         try
         {
-            var saved = await _userService.SaveProfilePreferencesAsync(_editingUserId.Value, overrides, _disposeCts.Token);
+            var saved = await _userService.SaveProfilePreferencesAsync(targetUserId, overrides, _disposeCts.Token);
+            if (_disposed || generation != _editSessionGeneration) return;
+
             await LoadUsersAsync();
-            if (_disposed) return;
+            if (_disposed || generation != _editSessionGeneration) return;
 
             StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("OperatorDurationsSaved"), saved.Name);
             _editingUserId = null;
@@ -380,14 +398,19 @@ public partial class RfidUsersViewModel : ViewModelBase, IRfidCardScanAwaiter, I
             EditingDurationsTitle = string.Empty;
             Step = StepMode.List;
         }
+        catch (OperationCanceledException)
+        {
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to save durations for operator {UserId}.", _editingUserId);
-            StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ErrorPrefix"), ex.Message);
+            _logger.LogError(ex, "Failed to save durations for operator {UserId}.", targetUserId);
+            if (!_disposed && generation == _editSessionGeneration)
+                StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ErrorPrefix"), ex.Message);
         }
         finally
         {
-            IsBusy = false;
+            if (!_disposed && generation == _editSessionGeneration)
+                IsBusy = false;
         }
     }
 

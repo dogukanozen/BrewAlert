@@ -198,6 +198,118 @@ public class OperatorBrewViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task SelectProfile_WhileBusyLoading_IsIgnored()
+    {
+        var tea = _profiles[0];
+        var alice = new RfidUser { CardId = "ALICE1", Name = "Ayşe", HasConfiguredProfiles = true };
+        var bob = new RfidUser { CardId = "BOB2", Name = "Burak", HasConfiguredProfiles = true };
+
+        using var vm = CreateVm();
+        vm.Initialize(alice);
+        var staleChoice = Assert.Single(vm.ProfileChoices, c => c.SourceProfile.Id == tea.Id);
+
+        var loadTcs = new TaskCompletionSource<IReadOnlyList<BrewProfile>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        _profileRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(_ => loadTcs.Task);
+
+        vm.Initialize(bob);
+        Assert.True(vm.IsBusy);
+        Assert.Empty(vm.ProfileChoices);
+
+        vm.SelectProfileCommand.Execute(staleChoice);
+        _timerService.DidNotReceiveWithAnyArgs().Start(default!, default, default);
+
+        loadTcs.SetResult(_profiles.ToList());
+        await WaitUntilAsync(() => !vm.IsBusy);
+        Assert.Equal(2, vm.ProfileChoices.Count);
+    }
+
+    [AvaloniaFact]
+    public async Task UseDefaults_CompletingAfterOperatorSwitch_DoesNotOverwriteActiveOperator()
+    {
+        var alice = new RfidUser { Id = Guid.NewGuid(), CardId = "ALICE1", Name = "Ayşe", HasConfiguredProfiles = false };
+        var bob = new RfidUser { Id = Guid.NewGuid(), CardId = "BOB2", Name = "Burak", HasConfiguredProfiles = true };
+        var saveTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var updatedAlice = new RfidUser
+        {
+            Id = alice.Id,
+            CardId = alice.CardId,
+            Name = alice.Name,
+            HasConfiguredProfiles = true,
+        };
+
+        _userRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([alice, bob]);
+        _userRepo.SaveAsync(Arg.Is<RfidUser>(u => u.Id == alice.Id), Arg.Any<CancellationToken>())
+            .Returns(_ => saveTcs.Task);
+        _userRepo.GetByCardIdAsync("BOB2", Arg.Any<CancellationToken>()).Returns(bob);
+
+        using var vm = CreateVm();
+        vm.Initialize(alice);
+        var useDefaultsTask = vm.UseDefaultsCommand.ExecuteAsync(null);
+
+        // Another operator taps their card while Alice's save is still awaiting.
+        _rfidReader.CardScanned += Raise.Event<EventHandler<RfidCardScannedEvent>>(
+            this, new RfidCardScannedEvent("BOB2", DateTime.UtcNow));
+        await WaitUntilAsync(() => vm.OperatorName == "Burak");
+
+        saveTcs.SetResult();
+        await useDefaultsTask;
+
+        Assert.Equal("Burak", vm.OperatorName);
+        Assert.True(vm.IsBrewSelection);
+
+        var tea = _profiles[0];
+        _timerService.Start(Arg.Any<BrewProfile>(), "Burak", "BOB2")
+            .Returns(new BrewSession { Profile = tea, BrewerName = "Burak", BrewerCardId = "BOB2" });
+        vm.SelectProfileCommand.Execute(vm.ProfileChoices.Single(c => c.SourceProfile.Id == tea.Id));
+
+        _timerService.Received(1).Start(Arg.Any<BrewProfile>(), "Burak", "BOB2");
+    }
+
+    [AvaloniaFact]
+    public async Task GlobalProfileOverMaxMinutes_UntouchedDoesNotSaveOverride_AndExplicitOverrideIsPreserved()
+    {
+        var coldBrew = new BrewProfile
+        {
+            Id = Guid.NewGuid(),
+            Name = "Soğuk Demleme",
+            Type = BrewType.Coffee,
+            BrewDuration = TimeSpan.FromMinutes(150),
+        };
+        _profiles.Clear();
+        _profiles.Add(coldBrew);
+
+        var user = new RfidUser { Id = Guid.NewGuid(), CardId = "CB01", Name = "Deniz", HasConfiguredProfiles = false };
+        _userRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([user]);
+
+        using var vm = CreateVm();
+        vm.Initialize(user);
+        vm.OpenDurationEditorCommand.Execute(null);
+
+        var row = Assert.Single(vm.EditableDurations, r => r.ProfileId == coldBrew.Id);
+        Assert.Equal(150, row.DefaultMinutes);
+        Assert.Equal(120, row.Minutes);
+        Assert.False(row.IsCustomized);
+
+        // Save without changing: must NOT create a bogus 120-min override.
+        await vm.SaveDurationsCommand.ExecuteAsync(null);
+        Assert.Empty(user.ProfileDurationMinutes);
+
+        // Now explicitly customize (119 -> 120): must save 120-min override and preserve it on reopen.
+        vm.OpenDurationEditorCommand.Execute(null);
+        row = Assert.Single(vm.EditableDurations, r => r.ProfileId == coldBrew.Id);
+        row.DecreaseCommand.Execute(null);
+        Assert.Equal(119, row.Minutes);
+        Assert.True(row.IsCustomized);
+        row.IncreaseCommand.Execute(null);
+        Assert.Equal(120, row.Minutes);
+        Assert.True(row.IsCustomized);
+
+        await vm.SaveDurationsCommand.ExecuteAsync(null);
+        Assert.Equal(120, user.ProfileDurationMinutes[coldBrew.Id]);
+    }
+
+    [AvaloniaFact]
     public void Dispose_UnsubscribesFromEvents()
     {
         var vm = CreateVm();

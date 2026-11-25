@@ -118,6 +118,9 @@
             <StackPanel Spacing="4">
                 <TextBlock Text="{Binding EditingDurationsTitle}" Classes="brew-title" FontSize="22" TextWrapping="Wrap" />
                 <TextBlock Text="{Binding EditDurationsSubtitle}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                <TextBlock x:Name="DurationEditorStatusMessage" Text="{Binding StatusMessage}"
+                           Foreground="{DynamicResource BrewDangerBrush}" FontSize="13" TextWrapping="Wrap"
+                           IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </StackPanel>
 
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">

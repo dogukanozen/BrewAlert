@@ -43,6 +43,7 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
     private RfidUser? _operator;
     private BrewProfile? _pendingProfile;
     private IReadOnlyList<BrewProfile> _loadedProfiles = [];
+    private int _sessionGeneration;
     private bool _disposed;
 
     [ObservableProperty]
@@ -121,27 +122,31 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
     {
         ArgumentNullException.ThrowIfNull(operatorUser);
 
+        var generation = ++_sessionGeneration;
         _operator = operatorUser;
         _pendingProfile = pendingProfile;
         OperatorName = operatorUser.Name;
         HasPendingProfile = pendingProfile is not null;
         PendingProfileName = pendingProfile?.Name ?? string.Empty;
         StatusMessage = string.Empty;
+        ProfileChoices.Clear();
+        DefaultPreviewPills.Clear();
+        EditableDurations.Clear();
         Mode = operatorUser.HasConfiguredProfiles ? ViewMode.BrewSelection : ViewMode.SetupPrompt;
 
         RestartInactivityTimer();
-        _ = LoadProfilesAsync();
+        _ = LoadProfilesAsync(generation);
     }
 
-    private async Task LoadProfilesAsync()
+    private async Task LoadProfilesAsync(int generation)
     {
-        if (_disposed) return;
+        if (_disposed || generation != _sessionGeneration) return;
 
         IsBusy = true;
         try
         {
             var profiles = await _profileService.GetAllProfilesAsync(_disposeCts.Token);
-            if (_disposed) return;
+            if (_disposed || generation != _sessionGeneration) return;
 
             _loadedProfiles = profiles;
             RebuildProfileProjections();
@@ -153,11 +158,13 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load brew profiles for operator view.");
-            StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ProfilesLoadError"), ex.Message);
+            if (!_disposed && generation == _sessionGeneration)
+                StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ProfilesLoadError"), ex.Message);
         }
         finally
         {
-            IsBusy = false;
+            if (!_disposed && generation == _sessionGeneration)
+                IsBusy = false;
         }
     }
 
@@ -172,12 +179,12 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
 
         foreach (var profile in _loadedProfiles)
         {
-            var defaultMinutes = ToRoundedMinutes(profile.BrewDuration);
+            var defaultMinutes = ToDisplayMinutes(profile.BrewDuration);
             DefaultPreviewPills.Add($"{profile.Name} · {defaultMinutes} {minShort}");
 
             var effective = RfidUserService.CreatePersonalizedProfile(profile, _operator);
             var isCustom = RfidUserService.HasCustomDuration(_operator, profile);
-            var effectiveMinutes = ToRoundedMinutes(effective.BrewDuration);
+            var effectiveMinutes = ToDisplayMinutes(effective.BrewDuration);
             var hint = isCustom
                 ? string.Format(_loc.CurrentCulture, _loc.Get("OperatorDefaultDurationHint"), defaultMinutes)
                 : string.Empty;
@@ -201,8 +208,8 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
         EditableDurations.Clear();
         foreach (var profile in _loadedProfiles)
         {
-            var defaultMinutes = ToRoundedMinutes(profile.BrewDuration);
-            var initialMinutes = ToRoundedMinutes(RfidUserService.ResolveDuration(_operator, profile));
+            var defaultMinutes = ToDisplayMinutes(profile.BrewDuration);
+            var initialMinutes = ToDisplayMinutes(RfidUserService.ResolveDuration(_operator, profile));
             EditableDurations.Add(new OperatorProfileDurationItem(
                 profile.Id,
                 profile.Name,
@@ -210,14 +217,15 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
                 defaultMinutes,
                 initialMinutes,
                 _loc,
-                RestartInactivityTimer));
+                RestartInactivityTimer,
+                hasCustomOverride: RfidUserService.HasCustomDuration(_operator, profile)));
         }
     }
 
     [RelayCommand]
     private void SelectProfile(OperatorProfileChoiceItem item)
     {
-        if (_disposed || _operator is null || item is null) return;
+        if (_disposed || _operator is null || IsBusy || item is null) return;
 
         _inactivityTimer.Stop();
         _timerService.Start(item.EffectiveProfile, _operator.Name, _operator.CardId);
@@ -229,13 +237,18 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
     {
         if (_disposed || _operator is null || IsBusy) return;
 
+        var generation = _sessionGeneration;
+        var targetOperatorId = _operator.Id;
+        var targetOperatorName = _operator.Name;
+
         IsBusy = true;
         StatusMessage = string.Empty;
         try
         {
-            _operator = await _rfidUserService.AcceptDefaultProfilesAsync(_operator.Id, _disposeCts.Token);
-            if (_disposed) return;
+            var savedOperator = await _rfidUserService.AcceptDefaultProfilesAsync(targetOperatorId, _disposeCts.Token);
+            if (_disposed || generation != _sessionGeneration || _operator?.Id != savedOperator.Id) return;
 
+            _operator = savedOperator;
             if (_pendingProfile is not null)
             {
                 StartPendingBrewAndNavigate();
@@ -251,12 +264,14 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to save default brew profile preference for {OperatorName}.", _operator.Name);
-            StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ErrorPrefix"), ex.Message);
+            _logger.LogError(ex, "Failed to save default brew profile preference for {OperatorName}.", targetOperatorName);
+            if (!_disposed && generation == _sessionGeneration)
+                StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ErrorPrefix"), ex.Message);
         }
         finally
         {
-            IsBusy = false;
+            if (!_disposed && generation == _sessionGeneration)
+                IsBusy = false;
         }
     }
 
@@ -276,10 +291,14 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
     {
         if (_disposed || _operator is null || IsBusy) return;
 
+        var generation = _sessionGeneration;
+        var targetOperatorId = _operator.Id;
+        var targetOperatorName = _operator.Name;
+
         var overrides = new Dictionary<Guid, int>();
         foreach (var item in EditableDurations)
         {
-            if (item.Minutes != item.DefaultMinutes)
+            if (item.IsCustomized)
                 overrides[item.ProfileId] = item.Minutes;
         }
 
@@ -287,9 +306,10 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
         StatusMessage = string.Empty;
         try
         {
-            _operator = await _rfidUserService.SaveProfilePreferencesAsync(_operator.Id, overrides, _disposeCts.Token);
-            if (_disposed) return;
+            var savedOperator = await _rfidUserService.SaveProfilePreferencesAsync(targetOperatorId, overrides, _disposeCts.Token);
+            if (_disposed || generation != _sessionGeneration || _operator?.Id != savedOperator.Id) return;
 
+            _operator = savedOperator;
             if (_pendingProfile is not null)
             {
                 StartPendingBrewAndNavigate();
@@ -305,12 +325,14 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to save custom brew durations for {OperatorName}.", _operator.Name);
-            StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ErrorPrefix"), ex.Message);
+            _logger.LogError(ex, "Failed to save custom brew durations for {OperatorName}.", targetOperatorName);
+            if (!_disposed && generation == _sessionGeneration)
+                StatusMessage = string.Format(_loc.CurrentCulture, _loc.Get("ErrorPrefix"), ex.Message);
         }
         finally
         {
-            IsBusy = false;
+            if (!_disposed && generation == _sessionGeneration)
+                IsBusy = false;
         }
     }
 
@@ -420,8 +442,8 @@ public partial class OperatorBrewViewModel : ViewModelBase, IRfidCardScanAwaiter
         _inactivityTimer.Start();
     }
 
-    private static int ToRoundedMinutes(TimeSpan duration) =>
-        Math.Clamp((int)Math.Round(duration.TotalMinutes), RfidUserService.MinBrewDurationMinutes, RfidUserService.MaxBrewDurationMinutes);
+    private static int ToDisplayMinutes(TimeSpan duration) =>
+        Math.Max(RfidUserService.MinBrewDurationMinutes, (int)Math.Round(duration.TotalMinutes));
 
     public void Dispose()
     {

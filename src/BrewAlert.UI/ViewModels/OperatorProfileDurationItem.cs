@@ -20,9 +20,14 @@ public partial class OperatorProfileDurationItem : ViewModelBase
     public int DefaultMinutes { get; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCustomized))]
     private int _minutes;
 
-    public bool IsCustomized => Minutes != DefaultMinutes;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCustomized))]
+    private bool _hasCustomOverride;
+
+    public bool IsCustomized => HasCustomOverride && Minutes != DefaultMinutes;
 
     public string DurationText => $"{Minutes} {_loc.Get("MinShort")}";
 
@@ -36,20 +41,21 @@ public partial class OperatorProfileDurationItem : ViewModelBase
         int defaultMinutes,
         int initialMinutes,
         ILocalizationService loc,
-        Action? onModified = null)
+        Action? onModified = null,
+        bool hasCustomOverride = false)
     {
         ProfileId = profileId;
         Name = name;
         Icon = icon;
-        DefaultMinutes = Math.Clamp(defaultMinutes, RfidUserService.MinBrewDurationMinutes, RfidUserService.MaxBrewDurationMinutes);
+        DefaultMinutes = Math.Max(RfidUserService.MinBrewDurationMinutes, defaultMinutes);
         _loc = loc;
         _onModified = onModified;
         _minutes = Math.Clamp(initialMinutes, RfidUserService.MinBrewDurationMinutes, RfidUserService.MaxBrewDurationMinutes);
+        _hasCustomOverride = hasCustomOverride && _minutes != DefaultMinutes;
     }
 
     partial void OnMinutesChanged(int value)
     {
-        OnPropertyChanged(nameof(IsCustomized));
         OnPropertyChanged(nameof(DurationText));
         _onModified?.Invoke();
     }
@@ -58,17 +64,27 @@ public partial class OperatorProfileDurationItem : ViewModelBase
     private void Increase()
     {
         if (Minutes < RfidUserService.MaxBrewDurationMinutes)
+        {
             Minutes++;
+            HasCustomOverride = Minutes != DefaultMinutes;
+        }
     }
 
     [RelayCommand]
     private void Decrease()
     {
         if (Minutes > RfidUserService.MinBrewDurationMinutes)
+        {
             Minutes--;
+            HasCustomOverride = Minutes != DefaultMinutes;
+        }
     }
 
-    public void ResetToDefault() => Minutes = DefaultMinutes;
+    public void ResetToDefault()
+    {
+        HasCustomOverride = false;
+        Minutes = Math.Clamp(DefaultMinutes, RfidUserService.MinBrewDurationMinutes, RfidUserService.MaxBrewDurationMinutes);
+    }
 
     public void RefreshLocalization(ILocalizationService loc)
     {

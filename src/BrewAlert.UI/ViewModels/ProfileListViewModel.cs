@@ -40,6 +40,7 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
     private readonly CancellationTokenSource _disposeCts = new();
     private bool _isLoadingRecentBrews;
     private bool _reloadRecentBrewsRequested;
+    private int _scanGeneration;
     private bool _disposed;
 
     [ObservableProperty] private bool _isLoading;
@@ -209,10 +210,11 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
         var normalized = RfidUserService.NormalizeCardId(cardId);
         if (normalized is null) return;
 
+        var generation = _scanGeneration;
         try
         {
             var user = await _rfidUserService.FindByCardIdAsync(normalized, _disposeCts.Token);
-            if (_disposed) return;
+            if (_disposed || generation != _scanGeneration) return;
             if (!IsAwaitingCardScan && !_rfidOptions.CurrentValue.RequireCardToBrew) return;
 
             if (user is not null)
@@ -354,6 +356,7 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
             return;
         }
 
+        _scanGeneration++;
         PendingProfile = profile;
         ScanErrorMessage = string.Empty;
         UnregisteredCardId = null;
@@ -367,6 +370,7 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
     {
         if (_disposed || !_rfidOptions.CurrentValue.RequireCardToBrew) return;
 
+        _scanGeneration++;
         PendingProfile = null;
         ScanErrorMessage = string.Empty;
         UnregisteredCardId = null;
@@ -449,6 +453,7 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
 
     private void ClearScanPrompt()
     {
+        _scanGeneration++;
         _scanTimeoutTimer.Stop();
         IsAwaitingCardScan = false;
         IsChoosingBrewer = false;

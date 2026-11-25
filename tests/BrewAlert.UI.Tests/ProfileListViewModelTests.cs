@@ -415,6 +415,44 @@ public class ProfileListViewModelTests
         Assert.False(vm.HasRecentBrews);
     }
 
+    [AvaloniaFact]
+    public async Task CancelledCardLookup_DiscardsLateResult_WhileSubsequentDirectScanWorks()
+    {
+        _rfidOptions.CurrentValue.Returns(new RfidOptions { RequireCardToBrew = true });
+        var tea = new BrewProfile { Id = Guid.NewGuid(), Name = "Çay", BrewDuration = TimeSpan.FromMinutes(15) };
+        var alice = new RfidUser { CardId = "ALICE1", Name = "Ayşe", HasConfiguredProfiles = true };
+        var bob = new RfidUser { CardId = "BOB2", Name = "Burak", HasConfiguredProfiles = true };
+
+        var firstLookup = new TaskCompletionSource<RfidUser?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _rfidUserRepo.GetByCardIdAsync("ALICE1", Arg.Any<CancellationToken>()).Returns(_ => firstLookup.Task);
+        _rfidUserRepo.GetByCardIdAsync("BOB2", Arg.Any<CancellationToken>()).Returns(bob);
+
+        using var vm = CreateVm();
+        vm.SelectProfileCommand.Execute(tea);
+        Assert.True(vm.IsAwaitingCardScan);
+
+        _rfidReader.CardScanned += Raise.Event<EventHandler<RfidCardScannedEvent>>(
+            this, new RfidCardScannedEvent("ALICE1", DateTime.UtcNow));
+        await WaitUntilAsync(() => _rfidUserRepo.ReceivedCalls().Any(c => c.GetMethodInfo().Name == nameof(IRfidUserRepository.GetByCardIdAsync)));
+
+        // User cancels while lookup is in-flight.
+        vm.CancelCardScanCommand.Execute(null);
+        Assert.False(vm.IsAwaitingCardScan);
+
+        firstLookup.SetResult(alice);
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+
+        _timerService.DidNotReceiveWithAnyArgs().Start(default!, default, default);
+        _navigation.DidNotReceive().NavigateTo<OperatorBrewViewModel>(Arg.Any<Action<OperatorBrewViewModel>>());
+
+        // Subsequent direct card scan on Home still works.
+        _rfidReader.CardScanned += Raise.Event<EventHandler<RfidCardScannedEvent>>(
+            this, new RfidCardScannedEvent("BOB2", DateTime.UtcNow));
+        await WaitUntilAsync(() => _navigation.ReceivedCalls().Any());
+
+        _navigation.Received(1).NavigateTo<OperatorBrewViewModel>(Arg.Any<Action<OperatorBrewViewModel>>());
+    }
+
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
