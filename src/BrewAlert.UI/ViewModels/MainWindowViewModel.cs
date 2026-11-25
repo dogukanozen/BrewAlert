@@ -298,6 +298,25 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _currentTitleKey = "OperatorBrewTitle";
             Title = _loc.Get("OperatorBrewTitle");
         }
+        else if (viewModel is ActiveBrewsViewModel)
+        {
+            var active = _timerService.GetActiveSessions();
+            if (active.Count > 0)
+            {
+                _currentTitleKey = TitleKeyBrewRunning;
+                Title = ComposeBrewTitle(active);
+            }
+            else
+            {
+                _currentTitleKey = TitleKeyAppName;
+                Title = "BrewAlert";
+            }
+        }
+        else if (viewModel is ProfileListViewModel)
+        {
+            _currentTitleKey = TitleKeyAppName;
+            Title = "BrewAlert";
+        }
         else if (viewModel is SettingsViewModel)
         {
             _currentTitleKey = "SettingsTitle";
