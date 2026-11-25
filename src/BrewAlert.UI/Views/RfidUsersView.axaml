@@ -34,7 +34,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="models:RfidUser">
                             <Border Classes="brew-panel" Padding="14,10" Margin="0,0,0,8">
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                                     <StackPanel Spacing="2" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Text="{Binding CardId}" Classes="brew-subtitle" FontSize="12"
@@ -43,10 +43,13 @@
                                                    Classes="brew-subtitle" FontSize="12"
                                                    IsVisible="{Binding CardId, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
                                     </StackPanel>
-                                    <Button Grid.Column="1" Content="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).EditText}"
+                                    <Button Grid.Column="1" Content="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).EditDurationsText}"
+                                            Command="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).EditUserDurationsCommand}"
+                                            CommandParameter="{Binding}" Classes="brew-secondary" />
+                                    <Button Grid.Column="2" Content="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).EditText}"
                                             Command="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).EditUserCommand}"
                                             CommandParameter="{Binding}" Classes="brew-secondary" />
-                                    <Button Grid.Column="2" Content="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).DeleteText}"
+                                    <Button Grid.Column="3" Content="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).DeleteText}"
                                             Command="{Binding $parent[ItemsControl].((vm:RfidUsersViewModel)DataContext).DeleteUserCommand}"
                                             CommandParameter="{Binding}" Classes="brew-secondary" />
                                 </Grid>
@@ -108,6 +111,53 @@
                                           SpaceLabel="{Binding SpaceLabel}"
                                           DoneLabel="{Binding DoneLabel}"
                                           DoneCommand="{Binding SaveUserCommand}" />
+        </Grid>
+
+        <!-- Editing Operator Durations Step -->
+        <Grid Grid.RowSpan="2" RowDefinitions="Auto,*,Auto" RowSpacing="12" IsVisible="{Binding IsEditingDurations}">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding EditingDurationsTitle}" Classes="brew-title" FontSize="22" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding EditDurationsSubtitle}" Classes="brew-subtitle" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding EditingDurations}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:OperatorProfileDurationItem">
+                            <Border Classes="brew-panel" Padding="14,10" Margin="0,0,0,8">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <Viewbox Width="20" Height="20" VerticalAlignment="Center">
+                                            <Path Data="{Binding Icon, Converter={StaticResource BrewIcon}}" Classes="brew-icon" />
+                                        </Viewbox>
+                                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding DefaultHintText}" Classes="brew-subtitle" FontSize="12" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Button Content="-" Command="{Binding DecreaseCommand}"
+                                                Classes="brew-secondary" Width="44" Padding="0" />
+                                        <TextBlock Text="{Binding DurationText}" MinWidth="60" TextAlignment="Center"
+                                                   VerticalAlignment="Center" FontSize="15" FontWeight="Medium" />
+                                        <Button Content="+" Command="{Binding IncreaseCommand}"
+                                                Classes="brew-secondary" Width="44" Padding="0" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <WrapPanel Grid.Row="2" Orientation="Horizontal">
+                <Button x:Name="SaveOperatorPrefsButton" Content="{Binding SaveText}" Command="{Binding SaveUserDurationsCommand}"
+                        IsEnabled="{Binding !IsBusy}" Classes="brew-primary" Margin="0,0,8,4" />
+                <Button Content="{Binding ResetDurationsText}" Command="{Binding ResetUserDurationsCommand}"
+                        IsEnabled="{Binding !IsBusy}" Classes="brew-secondary" Margin="0,0,8,4" />
+                <Button Content="{Binding CancelText}" Command="{Binding CancelRegistrationCommand}"
+                        Classes="brew-secondary" Margin="0,0,0,4" />
+            </WrapPanel>
         </Grid>
     </Grid>
 </UserControl>
