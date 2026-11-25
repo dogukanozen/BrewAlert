@@ -12,6 +12,16 @@
                     <TextBlock Text="{Binding HomeEyebrow}" Classes="brew-eyebrow" />
                     <TextBlock Text="{Binding HomeTitle}" Classes="home-title" />
                     <TextBlock Text="{Binding HomeSubtitle}" Classes="brew-subtitle" TextWrapping="Wrap" />
+                    <Button x:Name="OperatorSignInButton" Command="{Binding OpenOperatorSignInCommand}"
+                            Classes="brew-secondary operator-signin-btn" HorizontalAlignment="Left" Margin="0,4,0,0"
+                            IsVisible="{Binding IsCardRequired}">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Viewbox Width="18" Height="18">
+                                <Path Data="{x:Static media:BrewIconGeometry.RfidCard}" Classes="brew-icon" />
+                            </Viewbox>
+                            <TextBlock Text="{Binding OperatorLoginText}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                     <TextBlock Text="{Binding LoadingText}" Classes="brew-subtitle" IsVisible="{Binding IsLoading}" />
                     <TextBlock Text="{Binding ProfilesErrorText}" Classes="brew-subtitle" TextWrapping="Wrap"
                                IsVisible="{Binding ProfilesErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -66,7 +76,8 @@
             <Border Classes="brew-panel" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560" MinWidth="260">
                 <Panel>
                     <StackPanel Spacing="14" HorizontalAlignment="Stretch" IsVisible="{Binding IsCardScanStep}">
-                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center"
+                                    IsVisible="{Binding PendingProfile, Converter={x:Static ObjectConverters.IsNotNull}}">
                             <Viewbox Width="28" Height="28">
                                 <Path Data="{x:Static media:BrewIconGeometry.RfidCard}" Classes="brew-icon" />
                             </Viewbox>
@@ -88,7 +99,8 @@
                     </StackPanel>
 
                     <StackPanel x:Name="WhoIsBrewingPanel" Spacing="14" HorizontalAlignment="Stretch" IsVisible="{Binding IsChoosingBrewer}">
-                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center"
+                                    IsVisible="{Binding PendingProfile, Converter={x:Static ObjectConverters.IsNotNull}}">
                             <Viewbox Width="24" Height="24">
                                 <Path Data="{x:Static media:BrewIconGeometry.User}" Classes="brew-icon" />
                             </Viewbox>

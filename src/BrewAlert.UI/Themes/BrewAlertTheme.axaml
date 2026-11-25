@@ -480,4 +480,123 @@
     <Style Selector=":is(UserControl).aizome :is(UserControl).profile-page.compact UniformGrid.profile-grid">
         <Setter Property="Columns" Value="1" />
     </Style>
+
+    <!-- Operator personalized brew & setup styles (adaptive across all 5 themes) -->
+    <Style Selector="UniformGrid.operator-profile-grid">
+        <Setter Property="Columns" Value="2" />
+    </Style>
+    <Style Selector="Button.operator-profile-card">
+        <Setter Property="Background" Value="{DynamicResource BrewSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrewTextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrewLineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="Padding" Value="18" />
+        <Setter Property="MinHeight" Value="138" />
+        <Setter Property="Margin" Value="0,0,12,12" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="TextBlock.operator-card-name">
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="LetterSpacing" Value="-0.4" />
+    </Style>
+    <Style Selector="TextBlock.operator-card-duration">
+        <Setter Property="FontSize" Value="26" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="LetterSpacing" Value="-0.6" />
+        <Setter Property="Foreground" Value="{DynamicResource BrewTextPrimaryBrush}" />
+    </Style>
+    <Style Selector="Border.operator-badge">
+        <Setter Property="CornerRadius" Value="999" />
+        <Setter Property="Padding" Value="8,3" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrewLineBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.operator-badge.custom">
+        <Setter Property="BorderBrush" Value="{DynamicResource BrewAccentBrush}" />
+        <Setter Property="Background" Value="{DynamicResource BrewCardBrush}" />
+    </Style>
+    <Style Selector="Border.operator-preview-pill">
+        <Setter Property="CornerRadius" Value="999" />
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrewLineBrush}" />
+        <Setter Property="Background" Value="{DynamicResource BrewCardBrush}" />
+        <Setter Property="Margin" Value="4" />
+    </Style>
+    <Style Selector="Border.operator-duration-row">
+        <Setter Property="Padding" Value="14,10" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+    <Style Selector=":is(UserControl).operator-brew-page.compact UniformGrid.operator-profile-grid">
+        <Setter Property="Columns" Value="1" />
+    </Style>
+    <Style Selector=":is(UserControl).operator-brew-page.compact TextBlock.operator-greeting-title">
+        <Setter Property="FontSize" Value="28" />
+    </Style>
+    <Style Selector=":is(UserControl).operator-brew-page.compact StackPanel.operator-greeting">
+        <Setter Property="Grid.ColumnSpan" Value="2" />
+    </Style>
+    <Style Selector=":is(UserControl).operator-brew-page.compact WrapPanel.operator-header-actions">
+        <Setter Property="Grid.Row" Value="1" />
+        <Setter Property="Grid.Column" Value="0" />
+        <Setter Property="Grid.ColumnSpan" Value="2" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector=":is(UserControl).operator-brew-page.compact StackPanel.operator-duration-info">
+        <Setter Property="Grid.ColumnSpan" Value="2" />
+    </Style>
+    <Style Selector=":is(UserControl).operator-brew-page.compact StackPanel.operator-duration-stepper">
+        <Setter Property="Grid.Row" Value="1" />
+        <Setter Property="Grid.Column" Value="0" />
+        <Setter Property="Grid.ColumnSpan" Value="2" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+
+    <!-- Per-theme OperatorBrewView refinements -->
+    <Style Selector=":is(UserControl).porcelain Button.operator-profile-card">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="4,16" />
+        <Setter Property="MinHeight" Value="116" />
+    </Style>
+    <Style Selector=":is(UserControl).porcelain Border.operator-setup-card, :is(UserControl).porcelain Border.operator-duration-row">
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector=":is(UserControl).sumi Button.operator-profile-card">
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+    <Style Selector=":is(UserControl).sumi Border.operator-setup-card, :is(UserControl).sumi Border.operator-duration-row, :is(UserControl).sumi Border.operator-badge, :is(UserControl).sumi Border.operator-preview-pill">
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+    <Style Selector=":is(UserControl).sumi TextBlock.operator-greeting-title">
+        <Setter Property="FontWeight" Value="Light" />
+    </Style>
+    <Style Selector=":is(UserControl).ibre Button.operator-profile-card">
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+    <Style Selector=":is(UserControl).ibre Border.operator-setup-card, :is(UserControl).ibre Border.operator-duration-row, :is(UserControl).ibre Border.operator-badge, :is(UserControl).ibre Border.operator-preview-pill">
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+    <Style Selector=":is(UserControl).ibre TextBlock.operator-greeting-title">
+        <Setter Property="FontWeight" Value="Light" />
+    </Style>
+    <Style Selector=":is(UserControl).aizome Button.operator-profile-card">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0,1,0,1" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style Selector=":is(UserControl).aizome Border.operator-setup-card, :is(UserControl).aizome Border.operator-duration-row, :is(UserControl).aizome Border.operator-badge, :is(UserControl).aizome Border.operator-preview-pill">
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector=":is(UserControl).aizome TextBlock.operator-greeting-title, :is(UserControl).aizome TextBlock.operator-card-name">
+        <Setter Property="FontWeight" Value="Light" />
+    </Style>
 </Styles>

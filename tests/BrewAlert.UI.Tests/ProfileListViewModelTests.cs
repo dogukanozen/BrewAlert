@@ -136,13 +136,19 @@ public class ProfileListViewModelTests
     }
 
     [AvaloniaFact]
-    public async Task CardScanned_WithRegisteredUser_StartsTimerWithBrewerNameAndNavigates()
+    public async Task CardScanned_WithConfiguredUserAndPendingProfile_StartsPersonalizedTimerAndNavigates()
     {
         _rfidOptions.CurrentValue.Returns(new RfidOptions { RequireCardToBrew = true });
-        var tea = new BrewProfile { Name = "Çay", BrewDuration = TimeSpan.FromMinutes(10) };
+        var tea = new BrewProfile { Id = Guid.NewGuid(), Name = "Çay", BrewDuration = TimeSpan.FromMinutes(15) };
         _rfidUserRepo.GetByCardIdAsync("001234", Arg.Any<CancellationToken>())
-            .Returns(new RfidUser { CardId = "001234", Name = "Ahmet" });
-        _timerService.Start(tea, "Ahmet", "001234")
+            .Returns(new RfidUser
+            {
+                CardId = "001234",
+                Name = "Ahmet",
+                HasConfiguredProfiles = true,
+                ProfileDurationMinutes = new Dictionary<Guid, int> { [tea.Id] = 20 },
+            });
+        _timerService.Start(Arg.Any<BrewProfile>(), "Ahmet", "001234")
             .Returns(new BrewSession { Profile = tea, BrewerName = "Ahmet", BrewerCardId = "001234" });
 
         using var vm = CreateVm();
@@ -153,8 +159,102 @@ public class ProfileListViewModelTests
 
         await WaitUntilAsync(() => !vm.IsAwaitingCardScan);
 
-        _timerService.Received(1).Start(tea, "Ahmet", "001234");
+        _timerService.Received(1).Start(
+            Arg.Is<BrewProfile>(p => p.Id == tea.Id && p.BrewDuration == TimeSpan.FromMinutes(20)),
+            "Ahmet",
+            "001234");
         _navigation.Received(1).NavigateTo<ActiveBrewsViewModel>();
+    }
+
+    [AvaloniaFact]
+    public async Task CardScanned_WithUnconfiguredUserAndPendingProfile_NavigatesToOperatorBrewView()
+    {
+        _rfidOptions.CurrentValue.Returns(new RfidOptions { RequireCardToBrew = true });
+        var tea = new BrewProfile { Id = Guid.NewGuid(), Name = "Çay", BrewDuration = TimeSpan.FromMinutes(15) };
+        var user = new RfidUser { CardId = "001234", Name = "Ahmet", HasConfiguredProfiles = false };
+        _rfidUserRepo.GetByCardIdAsync("001234", Arg.Any<CancellationToken>()).Returns(user);
+
+        using var vm = CreateVm();
+        vm.SelectProfileCommand.Execute(tea);
+
+        _rfidReader.CardScanned += Raise.Event<EventHandler<RfidCardScannedEvent>>(
+            this, new RfidCardScannedEvent("001234", DateTime.UtcNow));
+
+        await WaitUntilAsync(() => !vm.IsAwaitingCardScan);
+
+        _timerService.DidNotReceiveWithAnyArgs().Start(default!, default, default);
+        _navigation.Received(1).NavigateTo<OperatorBrewViewModel>(Arg.Any<Action<OperatorBrewViewModel>>());
+    }
+
+    [AvaloniaFact]
+    public async Task DirectCardScanOnHome_WhenCardRequired_NavigatesToOperatorBrewView()
+    {
+        _rfidOptions.CurrentValue.Returns(new RfidOptions { RequireCardToBrew = true });
+        var user = new RfidUser { CardId = "ABC123", Name = "Deniz", HasConfiguredProfiles = true };
+        _rfidUserRepo.GetByCardIdAsync("ABC123", Arg.Any<CancellationToken>()).Returns(user);
+
+        using var vm = CreateVm();
+        Assert.False(vm.IsAwaitingCardScan);
+        Assert.True(((IRfidCardScanAwaiter)vm).CanAcceptKeyboardCardScan);
+
+        _rfidReader.CardScanned += Raise.Event<EventHandler<RfidCardScannedEvent>>(
+            this, new RfidCardScannedEvent("abc123", DateTime.UtcNow));
+
+        await WaitUntilAsync(() => _navigation.ReceivedCalls().Any());
+
+        _navigation.Received(1).NavigateTo<OperatorBrewViewModel>(Arg.Any<Action<OperatorBrewViewModel>>());
+    }
+
+    [AvaloniaFact]
+    public async Task DirectCardScanOnHome_WhenUnknownCard_OpensRegisterPrompt()
+    {
+        _rfidOptions.CurrentValue.Returns(new RfidOptions { RequireCardToBrew = true });
+        _loc.Get("RfidUnknownCard").Returns("Unregistered card ({0})");
+        _rfidUserRepo.GetByCardIdAsync("UNK99", Arg.Any<CancellationToken>()).Returns((RfidUser?)null);
+
+        using var vm = CreateVm();
+        _rfidReader.CardScanned += Raise.Event<EventHandler<RfidCardScannedEvent>>(
+            this, new RfidCardScannedEvent("unk99", DateTime.UtcNow));
+
+        await WaitUntilAsync(() => vm.HasUnregisteredCard);
+
+        Assert.True(vm.IsAwaitingCardScan);
+        Assert.True(vm.IsCardScanStep);
+        Assert.Equal("UNK99", vm.UnregisteredCardId);
+    }
+
+    [AvaloniaFact]
+    public async Task DirectCardScanOnHome_WhenCardNotRequired_IsIgnored()
+    {
+        _rfidOptions.CurrentValue.Returns(new RfidOptions { RequireCardToBrew = false });
+        using var vm = CreateVm();
+        Assert.False(((IRfidCardScanAwaiter)vm).CanAcceptKeyboardCardScan);
+
+        _rfidReader.CardScanned += Raise.Event<EventHandler<RfidCardScannedEvent>>(
+            this, new RfidCardScannedEvent("ABC123", DateTime.UtcNow));
+
+        await Dispatcher.UIThread.InvokeAsync(() => { });
+        _navigation.DidNotReceive().NavigateTo<OperatorBrewViewModel>(Arg.Any<Action<OperatorBrewViewModel>>());
+    }
+
+    [AvaloniaFact]
+    public async Task OpenOperatorSignIn_LoadsOperatorsAndNavigatesOnSelection()
+    {
+        _rfidOptions.CurrentValue.Returns(new RfidOptions { RequireCardToBrew = true });
+        var operatorUser = new RfidUser { CardId = null, Name = "Deniz", HasConfiguredProfiles = false };
+        _rfidUserRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([operatorUser]);
+
+        using var vm = CreateVm();
+        await vm.OpenOperatorSignInCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsAwaitingCardScan);
+        Assert.True(vm.IsChoosingBrewer);
+        Assert.Null(vm.PendingProfile);
+
+        vm.SelectBrewerCommand.Execute(operatorUser);
+
+        Assert.False(vm.IsAwaitingCardScan);
+        _navigation.Received(1).NavigateTo<OperatorBrewViewModel>(Arg.Any<Action<OperatorBrewViewModel>>());
     }
 
     [AvaloniaFact]
@@ -203,11 +303,17 @@ public class ProfileListViewModelTests
     public async Task ChooseBrewerWithoutCard_LoadsOperatorsAndStartsBrewForSelectedBrewer()
     {
         _rfidOptions.CurrentValue.Returns(new RfidOptions { RequireCardToBrew = true });
-        var tea = new BrewProfile { Name = "Çay", BrewDuration = TimeSpan.FromMinutes(10) };
-        var cardless = new RfidUser { CardId = null, Name = "Deniz" };
-        var carded = new RfidUser { CardId = "112233", Name = "Ahmet" };
+        var tea = new BrewProfile { Id = Guid.NewGuid(), Name = "Çay", BrewDuration = TimeSpan.FromMinutes(10) };
+        var cardless = new RfidUser
+        {
+            CardId = null,
+            Name = "Deniz",
+            HasConfiguredProfiles = true,
+            ProfileDurationMinutes = new Dictionary<Guid, int> { [tea.Id] = 18 },
+        };
+        var carded = new RfidUser { CardId = "112233", Name = "Ahmet", HasConfiguredProfiles = true };
         _rfidUserRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([carded, cardless]);
-        _timerService.Start(tea, "Deniz", null).Returns(new BrewSession { Profile = tea, BrewerName = "Deniz" });
+        _timerService.Start(Arg.Any<BrewProfile>(), "Deniz", null).Returns(new BrewSession { Profile = tea, BrewerName = "Deniz" });
 
         using var vm = CreateVm();
         vm.SelectProfileCommand.Execute(tea);
@@ -222,7 +328,10 @@ public class ProfileListViewModelTests
 
         vm.SelectBrewerCommand.Execute(cardless);
 
-        _timerService.Received(1).Start(tea, "Deniz", null);
+        _timerService.Received(1).Start(
+            Arg.Is<BrewProfile>(p => p.Id == tea.Id && p.BrewDuration == TimeSpan.FromMinutes(18)),
+            "Deniz",
+            null);
         _navigation.Received(1).NavigateTo<ActiveBrewsViewModel>();
         Assert.False(vm.IsAwaitingCardScan);
     }

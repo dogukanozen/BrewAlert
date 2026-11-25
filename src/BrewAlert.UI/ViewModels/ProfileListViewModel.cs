@@ -36,6 +36,7 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
     private readonly ILogger<ProfileListViewModel> _logger;
     private readonly DispatcherTimer _recentRefreshTimer;
     private readonly DispatcherTimer _scanTimeoutTimer;
+    private readonly IDisposable? _rfidOptionsListener;
     private readonly CancellationTokenSource _disposeCts = new();
     private bool _isLoadingRecentBrews;
     private bool _reloadRecentBrewsRequested;
@@ -68,6 +69,10 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
 
     public bool IsCardScanStep => IsAwaitingCardScan && !IsChoosingBrewer;
     public bool HasUnregisteredCard => !string.IsNullOrEmpty(UnregisteredCardId);
+    public bool IsCardRequired => _rfidOptions.CurrentValue.RequireCardToBrew;
+
+    bool IRfidCardScanAwaiter.CanAcceptKeyboardCardScan =>
+        !_disposed && (IsAwaitingCardScan || _rfidOptions.CurrentValue.RequireCardToBrew);
 
     public ObservableCollection<BrewProfile> Profiles { get; } = [];
     public ObservableCollection<RecentBrewItem> RecentBrews { get; } = [];
@@ -75,6 +80,7 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
     public string HomeTitle => _loc.Get("HomeTitle");
     public string HomeEyebrow => _loc.Get("HomeEyebrow");
     public string HomeSubtitle => _loc.Get("HomeSubtitle");
+    public string OperatorLoginText => _loc.Get("OperatorLoginButton");
     public string StartText => _loc.Get("BrewStart");
     public string ScanPromptTitle => _loc.Get("RfidScanPromptTitle");
     public string ScanPromptSubtitle => _loc.Get("RfidScanPromptSubtitle");
@@ -121,6 +127,11 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
         _loc.LanguageChanged += OnLanguageChanged;
         _history.HistoryUpdated += OnHistoryUpdated;
         _rfidReader.CardScanned += OnCardScanned;
+        _rfidOptionsListener = _rfidOptions.OnChange(_ => Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed)
+                OnPropertyChanged(nameof(IsCardRequired));
+        }));
         RefreshLocalizedStrings();
 
         _recentRefreshTimer = new DispatcherTimer { Interval = RecentBrewRefreshInterval };
@@ -138,7 +149,7 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
     {
         foreach (var name in new[]
         {
-            nameof(HomeTitle), nameof(HomeEyebrow), nameof(HomeSubtitle), nameof(StartText),
+            nameof(HomeTitle), nameof(HomeEyebrow), nameof(HomeSubtitle), nameof(OperatorLoginText), nameof(StartText),
             nameof(HistoryToggleText), nameof(ScanPromptTitle), nameof(ScanPromptSubtitle),
             nameof(CancelText), nameof(RegisterThisCardText), nameof(BrewWithoutCardText),
             nameof(WhoIsBrewingTitle), nameof(WhoIsBrewingSubtitle), nameof(BackToCardScanText),
@@ -192,7 +203,8 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
 
     private async Task HandleCardScannedAsync(string cardId)
     {
-        if (_disposed || !IsAwaitingCardScan || PendingProfile is null) return;
+        if (_disposed) return;
+        if (!IsAwaitingCardScan && !_rfidOptions.CurrentValue.RequireCardToBrew) return;
 
         var normalized = RfidUserService.NormalizeCardId(cardId);
         if (normalized is null) return;
@@ -200,17 +212,28 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
         try
         {
             var user = await _rfidUserService.FindByCardIdAsync(normalized, _disposeCts.Token);
-            if (_disposed || !IsAwaitingCardScan || PendingProfile is null) return;
+            if (_disposed) return;
+            if (!IsAwaitingCardScan && !_rfidOptions.CurrentValue.RequireCardToBrew) return;
 
             if (user is not null)
             {
-                var profile = PendingProfile;
+                var pending = PendingProfile;
                 ClearScanPrompt();
-                _timerService.Start(profile, user.Name, user.CardId);
-                _navigation.NavigateTo<ActiveBrewsViewModel>();
+                if (pending is not null && user.HasConfiguredProfiles)
+                {
+                    var personalized = RfidUserService.CreatePersonalizedProfile(pending, user);
+                    _timerService.Start(personalized, user.Name, user.CardId);
+                    _navigation.NavigateTo<ActiveBrewsViewModel>();
+                }
+                else
+                {
+                    _navigation.NavigateTo<OperatorBrewViewModel>(vm => vm.Initialize(user, pending));
+                }
             }
             else
             {
+                IsChoosingBrewer = false;
+                IsAwaitingCardScan = true;
                 RestartScanTimeout();
                 UnregisteredCardId = normalized;
                 ScanErrorMessage = string.Format(CultureInfo.CurrentCulture, _loc.Get("RfidUnknownCard"), normalized);
@@ -340,14 +363,26 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
     }
 
     [RelayCommand]
+    private async Task OpenOperatorSignInAsync()
+    {
+        if (_disposed || !_rfidOptions.CurrentValue.RequireCardToBrew) return;
+
+        PendingProfile = null;
+        ScanErrorMessage = string.Empty;
+        UnregisteredCardId = null;
+        IsAwaitingCardScan = true;
+        await ChooseBrewerWithoutCardAsync();
+    }
+
+    [RelayCommand]
     private async Task ChooseBrewerWithoutCardAsync()
     {
-        if (_disposed || !IsAwaitingCardScan || PendingProfile is null) return;
+        if (_disposed || !IsAwaitingCardScan) return;
 
         try
         {
             var users = await _rfidUserService.GetAllAsync(_disposeCts.Token);
-            if (_disposed || !IsAwaitingCardScan || PendingProfile is null) return;
+            if (_disposed || !IsAwaitingCardScan) return;
 
             AvailableBrewers.Clear();
             foreach (var user in users)
@@ -376,12 +411,20 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
     [RelayCommand]
     private void SelectBrewer(RfidUser user)
     {
-        if (PendingProfile is null || user is null) return;
+        if (user is null) return;
 
-        var profile = PendingProfile;
+        var pending = PendingProfile;
         ClearScanPrompt();
-        _timerService.Start(profile, user.Name, user.CardId);
-        _navigation.NavigateTo<ActiveBrewsViewModel>();
+        if (pending is not null && user.HasConfiguredProfiles)
+        {
+            var personalized = RfidUserService.CreatePersonalizedProfile(pending, user);
+            _timerService.Start(personalized, user.Name, user.CardId);
+            _navigation.NavigateTo<ActiveBrewsViewModel>();
+        }
+        else
+        {
+            _navigation.NavigateTo<OperatorBrewViewModel>(vm => vm.Initialize(user, pending));
+        }
     }
 
     [RelayCommand]
@@ -442,5 +485,6 @@ public partial class ProfileListViewModel : ViewModelBase, IRfidCardScanAwaiter,
         _loc.LanguageChanged -= OnLanguageChanged;
         _history.HistoryUpdated -= OnHistoryUpdated;
         _rfidReader.CardScanned -= OnCardScanned;
+        _rfidOptionsListener?.Dispose();
     }
 }

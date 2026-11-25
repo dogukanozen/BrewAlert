@@ -179,6 +179,7 @@ public partial class App : Application
         services.AddSingleton<MainWindowViewModel>();
         services.AddTransient<ActiveBrewsViewModel>();
         services.AddTransient<ProfileListViewModel>();
+        services.AddTransient<OperatorBrewViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<RfidUsersViewModel>();
 

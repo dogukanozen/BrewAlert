@@ -8,4 +8,5 @@ namespace BrewAlert.UI.Services;
 public interface IRfidCardScanAwaiter
 {
     bool IsAwaitingCardScan { get; }
+    bool CanAcceptKeyboardCardScan => IsAwaitingCardScan;
 }

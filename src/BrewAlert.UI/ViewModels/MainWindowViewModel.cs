@@ -293,6 +293,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _currentTitleKey = "RfidUsersTitle";
             Title = _loc.Get("RfidUsersTitle");
         }
+        else if (viewModel is OperatorBrewViewModel)
+        {
+            _currentTitleKey = "OperatorBrewTitle";
+            Title = _loc.Get("OperatorBrewTitle");
+        }
         else if (viewModel is SettingsViewModel)
         {
             _currentTitleKey = "SettingsTitle";
