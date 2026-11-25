@@ -27,6 +27,7 @@ public class UpdateService : IUpdateService
         try
         {
             var mgr = new UpdateManager(new GithubSource(RepoUrl, null, false));
+            if (!mgr.IsInstalled) return false;
             var info = await mgr.CheckForUpdatesAsync();
             if (info != null)
             {
