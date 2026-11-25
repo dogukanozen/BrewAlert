@@ -179,4 +179,26 @@ public class TeamsMessageBuilderTests
         Assert.Contains(expectedTime, payload);
         Assert.DoesNotContain("(UTC)", payload);
     }
+
+    [Fact]
+    public void BuildBrewCompletedPayload_WithBrewerName_IncludesBrewerInHeaderAndFacts()
+    {
+        var session = new BrewSession
+        {
+            Profile = new BrewProfile { Name = "Çay", Type = BrewType.Tea, BrewDuration = TimeSpan.FromMinutes(10), Icon = "♨" },
+            StartedAtUtc = DateTime.UtcNow,
+            EndsAtUtc = DateTime.UtcNow.AddMinutes(10),
+            BrewerName = "Ahmet",
+        };
+
+        var trPayload = TeamsMessageBuilder.BuildBrewCompletedPayload(session, Turkish);
+        Assert.Contains("(Ahmet demledi)", trPayload);
+        Assert.Contains("Demleyen", trPayload);
+        Assert.Contains("Ahmet", trPayload);
+
+        var enPayload = TeamsMessageBuilder.BuildBrewCompletedPayload(session, English);
+        Assert.Contains("(Brewed by Ahmet)", enPayload);
+        Assert.Contains("Brewed By", enPayload);
+        Assert.Contains("Ahmet", enPayload);
+    }
 }

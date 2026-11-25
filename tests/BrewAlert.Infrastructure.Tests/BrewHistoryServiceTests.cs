@@ -66,6 +66,7 @@ public class BrewHistoryServiceTests
         public event EventHandler<BrewCompletedEvent>? BrewCompleted;
 
         public BrewSession Start(BrewProfile profile) => throw new NotSupportedException();
+        public BrewSession Start(BrewProfile profile, string? brewerName, string? brewerCardId = null) => throw new NotSupportedException();
         public void Cancel(Guid sessionId) { }
         public void Pause(Guid sessionId) { }
         public void Resume(Guid sessionId) { }

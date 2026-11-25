@@ -145,4 +145,25 @@ public class TeamsGraphMessageBuilderTests
 
         Assert.Contains(expected, json);
     }
+
+    [Fact]
+    public void BuildBrewCompletedPayload_WithBrewerName_IncludesBrewerInHeaderAndFacts()
+    {
+        var profile = new BrewProfile { Name = "Çay", Icon = "♨", Type = BrewType.Tea, BrewDuration = TimeSpan.FromMinutes(10) };
+        var session = new BrewSession
+        {
+            Profile = profile,
+            StartedAtUtc = DateTime.UtcNow,
+            EndsAtUtc = DateTime.UtcNow.AddMinutes(10),
+            BrewerName = "Zeynep",
+        };
+
+        var trJson = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session, Turkish);
+        Assert.Contains("(Zeynep demledi)", trJson);
+        Assert.Contains("Demleyen", trJson);
+
+        var enJson = TeamsGraphMessageBuilder.BuildBrewCompletedPayload(session, English);
+        Assert.Contains("(Brewed by Zeynep)", enJson);
+        Assert.Contains("Brewed By", enJson);
+    }
 }

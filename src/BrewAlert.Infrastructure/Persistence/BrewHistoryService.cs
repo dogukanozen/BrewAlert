@@ -42,7 +42,8 @@ public sealed class BrewHistoryService : IBrewHistoryService, IDisposable
             ProfileName: session.Profile.Name,
             Type: session.Profile.Type,
             Icon: session.Profile.Icon,
-            DurationSeconds: (int)Math.Max(0, duration.TotalSeconds));
+            DurationSeconds: (int)Math.Max(0, duration.TotalSeconds),
+            BrewerName: session.BrewerName);
 
         _ = PersistAsync(entry);
     }

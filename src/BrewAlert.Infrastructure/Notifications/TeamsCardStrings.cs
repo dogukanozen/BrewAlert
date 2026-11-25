@@ -27,7 +27,9 @@ internal static class TeamsCardStrings
     private static readonly Dictionary<string, string> English = new()
     {
         ["HeaderReady"] = "{0} BrewAlert — Your {1} is Ready!",
+        ["HeaderReadyBy"] = "{0} BrewAlert — Your {1} is Ready! (Brewed by {2})",
         ["FactProfile"] = "Profile",
+        ["FactBrewedBy"] = "Brewed By",
         ["FactBrewTime"] = "Brew Time",
         ["FactCompletedAt"] = "Completed At",
         ["FooterDontLetItGetCold"] = "Don't let it get cold! ☕",
@@ -42,7 +44,9 @@ internal static class TeamsCardStrings
     private static readonly Dictionary<string, string> Turkish = new()
     {
         ["HeaderReady"] = "{0} BrewAlert — {1} hazır!",
+        ["HeaderReadyBy"] = "{0} BrewAlert — {1} hazır! ({2} demledi)",
         ["FactProfile"] = "Profil",
+        ["FactBrewedBy"] = "Demleyen",
         ["FactBrewTime"] = "Demleme Süresi",
         ["FactCompletedAt"] = "Tamamlanma",
         ["FooterDontLetItGetCold"] = "Soğutmayın! ☕",

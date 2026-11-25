@@ -35,8 +35,19 @@ public static class TeamsGraphMessageBuilder
         var completedAt = endsAt.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture);
 
         var typeLabel = TeamsCardStrings.Get(language, $"BrewType_{session.Profile.Type}");
-        var headerTemplate = TeamsCardStrings.Get(language, "HeaderReady");
-        var headerText = string.Format(CultureInfo.InvariantCulture, headerTemplate, session.Profile.Icon, typeLabel);
+        var hasBrewer = !string.IsNullOrWhiteSpace(session.BrewerName);
+        var headerText = hasBrewer
+            ? string.Format(CultureInfo.InvariantCulture, TeamsCardStrings.Get(language, "HeaderReadyBy"), session.Profile.Icon, typeLabel, session.BrewerName)
+            : string.Format(CultureInfo.InvariantCulture, TeamsCardStrings.Get(language, "HeaderReady"), session.Profile.Icon, typeLabel);
+
+        var facts = new List<object>
+        {
+            new { title = TeamsCardStrings.Get(language, "FactProfile"), value = session.Profile.Name },
+        };
+        if (hasBrewer)
+            facts.Add(new { title = TeamsCardStrings.Get(language, "FactBrewedBy"), value = session.BrewerName! });
+        facts.Add(new { title = TeamsCardStrings.Get(language, "FactBrewTime"), value = duration });
+        facts.Add(new { title = TeamsCardStrings.Get(language, "FactCompletedAt"), value = completedAt });
 
         var cardContentObj = new Dictionary<string, object>
         {
@@ -56,12 +67,7 @@ public static class TeamsGraphMessageBuilder
                 new
                 {
                     type = "FactSet",
-                    facts = new object[]
-                    {
-                        new { title = TeamsCardStrings.Get(language, "FactProfile"), value = session.Profile.Name },
-                        new { title = TeamsCardStrings.Get(language, "FactBrewTime"), value = duration },
-                        new { title = TeamsCardStrings.Get(language, "FactCompletedAt"), value = completedAt }
-                    }
+                    facts = facts.ToArray()
                 },
                 new
                 {
